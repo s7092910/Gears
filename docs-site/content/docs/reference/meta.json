@@ -1,8 +1,7 @@
 {
-  "title": "API reference",
+  "title": "API Reference",
   "description": "Every public type in GearsAPI 3.0.0",
   "pages": [
-    "index",
     "core",
     "settings",
     "base",

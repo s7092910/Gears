@@ -176,7 +176,7 @@ function renderType(t) {
 function renderIndex(bySection) {
   const out = [];
   out.push('---');
-  out.push('title: API reference');
+  out.push('title: API Reference');
   out.push('description: Every public type in GearsAPI.dll 3.0.0, one page per type, grouped by namespace.');
   out.push('---');
   out.push('');
@@ -296,10 +296,14 @@ for (const sec of model.sections) {
     JSON.stringify({ title: sec.short ?? sec.title, description: sec.blurb, pages: rows.map((t) => t.slug) }, null, 2) + '\n'
   );
 }
+  // `index` is deliberately absent from `pages`. Fumadocs only treats a folder's index.mdx as
+  // the folder's own link -- SidebarFolderLink, which navigates *and* expands on click -- when it
+  // is not listed in `pages`; listing it makes it a separate child and leaves the folder a plain
+  // toggle. See the `delete node.index` branch in fumadocs-core's page tree builder.
 files.set(
   path.join(OUT, 'meta.json'),
   JSON.stringify(
-    { title: 'API reference', description: 'Every public type in GearsAPI 3.0.0', pages: ['index', ...model.sections.map((s) => s.id)] },
+    { title: 'API Reference', description: 'Every public type in GearsAPI 3.0.0', pages: model.sections.map((s) => s.id) },
     null, 2
   ) + '\n'
 );
