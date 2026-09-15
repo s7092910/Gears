@@ -10,6 +10,11 @@ Build:
 npm run build
 ```
 
+Generate API Docs:
+```bash
+npm run gen:api
+```
+
 Run development server:
 
 ```bash
