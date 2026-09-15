@@ -18,12 +18,12 @@ import { parseFile, memberKey, splitGeneric } from './csharp.mjs';
  */
 export const SECTIONS = [
   {
-    id: 'core', ns: 'GearsAPI', title: 'GearsAPI',
+    id: 'core', ns: 'GearsAPI', title: 'GearsAPI', short: 'Core',
     blurb: 'The assembly entry point.',
     order: ['GearsApi'],
   },
   {
-    id: 'settings', ns: 'GearsAPI.Settings', title: 'GearsAPI.Settings',
+    id: 'settings', ns: 'GearsAPI.Settings', title: 'GearsAPI.Settings', short: 'Settings',
     blurb: 'The mod-level contracts and the members every setting shares.',
     order: [
       'GearsSettingsManager', 'IGearsMod', 'IGearsModApi', 'IModSetting',
@@ -32,7 +32,7 @@ export const SECTIONS = [
     ],
   },
   {
-    id: 'base', ns: 'GearsAPI.Settings.Base', title: 'GearsAPI.Settings.Base',
+    id: 'base', ns: 'GearsAPI.Settings.Base', title: 'GearsAPI.Settings.Base', short: 'Settings.Base',
     blurb: 'Non-generic faces of the value settings, for type-agnostic code.',
     order: [
       'IValueModSettingBase', 'ISelectorSettingBase', 'ISliderSettingBase',
@@ -40,7 +40,7 @@ export const SECTIONS = [
     ],
   },
   {
-    id: 'global', ns: 'GearsAPI.Settings.Global', title: 'GearsAPI.Settings.Global',
+    id: 'global', ns: 'GearsAPI.Settings.Global', title: 'GearsAPI.Settings.Global', short: 'Settings.Global',
     blurb: "The player's settings: tabs, categories and the global setting types.",
     order: [
       'IModGlobalSettings', 'IGlobalModSettingsTab', 'IGlobalModSettingsCategory',
@@ -50,7 +50,7 @@ export const SECTIONS = [
     ],
   },
   {
-    id: 'world', ns: 'GearsAPI.Settings.World', title: 'GearsAPI.Settings.World',
+    id: 'world', ns: 'GearsAPI.Settings.World', title: 'GearsAPI.Settings.World', short: 'Settings.World',
     blurb: "A save's settings: categories and the world setting types.",
     order: [
       'IModWorldSettings', 'IWorldModSettingsCategory', 'IWorldModSetting',
@@ -58,7 +58,7 @@ export const SECTIONS = [
     ],
   },
   {
-    id: 'attributes', ns: 'GearsAPI.Attributes', title: 'GearsAPI.Attributes',
+    id: 'attributes', ns: 'GearsAPI.Attributes', title: 'GearsAPI.Attributes', short: 'Attributes',
     blurb: 'Binding, listener and serialization attributes.',
     order: [
       'SettingPathAttribute', 'SettingAttribute', 'SettingListenerAttribute',

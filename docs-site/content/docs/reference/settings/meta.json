@@ -1,5 +1,5 @@
 {
-  "title": "GearsAPI.Settings",
+  "title": "Settings",
   "description": "The mod-level contracts and the members every setting shares.",
   "pages": [
     "gears-settings-manager",

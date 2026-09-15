@@ -1,5 +1,5 @@
 {
-  "title": "GearsAPI.Settings.Base",
+  "title": "Settings.Base",
   "description": "Non-generic faces of the value settings, for type-agnostic code.",
   "pages": [
     "i-value-mod-setting-base",

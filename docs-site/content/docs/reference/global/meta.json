@@ -1,5 +1,5 @@
 {
-  "title": "GearsAPI.Settings.Global",
+  "title": "Settings.Global",
   "description": "The player's settings: tabs, categories and the global setting types.",
   "pages": [
     "i-mod-global-settings",

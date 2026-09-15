@@ -1,5 +1,5 @@
 {
-  "title": "GearsAPI.Attributes",
+  "title": "Attributes",
   "description": "Binding, listener and serialization attributes.",
   "pages": [
     "setting-path-attribute",

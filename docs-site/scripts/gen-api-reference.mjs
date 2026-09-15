@@ -289,9 +289,11 @@ for (const t of model.types.values()) {
 for (const sec of model.sections) {
   const rows = bySection.get(sec.id) ?? [];
   if (!rows.length) continue;
+  // The sidebar shows the short label; the full namespace stays on the index page and in each
+  // type page's TypeMeta strip.
   files.set(
     path.join(OUT, sec.id, 'meta.json'),
-    JSON.stringify({ title: sec.title, description: sec.blurb, pages: rows.map((t) => t.slug) }, null, 2) + '\n'
+    JSON.stringify({ title: sec.short ?? sec.title, description: sec.blurb, pages: rows.map((t) => t.slug) }, null, 2) + '\n'
   );
 }
 files.set(
