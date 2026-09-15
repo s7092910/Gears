@@ -1,0 +1,18 @@
+{
+  "title": "GearsAPI.Settings.Global",
+  "description": "The player's settings: tabs, categories and the global setting types.",
+  "pages": [
+    "i-mod-global-settings",
+    "i-global-mod-settings-tab",
+    "i-global-mod-settings-category",
+    "i-global-mod-setting",
+    "on-setting-changed-event",
+    "i-global-value-setting",
+    "value-changed-event",
+    "i-selector-global-setting",
+    "i-slider-global-setting",
+    "i-switch-global-setting",
+    "i-color-selector-global-setting",
+    "i-control-binding-setting"
+  ]
+}

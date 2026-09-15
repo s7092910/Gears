@@ -1,0 +1,38 @@
+# Deny by default: this repo holds the documentation site and the public API source only.
+# The Gears mod implementation, UnitTests, build output and the wiki clone stay untracked.
+#
+# `!*/` is required: git cannot re-include a file whose parent directory is excluded, so the
+# directories have to stay walkable for the whitelist entries below to match.
+*
+!*/
+
+# --- documentation site ---
+!/.gitignore
+!/.github/**
+!/docs-site/**
+
+# --- public API surface, so the reference's "Source" links resolve ---
+!/GearsAPI/Source/**
+!/GearsAPI/Properties/AssemblyInfo.cs
+!/GearsAPI/GearsAPI.csproj
+!/Directory.Build.props
+!/CHANGELOG.md
+
+# --- never track, even under the allowances above (last match wins) ---
+/docs-site/node_modules/
+/docs-site/.next/
+/docs-site/out/
+/docs-site/.source/
+.gen/
+.vs/
+packages/
+Release/
+Images/
+TestResults/
+# The GitHub wiki clone. It has its own .git and is no longer the source of truth.
+Docs/
+**/bin/
+**/obj/
+**/TestResults/
+*.user
+*.suo

@@ -1,0 +1,51 @@
+---
+title: "ISliderWorldSetting<T>"
+description: "A world numeric setting within a range. int and float only."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.World" source="GearsAPI/Source/Settings/World/SettingTypes/ISliderWorldSetting.cs" />
+
+```csharp
+public interface ISliderWorldSetting<T> : IWorldModSetting, IValueModSetting<T>, ISliderSettingBase where T : struct
+```
+
+A world numeric setting within a range. Implemented for `int` and `float` only.
+
+**Type parameters:** `T` — `int` or `float`.\
+**Implements:** [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting) · [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`ISliderSettingBase`](/docs/reference/base/i-slider-setting-base) · [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
+
+## Properties
+
+### Increment
+
+```csharp
+T Increment { get; }
+```
+
+Gets the step between values.
+
+### Min
+
+```csharp
+T Min { get; }
+```
+
+Gets the lowest value.
+
+### Max
+
+```csharp
+T Max { get; }
+```
+
+Gets the highest value.
+
+## Methods
+
+### SetAllowedValues(T, T, T)
+
+```csharp
+void SetAllowedValues(T increment, T min, T max);
+```
+
+Sets `Increment`, `Min` and `Max`.

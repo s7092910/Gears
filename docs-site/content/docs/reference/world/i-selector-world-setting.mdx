@@ -1,0 +1,42 @@
+---
+title: "ISelectorWorldSetting<T>"
+description: "A world setting chosen from a list of allowed values."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.World" source="GearsAPI/Source/Settings/World/SettingTypes/ISelectorWorldSetting.cs" />
+
+```csharp
+public interface ISelectorWorldSetting<T> : IWorldModSetting, IValueModSetting<T>, ISelectorSettingBase
+```
+
+A world setting chosen from a list of allowed values. Implemented for `int`, `float`, `string`
+and any enum. Raises `OnSelected` only; there is no `OnValueChanged` on world settings.
+
+**Type parameters:** `T` — `int`, `float`, `string` or an enum.\
+**Implements:** [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting) · [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`ISelectorSettingBase`](/docs/reference/base/i-selector-setting-base) · [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
+
+## Methods
+
+### SetAllowedValues(T[])
+
+```csharp
+void SetAllowedValues(T[] values);
+```
+
+Replaces the allowed values with `values`, in that order.
+
+### SetAllowedValues(T, T, T)
+
+```csharp
+void SetAllowedValues(T increment, T min, T max);
+```
+
+Replaces the allowed values with the range `min` to `max` in steps of `increment`. Same validation as the global version.
+
+### GetAllowedValues()
+
+```csharp
+T[] GetAllowedValues();
+```
+
+Returns the allowed values as `T[]`.

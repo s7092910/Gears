@@ -1,0 +1,27 @@
+---
+title: "ISwitchSettingBase.SelectedButton"
+description: "Which side of a Switch is lit."
+---
+
+<TypeMeta kind="Enum" namespace="GearsAPI.Settings.Base" source="GearsAPI/Source/Settings/Base/ISwitchSettingBase.cs" />
+
+```csharp
+public enum SelectedButton
+```
+
+Which side of a Switch is lit. Nested in [`ISwitchSettingBase`](/docs/reference/base/i-switch-setting-base); write
+`ISwitchSettingBase.SelectedButton.Left` or add
+`using static GearsAPI.Settings.Base.ISwitchSettingBase;`.
+
+**Inheritance:** `Object` → `ValueType` → `Enum` → `SelectedButton`
+
+<Callout>
+  Declared inside the interface without an explicit `public` modifier — nested interface types are implicitly public.
+</Callout>
+
+## Fields
+
+| Name | Value | Description |
+|---|---|---|
+| `Right` | 0 | The right button, holding `RightValue`. For a `bool` switch, `true`. |
+| `Left` | 1 | The left button, holding `LeftValue`. For a `bool` switch, `false`. Also the resting position when the selected value matches neither side. |

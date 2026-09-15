@@ -1,0 +1,139 @@
+---
+title: Using Mod Settings in XML Patches
+description: The modsetting() function — reading another mod's settings from conditionals and inline in attribute values.
+---
+
+Gears adds one function, `modsetting()`, to the game's XML patching. It works in two places:
+inside the vanilla `<conditional>` blocks, and inline inside any attribute value. Everything else
+on this page (`<conditional>`, `<if>`, `<else>`, `mod_loaded`, `mod_version`, XPath) is the game's
+own patching system.
+
+## The function
+
+```text
+modsetting('ModName', 'SettingsGroup', 'SettingPath')
+```
+
+| Argument | Value |
+|---|---|
+| `ModName` | The `<Name>` from the other mod's `ModInfo.xml`. Not the display name, not the folder. |
+| `SettingsGroup` | `Global` or `World`, case-insensitive. |
+| `SettingPath` | Global: `TabName.CategoryName.SettingName` (exactly three parts). World: `CategoryName.SettingName` (exactly two). The names are the `name` attributes from `ModSettings.xml`, not the display keys. |
+
+It returns the setting's **serialized value as a string**: the same text that goes into the saved
+settings file. That means:
+
+- a `bool` is `True` or `False`;
+- a number uses `<Formatter serialize="…">` if the setting has one, otherwise its plain
+  `ToString()`;
+- an enum is its member name; a `Color` is `R,G,B`;
+- a `Binding` has no value and returns an empty string.
+
+Compare against quoted strings: `== 'True'`, `== 'Hard'`, `== '2'`.
+
+## In a conditional block
+
+```xml
+<configs>
+	<conditional>
+		<if cond="modsetting('MyMod', 'Global', 'General.Difficulty.Mode') == 'Hard'">
+			<set xpath="/progression/@experience_multiplier">0.5</set>
+		</if>
+		<else>
+			<set xpath="/progression/@experience_multiplier">1.0</set>
+		</else>
+	</conditional>
+</configs>
+```
+
+World example, two-part path:
+
+```xml
+<if cond="modsetting('MyMod', 'World', 'Zombies.FeralNights') == 'True'">
+```
+
+`modsetting` sits alongside the vanilla condition functions such as `mod_loaded`, `mod_version`,
+`version` and `game_version`, and can be combined with them in the same expression.
+
+## Inline in an attribute value
+
+After the conditional blocks of a file have been applied, Gears scans **every attribute of every
+element** in the file and replaces each `modsetting(...)` it finds with the value:
+
+```xml
+<configs>
+	<append xpath="/windows/window[@name='windowHUD']">
+		<label depth="4" width="500" height="40"
+		       text="Day of the week: modsetting('MyMod', 'Global', 'Calendar.Selectors.DayOfWeek')"
+		       color="modsetting('MyMod', 'Global', 'Colors.HUD.DayColor')" />
+	</append>
+</configs>
+```
+
+Rules for this form, which is a plain text substitution:
+
+- It works in **attribute values only**. Element text (`<set xpath="…">modsetting(...)</set>`) is
+  not substituted.
+- The match is case-insensitive. Arguments run up to the **first `)`**, every `'` is removed, and
+  the rest is split on `,`. So quotes are optional, and an argument can contain neither a comma
+  nor a parenthesis.
+- Several calls in one attribute are all replaced. A value that itself contains the text
+  `modsetting(` is left alone rather than expanded again.
+- A call with no closing `)` is an error naming the file, attribute and line, and patching of
+  that file stops.
+
+## Guarding for players without Gears
+
+<Callout type="warn">
+  If Gears is not installed, `modsetting` is unknown. Inside `<conditional>` that makes the
+  condition fail to evaluate; inline, the game will try to use the literal text `modsetting(...)`
+  as a value and log errors. Wrap either form in a vanilla check.
+</Callout>
+
+```xml
+<configs>
+	<conditional>
+		<if cond="mod_loaded('Gears')">
+			<append xpath="/windows/window[@name='windowHUD']">
+				<label depth="4" width="500" height="40"
+				       text="Day of the week: modsetting('MyMod', 'World', 'Calendar.DayOfWeek')" />
+			</append>
+		</if>
+		<else>
+			<append xpath="/windows/window[@name='windowHUD']">
+				<label depth="4" width="500" height="40" text="Day of the week: Monday" />
+			</append>
+		</else>
+	</conditional>
+</configs>
+```
+
+## When the values are valid
+
+Settings are populated at game start, before any XML is patched, so **Global** values are always
+current at patch time.
+
+**World** values belong to the save. On the host they are loaded when the world starts; on a
+client they arrive from the server as part of the config files. Both happen before the world's
+XML is patched, so world patches see the right values. Before a world is loaded, a world setting
+reads as its `defaultValue`.
+
+## Errors
+
+Every failure is reported as an XML patch error in the log with the file and line. The messages,
+with `Calling function ` in front in the conditional form and without it inline:
+
+| Message | Cause |
+|---|---|
+| `modsetting with invalid number of arguments (N, expected 3)` | wrong argument count |
+| `modsetting: Parameter ModName expected string argument` | first argument empty or not a string |
+| `modsetting: Parameter SettingsGroup expected to be either 'Global or World'` | second argument is something else |
+| `modsetting: Parameter SettingName expected string argument in the format of 'TabName.CategoryName.SettingName'` | Global path does not have three parts |
+| `modsetting: Parameter SettingName expected string argument in the format of 'CategoryName.SettingName'` | World path does not have two parts |
+| `modsetting: mod <ModName> could not be found` | no loaded mod has that `<Name>` |
+| `modsetting: mod <ModName> does not have any global mod settings` / `…world mod settings` | the mod has no settings of that group |
+| `modsetting: mod <ModName> does not have a mod settings tab called <t>` | first part of a Global path is wrong |
+| `modsetting: mod <ModName> does not have a mod settings category called <c>` | category part is wrong |
+| `modsetting: mod <ModName> does not have a mod setting called <s>` | setting name is wrong |
+
+A setting that exists but has no value (a `Binding`) is not an error; it returns `""`.

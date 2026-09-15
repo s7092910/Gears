@@ -1,0 +1,51 @@
+---
+title: "ISliderGlobalSetting<T>"
+description: "A global numeric setting dragged within a range. int and float only."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/SettingTypes/ISliderGlobalSetting.cs" />
+
+```csharp
+public interface ISliderGlobalSetting<T> : IGlobalValueSetting<T>, ISliderSettingBase where T : struct
+```
+
+A global numeric setting dragged within a range. Implemented for `int` and `float` only.
+
+**Type parameters:** `T` — `int` or `float`.\
+**Implements:** [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) · [`ISliderSettingBase`](/docs/reference/base/i-slider-setting-base) · [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
+
+## Properties
+
+### Increment
+
+```csharp
+T Increment { get; }
+```
+
+Gets the step between values. `default(T)` until `SetAllowedValues` is called.
+
+### Min
+
+```csharp
+T Min { get; }
+```
+
+Gets the lowest value.
+
+### Max
+
+```csharp
+T Max { get; }
+```
+
+Gets the highest value.
+
+## Methods
+
+### SetAllowedValues(T, T, T)
+
+```csharp
+void SetAllowedValues(T increment, T min, T max);
+```
+
+Sets `Increment`, `Min` and `Max`.

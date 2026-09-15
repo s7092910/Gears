@@ -1,0 +1,36 @@
+---
+title: "GearsApi"
+description: "The game's IModApi entry point for GearsAPI.dll itself. Not intended for use by mods."
+---
+
+<TypeMeta kind="Class" namespace="GearsAPI" source="GearsAPI/Source/GearsApi.cs" />
+
+```csharp
+public class GearsApi : IModApi
+```
+
+The game's `IModApi` entry point for `GearsAPI.dll` itself. It logs the GearsAPI version when
+the game loads the assembly. Not intended for use by mods.
+
+**Inheritance:** `Object` → `GearsApi`\
+**Implements:** `IModApi` (game)
+
+## Constructors
+
+### GearsApi()
+
+```csharp
+public GearsApi()
+```
+
+Initializes a new instance. Called by the game's mod loader.
+
+## Methods
+
+### InitMod(Mod)
+
+```csharp
+public void InitMod(Mod _modInstance)
+```
+
+Logs `[Gears API] Gears API version <version> loaded`. Implements `IModApi.InitMod`.

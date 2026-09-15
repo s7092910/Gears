@@ -1,0 +1,44 @@
+---
+title: "ISwitchGlobalSetting<T>"
+description: "A global two-position setting."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/SettingTypes/ISwitchGlobalSetting.cs" />
+
+```csharp
+public interface ISwitchGlobalSetting<T> : IGlobalValueSetting<T>, ISwitchSettingBase
+```
+
+A global two-position setting. Implemented for `bool` (left `false`, right `true`), `string` (no
+sides until `SetSwitchValues`) and any enum (left and right are the first two declared members).
+
+**Type parameters:** `T` — `bool`, `string` or an enum.\
+**Implements:** [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) · [`ISwitchSettingBase`](/docs/reference/base/i-switch-setting-base) · [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
+
+## Properties
+
+### LeftValue
+
+```csharp
+T LeftValue { get; set; }
+```
+
+Gets or sets the value the left button selects.
+
+### RightValue
+
+```csharp
+T RightValue { get; set; }
+```
+
+Gets or sets the value the right button selects.
+
+## Methods
+
+### SetSwitchValues(T, T)
+
+```csharp
+void SetSwitchValues(T leftValue, T rightValue);
+```
+
+Sets `LeftValue` and `RightValue` together.

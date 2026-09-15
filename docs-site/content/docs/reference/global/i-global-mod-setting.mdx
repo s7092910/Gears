@@ -1,0 +1,52 @@
+---
+title: "IGlobalModSetting"
+description: "A setting that belongs to the player rather than to a world."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/IGlobalModSetting.cs" />
+
+```csharp
+public interface IGlobalModSetting : IModSetting
+```
+
+A setting that belongs to the player rather than to a world: it knows its tab and category, can
+warn about a reload or restart, and raises `OnSettingChanged` when applied.
+
+**Implements:** [`IModSetting`](/docs/reference/settings/i-mod-setting)\
+**Derived:** [`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category) · [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) · [`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting)
+
+## Properties
+
+### RestartScope
+
+```csharp
+SettingRestartScope RestartScope { get; set; }
+```
+
+Gets or sets what a change costs the player, as a [`SettingRestartScope`](/docs/reference/settings/setting-restart-scope): `None`, `Reload` or `Restart`. Always `None` on a category.
+
+### Category
+
+```csharp
+IGlobalModSettingsCategory Category { get; }
+```
+
+Gets the [`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category) this setting belongs to.
+
+### Tab
+
+```csharp
+IGlobalModSettingsTab Tab { get; }
+```
+
+Gets the [`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab) this setting belongs to.
+
+## Events
+
+### OnSettingChanged
+
+```csharp
+event OnSettingChangedEvent OnSettingChanged;
+```
+
+Occurs when `ApplyCurrentChange()` runs, whether or not the value differs. Type [`OnSettingChangedEvent`](/docs/reference/global/on-setting-changed-event).

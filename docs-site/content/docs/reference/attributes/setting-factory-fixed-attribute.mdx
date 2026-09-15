@@ -1,0 +1,42 @@
+---
+title: "SettingFactoryFixedAttribute"
+description: "Registers an implementation of a non-generic setting interface. Reserved."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Factories/SettingFactoryFixedAttribute.cs" />
+
+```csharp
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+public sealed class SettingFactoryFixedAttribute : Attribute
+```
+
+Registers a class as the implementation of a non-generic setting interface such as
+[`IColorSelectorGlobalSetting`](/docs/reference/global/i-color-selector-global-setting) or [`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting).
+
+**Inheritance:** `Object` → `Attribute` → `SettingFactoryFixedAttribute`\
+**Attributes:** `AttributeUsageAttribute`
+
+<Callout type="warn" title="Reserved">
+  Gears scans only its own assembly for this attribute, so it has no effect in a mod
+  assembly.
+</Callout>
+
+## Constructors
+
+### SettingFactoryFixedAttribute(Type)
+
+```csharp
+public SettingFactoryFixedAttribute(Type keyInterface)
+```
+
+Initializes the attribute with the setting interface it implements.
+
+## Properties
+
+### KeyInterface
+
+```csharp
+public Type KeyInterface { get; }
+```
+
+Gets the non-generic setting interface the class implements.

@@ -1,0 +1,120 @@
+---
+title: C# Custom Value Types
+description: What works out of the box, how to use your own enums, and how to register a parser and formatter for another type.
+---
+
+A setting's value type decides how its text in `ModSettings.xml` and in the saved settings file
+is turned into a value and back. This page covers what works out of the box, how to use your own
+enums, and how to register a parser and formatter for another type.
+
+## Built-in types
+
+| Type | Parsed from | Written as | Formatter string |
+|---|---|---|---|
+| `int` | `StringParsers.ParseSInt32` | `ToString(fmt)` | honoured (`"000"` → `042`) |
+| `float` | `StringParsers.ParseFloat`; a `%` suffix divides by 100 (`5%` → `0.05`) | `ToString(fmt)` | honoured (`"0%"` → `5%`) |
+| `double` | `StringParsers.ParseDouble` | `ToString(fmt)` | honoured, but **no Selector, Slider or Switch exists for `double`** |
+| `bool` | `StringParsers.ParseBool` | `True` / `False` | ignored |
+| `string` | as is | as is | ignored |
+| `UnityEngine.Color` | `StringParsers.ParseColor32` (`255,128,0`) | `R,G,B` | ignored |
+| any `enum` | member name, case-insensitive | member name | ignored |
+
+## Enums: nothing to register
+
+Any enum in any loaded assembly works as a value type with no code on your side.
+
+```csharp
+namespace MyMod
+{
+    public enum Difficulty { Easy, Normal, Hard }
+}
+```
+
+```xml
+<Selector name="Mode" displayKey="myModMode" type="MyMod.Difficulty" defaultValue="Normal" />
+<Switch name="Hardcore" displayKey="myModHardcore" type="MyMod.Difficulty, MyMod" defaultValue="Easy">
+	<Buttons left="Easy" right="Hard" />
+</Switch>
+```
+
+`type` may be the full name, the assembly-qualified name or just `Difficulty`, matched
+case-insensitively. An enum Selector starts with every declared member as its allowed values; an
+enum Switch takes the first two declared members unless `<Buttons>` says otherwise.
+
+From C#:
+
+```csharp
+ISelectorGlobalSetting<Difficulty> mode =
+    category.GetSetting<ISelectorGlobalSetting<Difficulty>>("Mode");
+Difficulty current = mode.SettingValue;
+```
+
+## Registering a parser and formatter for another type
+
+Tag a class with [`[SettingsSerializationProvider]`](/docs/reference/attributes/settings-serialization-provider)
+and give it two static methods:
+
+```csharp
+using GearsAPI.Attributes;
+
+[SettingsSerializationProvider]
+public static class MyModSerialization
+{
+    // Must be: static T Method(string)
+    [SettingParser(typeof(Vector2))]
+    public static Vector2 ParseVector2(string raw)
+    {
+        string[] parts = raw.Split(',');
+        return new Vector2(float.Parse(parts[0]), float.Parse(parts[1]));
+    }
+
+    // Must be: static string Method(T, string)   - the second argument is the formatter string, possibly null
+    [SettingFormatter(typeof(Vector2))]
+    public static string FormatVector2(Vector2 value, string fmt)
+    {
+        return value.x.ToString(fmt) + "," + value.y.ToString(fmt);
+    }
+}
+```
+
+Rules:
+
+- The attribute is spelled `[SettingsSerializationProvider]` (no `Attribute` suffix exists) and
+  the method attributes are `[SettingParser(typeof(T))]` and `[SettingFormatter(typeof(T))]`.
+- Gears scans **every loaded assembly** for provider classes at `GameAwake`, before any setting is
+  created, so the provider works for settings declared in XML as well as in code.
+- Methods must be **static** and **declared on the provider class itself** (not inherited); public
+  or private both work. A static class is fine.
+- A method with the wrong signature throws `InvalidOperationException` at scan time, spelling out
+  the expected signature, for example
+  `[SettingParser(typeof(Vector2))] on 'MyMod.MyModSerialization.ParseVector2' has an invalid signature. Expected: static Vector2 ParseVector2(string).`
+- Registering a built-in type (`int`, `float`, …) replaces Gears' own handler for it.
+- A parser that throws is caught at the point of use: the bad value is logged and the setting
+  keeps its previous value.
+
+## The limitation you need to know
+
+<Callout type="warn">
+  Parsing and formatting is only half of a setting. The other half is a Selector, Slider or Switch
+  class that holds a value of that type, and **those exist only for the built-in types and for
+  enums**.
+</Callout>
+
+So with the provider above:
+
+- `type="UnityEngine.Vector2"` in XML resolves and has a parser, but the parser log then shows
+  `Setting 'x' of type 'UnityEngine.Vector2' could not be created: No ISelectorGlobalSetting implementation registered for value type 'UnityEngine.Vector2'`
+  and the setting is dropped.
+- `CreateSetting<ISelectorGlobalSetting<Vector2>>(...)` throws `InvalidOperationException` with
+  the same message.
+
+If you need a setting over a type that is not a built-in or an enum, model it as one that is: an
+enum of named presets, a `string` selector whose allowed values you parse yourself, or several
+numeric settings.
+
+GearsAPI also declares [`[SettingFactory]`](/docs/reference/attributes/setting-factory-attribute),
+[`[SettingFactoryEnum]`](/docs/reference/attributes/setting-factory-enum-attribute) and
+[`[SettingFactoryFixed]`](/docs/reference/attributes/setting-factory-fixed-attribute),
+which are how Gears registers its own setting classes. They are public, but Gears only scans its
+own assembly for them, so a mod cannot add a setting class through them today. Treat them as
+reserved.

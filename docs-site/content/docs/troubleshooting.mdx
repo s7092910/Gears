@@ -1,0 +1,103 @@
+---
+title: Troubleshooting
+description: The log lines to look for and what they mean, plus a symptom-to-cause index for the problems Gears reports silently.
+---
+
+Gears never lets one bad setting take down a file or one bad mod take down the others. The flip
+side is that most problems show up only as a line in the game log. This page tells you which
+lines to look for.
+
+## Reading the log
+
+Every Gears line starts with `[Gears]`, and most carry a second tag naming the component:
+
+```text
+[Gears] [XmlSettingsParserV2] Slider 'fov' has no defaultValue; defaultValue is required, skipping.
+```
+
+Search the log (`7DaysToDie_Data\output_log*.txt`, or the in-game console) for `[Gears]`.
+
+Some lines are debug-only and hidden by default: the "does not contain a ModSettings.xml" notice,
+per-setting world values at world start, and the inline `modsetting()` expansions. Turn them on
+with the console command:
+
+```text
+gears debug on
+```
+
+<Callout>
+  `gears debug` alone toggles; `gears debug off` turns them back off.
+</Callout>
+
+## Tags and what they mean
+
+| Tag | Reports |
+|---|---|
+| `[ModSettingsFromXml]` | Whole-file problems: no `version`, `version` other than `2`, malformed XML, wrong root, no elements. **The mod's entire `ModSettings.xml` was skipped.** |
+| `[XmlSettingsParserV2]` | A single setting dropped or a property ignored while parsing: missing `type` or `defaultValue`, unknown or unsupported type, unparseable `increment`/`minValue`/`maxValue`/`allowedValues`/preview value, Color per-value previews. |
+| `[GlobalModValueSetting]` / `[WorldModValueSetting]` | An unparseable `defaultValue` or saved value. The setting survived at its previous or default value. |
+| `[SelectorSetting]` / `[SelectorWorldSetting]` | `<Incremental>` on a string or enum selector, or an increment of 0 or less. The range was ignored. |
+| `[SavedModSettingsFromXml]` | Restoring the player's saved global values: a mod, tab, category or setting named in the file no longer exists (usually renamed), or an element is missing its `name`/`value`. The setting kept its default. |
+| `[WorldSettingsFromXml]` | The same for a save's `WorldModSettings.xml`. |
+| `[GearsMod]` | Your `IGearsModApi`: a type with no public parameterless constructor, a constructor that threw, a callback that threw (`Error thrown in <Callback>() by <Type> for <Mod>`), or the outdated-GearsAPI warning. |
+| An `InvalidOperationException` at startup, not a log line | A `[SettingParser]` or `[SettingFormatter]` method with the wrong signature. The message spells out the expected signature. |
+| `[Gears]` with no tag, listener or binding messages | `BindSettingsClass` skipped a member: wrong path format, unknown setting, unsupported event, or wrong signature for a method; readonly, const, non-static, missing a setter, or the wrong declared type for a `[Setting]` field or property. See [C# Setting Listeners](/docs/csharp/setting-listeners). |
+| XML patch errors mentioning `modsetting` | A `modsetting()` call with the wrong argument count, group, path shape, or a mod/tab/category/setting name that does not exist. See [Using Mod Settings in XML Patches](/docs/xml/xml-patches). |
+
+## Symptom to cause
+
+**My mod is not in the Mods menu at all, or has no Settings tab.**
+The whole file was rejected. Look for `[ModSettingsFromXml]`. Usual causes: the root has no
+`version="2"` (a V1 file), the file is not at the mod root beside `ModInfo.xml`, or the XML does
+not parse.
+
+**One setting is missing.**
+Look for `[XmlSettingsParserV2]` lines naming it. In rough order of likelihood:
+
+1. No `defaultValue`.
+2. No `type`, or a misspelled or unknown one. To access inner types, the type name is `myClass+innerType` instead of `myClass.innerType`
+3. A `string` or `bool` on a `Slider`; sliders take `int` and `float` only.
+4. A type that resolves but has no setting implementation, such as `double`, or a custom struct
+   with only a parser registered.
+5. A `Color` or `Binding` under `<World>`. These are dropped without a log line.
+6. A setting placed directly under `<Tab>` instead of inside a `<Category>`. Also silent.
+
+**A selector shows no values.**
+One entry in `allowedValues` did not parse (the whole list is dropped), or `<Incremental>` had a
+bad bound or a zero increment, or the selector is a `string` or enum with an `<Incremental>`.
+
+**A selector shows my list values as the wrong set.**
+It declares both `<List>` and `<Incremental>`; the range is applied last and wins.
+
+**A switch shows `False`/`True` instead of my labels.**
+`<Buttons>` needs both `left` and `right`, both parseable; with one missing neither applies. For a
+`bool` switch, add a `<LocalizationPrefix>` and localize `<prefix>True` / `<prefix>False`.
+
+**Text shows as a raw key like `myModHudScale`.**
+The key is missing from your `Config/Localization.csv`, or the row lacks the `UsedInMainMenu`
+mark. See [Localization](/docs/xml/localization).
+
+**The player's saved value comes back as the default after I renamed something.**
+Saved values are keyed by tab, category and setting `name`. Renaming any of them orphans the
+saved value; `[SavedModSettingsFromXml]` says which one.
+
+**Two world settings share a value.**
+World setting names must be unique across all of a mod's world categories, not just within one.
+
+**My `IGearsModApi` callbacks never run.**
+The class must be public, concrete, non-generic, with a public parameterless constructor, in an
+assembly listed by your mod. Look for `[GearsMod]` warnings. `OnWorldSettingsLoaded` also does not
+run for a mod with no world settings.
+
+**`TypeLoadException` or "outdated GearsAPI" in the log.**
+Your mod was compiled against a different `GearsAPI.dll` than the one Gears is running. Rebuild
+against the current one.
+
+**`modsetting()` gives an empty string.**
+The setting is a `Binding`, which has no value. Every other failure is an error, not an empty
+string.
+
+**`modsetting()` inline in an attribute leaves the literal text in place, or the game logs
+parsing errors.**
+Gears is not installed for that player, so nothing expands the call. Guard the patch with
+`mod_loaded('Gears')`; see [Using Mod Settings in XML Patches](/docs/xml/xml-patches).

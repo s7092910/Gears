@@ -1,0 +1,411 @@
+---
+title: ModSettings XML Reference
+description: The complete V2 schema for ModSettings.xml, as the parser actually reads it — every element, every attribute, and exactly what happens when something is wrong.
+---
+
+The complete V2 schema for `ModSettings.xml`, as the parser actually reads it. Where the parser
+drops or ignores something, this page says so and gives the log line to look for. All log lines
+are prefixed `[Gears] [XmlSettingsParserV2]` unless stated otherwise.
+
+<Callout title="The guiding rule">
+  **One bad setting never takes down the file.** The parser logs the problem, skips that element,
+  and loads the rest. The price is that a dropped setting is silent unless you read the log. See
+  [Troubleshooting](/docs/troubleshooting).
+</Callout>
+
+## The file
+
+| Rule | Detail |
+|---|---|
+| Location | `<mod folder>\ModSettings.xml`, beside `ModInfo.xml`. No other path or name is tried. A mod without one is skipped silently. |
+| Root | `<ModSettings version="2">`. |
+| `version` | **Required, and must be `2`.** A root with no `version` is a V1 file and is rejected; any other value is rejected. Both log an error from `[ModSettingsFromXml]` naming the mod, and the whole file is skipped. |
+| Malformed XML | The whole file is skipped: `Mod <Name> ModSettings Failed parsing <folder>:` followed by the exception. |
+| Wrong root name or no child elements | The whole file is skipped with an error. |
+| When | Read once, at game start (`GameAwake`), for every loaded mod in the game's load order. |
+
+## Document shape
+
+```xml
+<ModSettings version="2">
+	<Global>
+		<Tab name="" displayKey="" tooltipKey="">
+			<Category name="" displayKey="">
+				<!-- Selector | Slider | Switch | Color | Binding -->
+			</Category>
+		</Tab>
+	</Global>
+	<World>
+		<Category name="" displayKey="">
+			<!-- Selector | Slider | Switch -->
+		</Category>
+	</World>
+</ModSettings>
+```
+
+- `<Global>` and `<World>` are both optional. Only the first of each is read.
+- `<Global>` reads only its `<Tab>` children; `<World>` reads only its `<Category>` children.
+  Anything else directly under them is ignored without a log line.
+
+## `<Tab>` (Global only)
+
+| Attribute | Required | Notes |
+|---|---|---|
+| `name` | yes | Identity within Global. Two tabs with the same name are **merged** into one. |
+| `displayKey` | no | Localization key for the tab label. Empty falls back to `name`. |
+| `tooltipKey` | no | Localization key for the hover text. **Tab is the only element that still uses `tooltipKey`**; everywhere else that became `<Description>`. |
+
+A Tab is not a setting: it takes no `Caption`, `Description`, `Preview` or `RestartScope`. Only
+its `<Category>` children are read; a setting placed directly under a Tab is dropped silently.
+A Tab with no categories still exists.
+
+## `<Category>`
+
+Same shape under Global and World.
+
+| Attribute | Required | Notes |
+|---|---|---|
+| `name` | yes | Identity within its Tab (Global) or within World. Duplicates merge. |
+| `displayKey` | no | Falls back to `name`. |
+
+A Category **is** a setting for display purposes, so it accepts `<Caption>`, `<Description>` and
+a single value-less `<Preview><Image path=""/></Preview>`. It does not accept `tooltipKey` or
+`<RestartScope>`. Every child element is tried as a setting; unknown element names are dropped
+without a log line.
+
+## Setting elements
+
+| Element | Global | World | Value types |
+|---|---|---|---|
+| `<Selector>` | yes | yes | `int`, `float`, `string`, any enum |
+| `<Slider>` | yes | yes | `int`, `float` **only** |
+| `<Switch>` | yes | yes | `bool`, `string`, any enum |
+| `<Color>` | yes | no | always a colour; `type` is accepted and ignored |
+| `<Binding>` | yes | no | none; a key binding has no value |
+
+A `Color` or `Binding` under `<World>` is dropped without a log line. Any other element name is
+dropped without a log line. A setting whose construction throws for any reason is dropped with
+`Failed to parse global <Element> '<name>': <message>` (or `world`).
+
+### Attributes shared by every setting
+
+| Attribute | Required | Notes |
+|---|---|---|
+| `name` | yes | Identity within its Category. Duplicates merge. **World setting names must also be unique across all World categories of the mod**: saved world values are looked up by name alone, so two categories sharing a name will both restore the first one's value. |
+| `displayKey` | no | Falls back to `name`. |
+| `type` | yes, except `Color` and `Binding` | See [Value types](#value-types). |
+| `defaultValue` | **yes**, except `Binding` | See [defaultValue](#defaultvalue). |
+
+### Value types
+
+`type` is matched case-insensitively after trimming.
+
+| Write | Meaning |
+|---|---|
+| `int`, `Int32`, `integer` | 32-bit integer |
+| `float`, `Single` | single-precision float. Accepts a `%` suffix: `50%` is stored as `0.5`. This applies wherever a float is parsed: `defaultValue`, `increment`, `minValue`, `maxValue`, `List` entries, `Image value`. |
+| `string` | text |
+| `bool`, `boolean` | `true` / `false` |
+| `Color`, `Color32` | `R,G,B` or `R,G,B,A`, each 0–255 |
+| `double` | resolves, but **no Selector, Slider or Switch exists for it**; the setting is dropped |
+| anything else | treated as a type name and looked up in every loaded assembly, case-insensitively, by full name (`MyMod.Difficulty`), assembly-qualified name ie. (`MyMod.Difficulty, MyMod`) or (`MyMod.Difficulty+DifficultySettings, MyMod `) for inner types or bare name (`Difficulty`). Must be an enum or a type with a registered parser (see [C# Custom Value Types](/docs/csharp/custom-value-types)). |
+
+Failures, all of which drop the setting:
+
+| Log line | Cause |
+|---|---|
+| `<Element> '<name>' has no type.` | `type` missing or whitespace |
+| `<Element> '<name>' has unknown type '<raw>'. Use one of int, float, string, bool, Color, or the name of an enum type such as 'MyMod.Difficulty, MyMod'.` | not an alias and not a resolvable type name |
+| `<Element> '<name>' uses type '<raw>', which is neither an enum nor a type with a registered parser.` | resolves to a real type Gears cannot read |
+| `Slider '<name>' has unsupported type '<type>'; sliders support int and float only.` | Slider with anything else |
+| `Setting '<name>' of type '<Type>' could not be created: <message>` | an enum or custom type that has no setting implementation for that element |
+
+An **enum Selector** starts with every declared member as its allowed values, in declaration
+order, so it needs no `<List>`. An **enum Switch** takes the first two declared members as left
+and right unless `<Buttons>` says otherwise.
+
+### `defaultValue`
+
+**Required** on Selector, Slider, Switch and Color. The default seeds three things at once: the
+setting's default, its saved value and its selected value. The player's saved value, if any,
+replaces the latter two after the file has loaded.
+
+| Case | Result |
+|---|---|
+| Missing or whitespace | Setting dropped: `<Element> '<name>' has no defaultValue; defaultValue is required, skipping.` |
+| Present but unparseable | Setting kept at `default(T)` (0, `false`, empty, black); `[GlobalModValueSetting]` or `[WorldModValueSetting]` logs `Setting '<name>': could not parse defaultValue '<raw>' as <Type> - <message>` |
+| Not in the `List` / `Incremental` range / `Buttons` | Not checked. The setting loads with the value you gave. |
+
+## Child elements
+
+Each child is matched by name among the setting's direct children. Unless noted, the order in
+the file does not matter.
+
+### `<Incremental increment="" minValue="" maxValue="" />` — Selector, Slider
+
+Parsed with the setting's value type. **All three must parse or none is applied**, each failure
+logging `Setting '<name>': could not parse <increment|minValue|maxValue> '<raw>' as <Type> - <message>`.
+
+- On a **Slider** the three values are stored as the slider's range. A slider with no
+  `Incremental` has a range of 0 to 0.
+- On an **int or float Selector** the range is expanded to the list `min, min+increment, …` up
+  to and including `max`. `increment` must be greater than 0 and `min` no greater than `max`;
+  otherwise the range is ignored with `Setting:'<name>', SetAllowedValues(increment, min, max) requires increment > 0 and min <= max; …` from `[SelectorSetting]` or `[SelectorWorldSetting]`.
+- On a **string or enum Selector** the range is ignored with `Setting:'<name>', SetAllowedValues(increment, min, max) requires a numeric type; '<Type>' is not supported.`
+
+### `<List allowedValues="a,b,c" />` — Selector only
+
+Split on commas, each entry trimmed and parsed. **One bad entry drops the whole list**, logging
+`Setting '<name>': could not parse allowedValues entry '<raw>' as <Type> - <message>`; the setting
+survives with no allowed values. There is no way to include a literal comma.
+
+If a Selector declares both `<List>` and `<Incremental>`, **the list is applied first and the
+range second**, whatever order they appear in, so the range wins.
+
+### `<Formatter ui="" serialize="" />` — Selector, Slider
+
+Both attributes optional; each is applied only if non-empty.
+
+- `ui` is what the player sees.
+- `serialize` is what is written to the saved settings file and what `modsetting()` returns.
+
+Each is a .NET numeric format string handed to the value's formatter: `"0.0"`, `"000"`, `"0%"`,
+and so on. They take effect on `int`, `float` and `double`. **`bool`, `string`, `Color` and enums
+ignore the format string**, and **`<Formatter>` is ignored entirely on `Switch`, `Color` and
+`Binding`**.
+
+### `<LocalizationPrefix prefix="" />` — Selector, Switch
+
+The prefix is concatenated with the formatted value, **with no separator**, and the result is
+looked up as a localization key: prefix `gearsUnits` and value `metric` show whatever
+`gearsUnitsmetric` says in `Localization.csv`. Applies to each allowed value, to both Switch
+buttons, and to the current and selected value. Ignored on Slider, Color and Binding.
+
+### `<Wrap wrap="true" />` — Selector only
+
+`true` or `false`, case-insensitive. Anything else is ignored and wrapping stays off. Controls
+whether stepping past the last value returns to the first.
+
+### `<Buttons left="" right="" />` — Switch only
+
+Both attributes must be present and both must parse as the value type, **otherwise neither is
+applied** and the defaults stand:
+
+| Type | Left | Right |
+|---|---|---|
+| `bool` | `false` | `true` |
+| enum | first declared member | second declared member |
+| `string` | none | none (set `<Buttons>`) |
+
+The lit button always follows the selected value: it is Right when the value equals the right
+side and not the left, and Left otherwise.
+
+### `<Caption key="" />` and `<Description key="" />` — every setting and Category, not Tab
+
+Localization keys. Applied only if `key` is non-empty; `<Caption />` or `<Caption key="" />`
+leaves the property unset.
+
+- Caption is the short heading in the description pane. Unset, it falls back to the display name.
+- Description is the body text. Unset, nothing is shown. This is the V2 replacement for the V1
+  `tooltipKey` on settings and categories.
+
+### `<RestartScope scope="" />` — Global settings only
+
+`None`, `Reload` or `Restart`, case-insensitive. Shown to the player as a warning that a change
+needs a world reload or a game restart. An unrecognised value leaves `None`; an empty one is
+ignored.
+
+**Ignored, without a log line, on World settings and on Categories.** A world setting is applied
+along with the save it belongs to, so there is nothing to ask the player to restart.
+
+### `<Preview>` with `<Image path="" value="" />`
+
+An image shown beside the setting. Two forms:
+
+- `<Image path="…" />` with no `value` is the **setting's own image**. Allowed on every setting
+  and on a Category. With several, **the last one wins**.
+- `<Image value="…" path="…" />` is shown **while that value is selected**. Selector, Slider
+  and Switch only. The `value` is parsed as the setting's type; unparseable ones are skipped with
+  `Setting '<name>': could not parse preview value '<raw>' as <Type> - <message>`. With two
+  images for the same value, **the first one wins**.
+
+`Color` accepts only the value-less form; a valued `<Image>` on a Color is skipped with the
+warning `Setting '<name>': Color settings do not support per-value previews, ignoring <Image value="…">.`
+`Binding` and `Category` are value-less only. An `<Image>` with no `path`, or one outside a
+`<Preview>`, is ignored.
+
+`path` is passed to the game's texture loader untouched. Use the game's own mod-folder form:
+
+```xml
+<Image path="@modfolder(MyMod)://Textures/low.png" />
+```
+
+where `MyMod` is the `<Name>` from `ModInfo.xml`.
+
+### `<Color>` specifics
+
+```xml
+<Color name="Crosshair" displayKey="myModCrosshair" defaultValue="255,0,0" />
+```
+
+Fixed type, so `type` is accepted and ignored. Takes `defaultValue` (required), `Caption`,
+`Description`, `RestartScope` and a value-less `Preview`. Serialized as `R,G,B` 0–255.
+
+### `<Binding>` specifics
+
+```xml
+<Binding name="Boost" displayKey="myModBoost">
+	<Description key="myModBoostDesc" />
+</Binding>
+```
+
+Takes only `name`, `displayKey`, `Caption`, `Description`, `RestartScope` and a value-less
+`Preview`. No `type`, no `defaultValue`, no valued previews. Declaring the binding in XML gives it
+a row in the menu; the actual key binding has to be attached from C# through
+[`IControlBindingSetting.PlayerAction`](/docs/reference/global/i-control-binding-setting) (see
+[C# Global Settings](/docs/csharp/global-settings)).
+
+## Duplicates and merging
+
+Two tabs, categories or settings with the same `name` in the same place are merged rather than
+duplicated. For a value setting the later default, saved and selected values overwrite the
+earlier ones; a Selector's allowed values, formatters and prefix are taken only if the earlier
+one had none; `Wrap` is true if either was.
+
+## What gets dropped and what survives
+
+| Problem | Outcome |
+|---|---|
+| No `version`, wrong `version`, malformed XML, wrong root | **Whole file skipped** |
+| Setting with no `type`, unknown `type`, or a `type` with no implementation for that element | Setting dropped |
+| Selector, Slider, Switch or Color with no `defaultValue` | Setting dropped |
+| `string` or `bool` on a Slider | Setting dropped |
+| `Color` or `Binding` under `<World>` | Setting dropped silently |
+| Setting element directly under `<Tab>` | Setting dropped silently |
+| Unparseable `defaultValue` | Setting kept at `default(T)` |
+| One bad `allowedValues` entry | Whole list dropped, setting kept |
+| One bad `increment` / `minValue` / `maxValue` | Whole range dropped, setting kept |
+| `increment` of 0 or less, or `min` above `max` | Range dropped, setting kept |
+| `<Buttons>` with one side missing or unparseable | Neither side applied, setting kept |
+| Non-boolean `Wrap` | Ignored |
+| Unknown `RestartScope` | Ignored |
+| `RestartScope` on a World setting or a Category | Ignored |
+| `<Formatter>` on Switch, Color, Binding | Ignored |
+| `<Image>` without `path`, outside `<Preview>`, or with an unparseable `value` | Image skipped |
+
+## Blank template
+
+Every element in one place. Copy and delete what you do not need; remember that `type` and
+`defaultValue` must be filled in on every Selector, Slider, Switch and Color.
+
+```xml title="ModSettings.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<ModSettings version="2">
+	<Global>
+		<Tab name="" displayKey="" tooltipKey="">
+			<Category name="" displayKey="">
+				<Caption key="" />
+				<Description key="" />
+				<Preview>
+					<Image path=""/>
+				</Preview>
+
+				<Selector name="" displayKey="" type="(int,float,string,enum)" defaultValue="">
+					<Incremental increment="" minValue="" maxValue="" />
+					<Formatter ui="" serialize="" />
+					<List allowedValues="" />
+					<LocalizationPrefix prefix=""/>
+					<Wrap wrap="true" />
+					<Caption key="" />
+					<Description key="" />
+					<RestartScope scope="(none/reload/restart)" />
+					<Preview>
+						<Image path="" value=""/>
+					</Preview>
+				</Selector>
+
+				<Slider name="" displayKey="" type="(int,float)" defaultValue="">
+					<Incremental increment="" minValue="" maxValue="" />
+					<Formatter ui="" serialize="" />
+					<Caption key="" />
+					<Description key="" />
+					<RestartScope scope="(none/reload/restart)" />
+					<Preview>
+						<Image path="" value=""/>
+					</Preview>
+				</Slider>
+
+				<Switch name="" displayKey="" type="(bool,string,enum)" defaultValue="">
+					<Buttons left="" right="" />
+					<LocalizationPrefix prefix=""/>
+					<Caption key="" />
+					<Description key="" />
+					<RestartScope scope="(none/reload/restart)" />
+					<Preview>
+						<Image path="" value=""/>
+					</Preview>
+				</Switch>
+
+				<Color name="" displayKey="" defaultValue="">
+					<Caption key="" />
+					<Description key="" />
+					<RestartScope scope="(none/reload/restart)" />
+					<Preview>
+						<Image path=""/>
+					</Preview>
+				</Color>
+
+				<Binding name="" displayKey="">
+					<Caption key="" />
+					<Description key="" />
+					<Preview>
+						<Image path=""/>
+					</Preview>
+				</Binding>
+			</Category>
+		</Tab>
+	</Global>
+	<World>
+		<Category name="" displayKey="">
+			<Caption key="" />
+			<Description key="" />
+			<Preview>
+				<Image path=""/>
+			</Preview>
+
+			<Selector name="" displayKey="" type="(int,float,string,enum)" defaultValue="">
+				<Incremental increment="" minValue="" maxValue="" />
+				<Formatter ui="" serialize="" />
+				<List allowedValues="" />
+				<LocalizationPrefix prefix=""/>
+				<Wrap wrap="true" />
+				<Caption key="" />
+				<Description key="" />
+				<Preview>
+					<Image path="" value=""/>
+				</Preview>
+			</Selector>
+
+			<Slider name="" displayKey="" type="(int,float)" defaultValue="">
+				<Incremental increment="" minValue="" maxValue="" />
+				<Formatter ui="" serialize="" />
+				<Caption key="" />
+				<Description key="" />
+				<Preview>
+					<Image path="" value=""/>
+				</Preview>
+			</Slider>
+
+			<Switch name="" displayKey="" type="(bool,string,enum)" defaultValue="">
+				<Buttons left="" right="" />
+				<LocalizationPrefix prefix=""/>
+				<Caption key="" />
+				<Description key="" />
+				<Preview>
+					<Image path="" value=""/>
+				</Preview>
+			</Switch>
+		</Category>
+	</World>
+</ModSettings>
+```

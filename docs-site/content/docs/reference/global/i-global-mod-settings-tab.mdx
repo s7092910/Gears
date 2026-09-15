@@ -1,0 +1,129 @@
+---
+title: "IGlobalModSettingsTab"
+description: "A tab in the mod's settings page. A tab is not a setting."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/IGlobalModSettingsTab.cs" />
+
+```csharp
+public interface IGlobalModSettingsTab
+```
+
+A tab in the mod's settings page. A tab is not a setting: it has a tooltip rather than a caption
+and description, and no preview or restart scope.
+
+## Properties
+
+### Name
+
+```csharp
+string Name { get; }
+```
+
+Gets the tab's identity within the mod.
+
+### DisplayKey
+
+```csharp
+string DisplayKey { get; }
+```
+
+Gets the localization key for the tab label. Falls back to `Name`.
+
+### TooltipKey
+
+```csharp
+string TooltipKey { get; set; }
+```
+
+Gets or sets the localization key for the hover text.
+
+## Methods
+
+### GetCategory(String)
+
+```csharp
+IGlobalModSettingsCategory GetCategory(string categoryName);
+```
+
+Returns the [`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category) named `categoryName`, or `null`.
+
+### CreateCategory(String, String)
+
+```csharp
+IGlobalModSettingsCategory CreateCategory(string categoryName, string displayName);
+```
+
+Creates a category with the given name and display key. Throws `ArgumentException` on a duplicate name.
+
+### GetOrCreateCategory(String, String)
+
+```csharp
+IGlobalModSettingsCategory GetOrCreateCategory(string categoryName, string displayName);
+```
+
+Returns the existing category, or creates it.
+
+### AddCategory(IGlobalModSettingsCategory)
+
+```csharp
+bool AddCategory(IGlobalModSettingsCategory category);
+```
+
+Adds an existing category object. Returns `false` if the name is taken.
+
+### RemoveCategory(String)
+
+```csharp
+bool RemoveCategory(string categoryName);
+```
+
+Removes the category with that name. Returns whether one was removed.
+
+### RemoveCategory(IGlobalModSettingsCategory)
+
+```csharp
+bool RemoveCategory(IGlobalModSettingsCategory category);
+```
+
+Removes that category. Returns whether it was removed.
+
+### GetAllCategories()
+
+```csharp
+List<IGlobalModSettingsCategory> GetAllCategories();
+```
+
+Returns every category as a `List<`[`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category)`>`.
+
+### GetAllModSettings()
+
+```csharp
+List<IGlobalModSetting> GetAllModSettings();
+```
+
+Returns every setting in every category of this tab, categories included, as a `List<`[`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`>`.
+
+### HasToolTip()
+
+```csharp
+bool HasToolTip();
+```
+
+Returns `true` if `TooltipKey` is set.
+
+### GetToolTipText()
+
+```csharp
+string GetToolTipText();
+```
+
+Returns the localized tooltip.
+
+### GetDisplayName()
+
+```csharp
+string GetDisplayName();
+```
+
+Returns the localized tab label.

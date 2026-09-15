@@ -1,0 +1,19 @@
+{
+  "title": "GearsAPI.Attributes",
+  "description": "Binding, listener and serialization attributes.",
+  "pages": [
+    "setting-path-attribute",
+    "setting-attribute",
+    "setting-listener-attribute",
+    "setting-on-value-changed-attribute",
+    "setting-on-selected-attribute",
+    "setting-on-changed-attribute",
+    "setting-on-enabled-attribute",
+    "settings-serialization-provider",
+    "setting-parser-attribute",
+    "setting-formatter-attribute",
+    "setting-factory-attribute",
+    "setting-factory-enum-attribute",
+    "setting-factory-fixed-attribute"
+  ]
+}

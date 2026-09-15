@@ -1,0 +1,133 @@
+---
+title: C# World Settings
+description: The per-save settings the host picks and every client receives, and how they differ from global settings.
+---
+
+World settings belong to a save. The host chooses them on the New Game or Continue Game screen,
+Gears writes them into the save folder as `WorldModSettings.xml`, and every client that joins
+receives the same values from the server. In C# they are reached through
+[`IModWorldSettings`](/docs/reference/world/i-mod-world-settings), handed to
+`OnWorldSettingsLoaded` or available as `IGearsMod.WorldSettings`. Namespace:
+`GearsAPI.Settings.World`.
+
+Read [C# Global Settings](/docs/csharp/global-settings) first; this page covers only what differs.
+
+## The tree
+
+There is no tab level. Categories sit directly on the mod:
+
+```text
+IModWorldSettings
+└── IWorldModSettingsCategory        (GetCategory / CreateCategory / GetOrCreateCategory)
+    └── IWorldModSetting             (GetSetting / CreateSetting / GetOrCreateSetting)
+```
+
+```csharp
+public interface IModWorldSettings
+{
+    IWorldModSettingsCategory GetCategory(string categoryName);
+    IWorldModSettingsCategory CreateCategory(string categoryName, string displayName);   // throws on a duplicate
+    IWorldModSettingsCategory GetOrCreateCategory(string categoryName, string displayName);
+    bool AddCategory(IWorldModSettingsCategory category);
+    bool RemoveCategory(string categoryName);
+    bool RemoveCategory(IWorldModSettingsCategory category);
+    List<IWorldModSettingsCategory> GetAllCategories();
+    List<IWorldModSetting> GetAllWorldSettings();
+    void BindSettingsClass(Type settingsType);           // [SettingOnSelected] only; see below
+    void SaveSettings();
+}
+
+public interface IWorldModSetting : IModSetting
+{
+    IWorldModSettingsCategory Category { get; }
+}
+
+public interface IWorldModSettingsCategory : IWorldModSetting
+{
+    IWorldModSetting GetSetting(string name);
+    T GetSetting<T>(string name) where T : class, IWorldModSetting;
+    T CreateSetting<T>(string name, string displayKey) where T : class, IWorldModSetting;
+    T GetOrCreateSetting<T>(string name, string displayName) where T : class, IWorldModSetting;
+    bool AddSetting(IWorldModSetting setting);
+    bool RemoveSetting(string settingName);
+    bool RemoveSetting(IWorldModSetting setting);
+    List<IWorldModSetting> GetAllSettings();
+}
+```
+
+## The setting interfaces
+
+```csharp
+public interface ISelectorWorldSetting<T> : IWorldModSetting, IValueModSetting<T>, ISelectorSettingBase
+{
+    void SetAllowedValues(T[] values);
+    void SetAllowedValues(T increment, T min, T max);
+    T[] GetAllowedValues();
+}
+
+public interface ISliderWorldSetting<T> : IWorldModSetting, IValueModSetting<T>, ISliderSettingBase where T : struct
+{
+    T Increment { get; }
+    T Min { get; }
+    T Max { get; }
+    void SetAllowedValues(T increment, T min, T max);
+}
+
+public interface ISwitchWorldSetting<T> : IWorldModSetting, IValueModSetting<T>, ISwitchSettingBase
+{
+    T LeftValue { get; set; }
+    T RightValue { get; set; }
+    void SetSwitchValues(T leftValue, T rightValue);
+}
+```
+
+Same members, same value types (Selector: `int`, `float`, `string`, enum; Slider: `int`,
+`float`; Switch: `bool`, `string`, enum), same three-value model (`DefaultValue`, `SettingValue`,
+`SelectedValue`) as their global counterparts.
+
+## What world settings do not have
+
+| Global has | World | Why |
+|---|---|---|
+| Tabs | no | categories sit directly on the mod |
+| `Color`, `Binding` | no | both are per-player concerns |
+| `RestartScope` | no | a world value is applied with the save, there is nothing to restart |
+| `OnSettingChanged` | no | there is no per-player Save step to hook |
+| `OnValueChanged` | **no** | the applied value arrives with the world; read `SettingValue` in `OnWorldSettingsLoaded` |
+| `OnSelected` | yes | fires while the host is picking values in the world settings screen |
+
+<Callout type="warn">
+  Because `OnValueChanged` does not exist on world settings, `[SettingOnValueChanged]` and
+  `[SettingOnChanged]` attributes on a world path are logged and skipped by `BindSettingsClass`;
+  only `[SettingOnSelected]` binds. See [C# Setting Listeners](/docs/csharp/setting-listeners).
+</Callout>
+
+## When the values are trustworthy
+
+`SettingValue` on a world setting is meaningful only after `OnWorldSettingsLoaded` has fired for
+the current world:
+
+| Situation | What `SettingValue` holds |
+|---|---|
+| Main menu, no world loaded | the `defaultValue` (or the last world's values, if you have already been in one this session) |
+| Hosting / single player, after world start | the values from the save's `WorldModSettings.xml`, or defaults for a new save |
+| Client, server sent settings | the server's values |
+| Client, server sent nothing (server has no Gears) | every world setting reset to its default |
+
+`OnWorldSettingsLoaded` can fire more than once per session, so treat it as "the world values
+have changed" rather than "startup". It does not fire for a mod with no world settings.
+
+## Name uniqueness
+
+<Callout type="warn">
+  A world setting's **name must be unique across all of the mod's world categories**, not just
+  within its category. Saved world values are looked up by setting name alone, so two categories
+  with a `Speed` setting each would both restore the first one's value.
+</Callout>
+
+## Saving
+
+Gears writes `WorldModSettings.xml` when the host confirms the world settings screen and again
+when the world starts. `IModWorldSettings.SaveSettings()` exists on the interface but writes the
+**player-level** global file, not the world file; world values are only written through the
+host's UI and world start.

@@ -1,0 +1,12 @@
+{
+  "title": "GearsAPI.Settings.World",
+  "description": "A save's settings: categories and the world setting types.",
+  "pages": [
+    "i-mod-world-settings",
+    "i-world-mod-settings-category",
+    "i-world-mod-setting",
+    "i-selector-world-setting",
+    "i-slider-world-setting",
+    "i-switch-world-setting"
+  ]
+}

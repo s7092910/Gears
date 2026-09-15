@@ -1,0 +1,34 @@
+---
+title: "GearsSettingsManager"
+description: "Static access to every mod Gears knows about, without waiting for a callback."
+---
+
+<TypeMeta kind="Abstract class" namespace="GearsAPI.Settings" source="GearsAPI/Source/GearsSettingsManager.cs" />
+
+```csharp
+public abstract class GearsSettingsManager
+```
+
+Static access to every mod Gears knows about, for code that wants a setting without waiting for
+an [`IGearsModApi`](/docs/reference/settings/i-gears-mod-api) callback. Populated by Gears at `GameAwake`; before that, both methods
+return empty results.
+
+**Inheritance:** `Object` → `GearsSettingsManager`
+
+## Methods
+
+### GetMods()
+
+```csharp
+public static List<IGearsMod> GetMods()
+```
+
+Returns every loaded mod as a `List<`[`IGearsMod`](/docs/reference/settings/i-gears-mod)`>`, in the game's load order. Returns an empty list before Gears has initialised.
+
+### GetGearsMod(String)
+
+```csharp
+public static IGearsMod GetGearsMod(string modName)
+```
+
+Returns the [`IGearsMod`](/docs/reference/settings/i-gears-mod) whose `ModInfo.xml` `<Name>` equals `modName`, or `null` if there is none or Gears has not initialised.

@@ -1,0 +1,36 @@
+---
+title: "IControlBindingSetting"
+description: "A global key-binding row. Not a value setting."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/SettingTypes/IControlBindingSetting.cs" />
+
+```csharp
+public interface IControlBindingSetting : IGlobalModSetting
+```
+
+A global key-binding row. Not a value setting: it has no `SettingValue`, is not saved by Gears,
+and returns an empty string from `modsetting()`. The mod attaches the game `PlayerAction` the row
+rebinds.
+
+**Implements:** [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
+
+## Properties
+
+### PlayerAction
+
+```csharp
+PlayerAction PlayerAction { get; set; }
+```
+
+Gets or sets the `InControl.PlayerAction` this row rebinds. `null` until the mod assigns it.
+
+## Methods
+
+### ClearBinding()
+
+```csharp
+void ClearBinding();
+```
+
+Removes every binding from `PlayerAction`.

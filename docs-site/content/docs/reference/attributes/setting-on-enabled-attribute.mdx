@@ -1,0 +1,27 @@
+---
+title: "SettingOnEnabledAttribute"
+description: "Binds a static method to OnEnabled. Works on every setting."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Listeners/SettingListenerAttribute.cs" />
+
+```csharp
+public sealed class SettingOnEnabledAttribute : SettingListenerAttribute
+```
+
+Binds a static method to the named setting's `OnEnabled` event ([`IModSetting`](/docs/reference/settings/i-mod-setting)), which
+fires when `Enabled` changes to a different value. Declared on `IModSetting`, so it is the one
+listener that works on every setting, global and world. Required method signature:
+`static void M(IModSetting setting, bool isEnabled)`.
+
+**Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute) → `SettingOnEnabledAttribute`
+
+## Constructors
+
+### SettingOnEnabledAttribute(String)
+
+```csharp
+public SettingOnEnabledAttribute(string settingPath)
+```
+
+Initializes the attribute with the setting path.

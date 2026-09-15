@@ -1,0 +1,33 @@
+---
+title: "ISliderSettingBase"
+description: "The non-generic members of a Slider."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Base" source="GearsAPI/Source/Settings/Base/ISliderSettingBase.cs" />
+
+```csharp
+public interface ISliderSettingBase : IValueModSettingBase
+```
+
+The non-generic members of a Slider.
+
+**Implements:** [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)\
+**Derived:** [`ISliderGlobalSetting<T>`](/docs/reference/global/i-slider-global-setting) · [`ISliderWorldSetting<T>`](/docs/reference/world/i-slider-world-setting)
+
+## Properties
+
+### UiFormatter
+
+```csharp
+string UiFormatter { get; set; }
+```
+
+Gets or sets the .NET format string used when the value is shown to the player.
+
+### SerializationFormatter
+
+```csharp
+string SerializationFormatter { get; set; }
+```
+
+Gets or sets the .NET format string used when the value is saved or read by `modsetting()`.

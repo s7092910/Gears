@@ -1,0 +1,27 @@
+---
+title: "ValueChangedEvent<T>"
+description: "Handler for IGlobalValueSetting<T>.OnValueChanged."
+---
+
+<TypeMeta kind="Delegate" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/SettingTypes/IGlobalValueSetting.cs" />
+
+```csharp
+public delegate void ValueChangedEvent<T>(IValueModSetting<T> setting, T newSelectedValue);
+```
+
+Handler for [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting)`.OnValueChanged`.
+
+## Parameters
+
+<TypeTable
+  type={{
+    setting: {
+      type: <><a href="/docs/reference/settings/i-value-mod-setting"><code>IValueModSetting&lt;T&gt;</code></a></>,
+      description: <>The setting whose applied value changed. Note the parameter type is <code>IValueModSetting&lt;T&gt;</code>, not <code>IGlobalValueSetting&lt;T&gt;</code>; listener methods must match it exactly.</>,
+    },
+    newSelectedValue: {
+      type: <><code>T</code></>,
+      description: <>The new applied value.</>,
+    },
+  }}
+/>

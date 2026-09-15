@@ -1,0 +1,87 @@
+---
+title: "IModGlobalSettings"
+description: "The root of a mod's global settings: the tabs, and operations across the whole tree."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/IModGlobalSettings.cs" />
+
+```csharp
+public interface IModGlobalSettings
+```
+
+The root of a mod's global settings: the tabs, and operations across the whole tree. Handed to
+[`IGearsModApi`](/docs/reference/settings/i-gears-mod-api)`.OnGlobalSettingsLoaded`; also [`IGearsMod`](/docs/reference/settings/i-gears-mod)`.GlobalSettings`.
+
+## Methods
+
+### GetTab(String)
+
+```csharp
+IGlobalModSettingsTab GetTab(string name);
+```
+
+Returns the [`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab) named `name`, or `null`.
+
+### CreateTab(String)
+
+```csharp
+IGlobalModSettingsTab CreateTab(string name);
+```
+
+Creates a tab whose display key is its name. Throws `ArgumentException` if a tab with that name exists.
+
+### CreateTab(String, String)
+
+```csharp
+IGlobalModSettingsTab CreateTab(string name, string displayNameKey);
+```
+
+Creates a tab with the given name and display key. Throws `ArgumentException` on a duplicate name.
+
+### GetOrCreateTab(String)
+
+```csharp
+IGlobalModSettingsTab GetOrCreateTab(string name);
+```
+
+Returns the existing tab named `name`, or creates it with its name as display key.
+
+### GetOrCreateTab(String, String)
+
+```csharp
+IGlobalModSettingsTab GetOrCreateTab(string name, string displayNameKey);
+```
+
+Returns the existing tab named `name`, or creates it with the given display key.
+
+### GetTabs()
+
+```csharp
+List<IGlobalModSettingsTab> GetTabs();
+```
+
+Returns every tab as a `List<`[`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab)`>`.
+
+### GetAllGlobalSettings()
+
+```csharp
+List<IGlobalModSetting> GetAllGlobalSettings();
+```
+
+Returns every setting in every category of every tab, categories included, as a `List<`[`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`>`.
+
+### BindSettingsClass(Type)
+
+```csharp
+void BindSettingsClass(Type settingsType);
+```
+
+Scans `settingsType` for tagged static members carrying a `"Tab.Category.Setting"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute), [`[SettingOnSelected]`](/docs/reference/attributes/setting-on-selected-attribute), [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. Throws `ArgumentNullException` for `null`; every other problem is logged and that one member skipped. See [C# Setting Listeners](/docs/csharp/setting-listeners).
+
+### SaveSettings()
+
+```csharp
+void SaveSettings();
+```
+
+Writes the player-level saved settings file now.

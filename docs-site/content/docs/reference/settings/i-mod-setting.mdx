@@ -1,0 +1,173 @@
+---
+title: "IModSetting"
+description: "The members every setting shares, including categories."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings" source="GearsAPI/Source/Settings/IModSetting.cs" />
+
+```csharp
+public interface IModSetting
+```
+
+The members every setting shares, including categories: identity, display text, enabled state,
+the change flags, preview images, and the three operations the settings window performs.
+
+**Derived:** [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting)
+
+## Properties
+
+### Name
+
+```csharp
+string Name { get; }
+```
+
+Gets the setting's identity within its category. The `name` attribute in XML.
+
+### DisplayKey
+
+```csharp
+string DisplayKey { get; }
+```
+
+Gets the localization key for the label. Falls back to `Name` when empty.
+
+### CaptionKey
+
+```csharp
+string CaptionKey { get; set; }
+```
+
+Gets or sets the localization key for the short heading in the description pane.
+
+### DescriptionKey
+
+```csharp
+string DescriptionKey { get; set; }
+```
+
+Gets or sets the localization key for the description text.
+
+### Enabled
+
+```csharp
+bool Enabled { get; set; }
+```
+
+Gets or sets whether the setting can be changed in the menu. Starts `true`.
+
+### IsChanged
+
+```csharp
+bool IsChanged { get; }
+```
+
+Gets whether the selected value differs from the applied value.
+
+### IsDefault
+
+```csharp
+bool IsDefault { get; }
+```
+
+Gets whether the applied value equals the default value.
+
+## Events
+
+### OnEnabled
+
+```csharp
+event OnSettingEnabledEvent OnEnabled;
+```
+
+Occurs when `Enabled` changes to a different value. Type [`OnSettingEnabledEvent`](/docs/reference/settings/on-setting-enabled-event).
+
+## Methods
+
+### GetDisplayName()
+
+```csharp
+string GetDisplayName();
+```
+
+Returns the localized label: `Localization.Get(DisplayKey)`, or of `Name` when the key is empty.
+
+### HasCaption()
+
+```csharp
+bool HasCaption();
+```
+
+Returns `true` if `CaptionKey` is set and not whitespace.
+
+### GetCaptionText()
+
+```csharp
+string GetCaptionText();
+```
+
+Returns the localized caption, or the display name when there is no caption.
+
+### HasDescription()
+
+```csharp
+bool HasDescription();
+```
+
+Returns `true` if `DescriptionKey` is set and not whitespace.
+
+### GetDescriptionText()
+
+```csharp
+string GetDescriptionText();
+```
+
+Returns the localized description.
+
+### HasPreviews()
+
+```csharp
+bool HasPreviews();
+```
+
+Returns `true` if the setting has any preview image.
+
+### GetCurrentPreview()
+
+```csharp
+string GetCurrentPreview();
+```
+
+Returns the image path for the selected value, or the setting's own image when none is keyed to that value.
+
+### AddPreview(String)
+
+```csharp
+void AddPreview(string path);
+```
+
+Sets the setting's own preview image path. The last call wins.
+
+### ResetToDefault()
+
+```csharp
+void ResetToDefault();
+```
+
+Sets the selected value to the default value. The applied value is untouched.
+
+### DiscardCurrentChange()
+
+```csharp
+void DiscardCurrentChange();
+```
+
+Sets the selected value back to the applied value.
+
+### ApplyCurrentChange()
+
+```csharp
+void ApplyCurrentChange();
+```
+
+Commits the selected value as the applied value, raising `OnValueChanged` and, on a global setting, `OnSettingChanged`.

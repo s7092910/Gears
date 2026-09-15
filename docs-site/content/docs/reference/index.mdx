@@ -1,0 +1,99 @@
+---
+title: API reference
+description: Every public type in GearsAPI.dll 3.0.0, one page per type, grouped by namespace.
+---
+
+Every public type in `GearsAPI.dll` 3.0.0 — one page per type, laid out the way the .NET API
+browser does it: a declaration, then its constructors, properties, methods and events, each with
+its real signature.
+
+Members inherited from a base interface are not repeated. Every GearsAPI type named on an
+*Implements*, *Derived* or *Inheritance* line links to its own page, so follow those to find
+them. Game and .NET types (`Mod`, `IModApi`, `PlayerAction`, `Color`, `Attribute`) are not linked.
+
+## GearsAPI
+
+The assembly entry point.
+
+| Type | Kind | Summary |
+|---|---|---|
+| [`GearsApi`](/docs/reference/core/gears-api) | Class | The game's `IModApi` entry point for `GearsAPI.dll` itself. Not intended for use by mods. |
+
+## GearsAPI.Settings
+
+The mod-level contracts and the members every setting shares.
+
+| Type | Kind | Summary |
+|---|---|---|
+| [`GearsSettingsManager`](/docs/reference/settings/gears-settings-manager) | Abstract class | Static access to every mod Gears knows about, without waiting for a callback. |
+| [`IGearsMod`](/docs/reference/settings/i-gears-mod) | Interface | What Gears knows about one loaded mod: its settings trees, icon and banner. |
+| [`IGearsModApi`](/docs/reference/settings/i-gears-mod-api) | Interface | The callback contract a C# mod implements to be told about its settings. |
+| [`IModSetting`](/docs/reference/settings/i-mod-setting) | Interface | The members every setting shares, including categories. |
+| [`OnSettingEnabledEvent`](/docs/reference/settings/on-setting-enabled-event) | Delegate | Handler for `IModSetting.OnEnabled`. |
+| [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) | Interface | A setting that holds a value of type `T`: the default, the applied value and the selected value. |
+| [`ValueSelectedEvent<T>`](/docs/reference/settings/value-selected-event) | Delegate | Handler for `IValueModSetting<T>.OnSelected`. |
+| [`SettingRestartScope`](/docs/reference/settings/setting-restart-scope) | Enum | What a change to a global setting costs the player. |
+
+## GearsAPI.Settings.Base
+
+Non-generic faces of the value settings, for type-agnostic code.
+
+| Type | Kind | Summary |
+|---|---|---|
+| [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) | Interface | The non-generic face of a value setting: string in, string out. |
+| [`ISelectorSettingBase`](/docs/reference/base/i-selector-setting-base) | Interface | The non-generic members of a Selector: display, storage and selection by position. |
+| [`ISliderSettingBase`](/docs/reference/base/i-slider-setting-base) | Interface | The non-generic members of a Slider. |
+| [`ISwitchSettingBase`](/docs/reference/base/i-switch-setting-base) | Interface | The non-generic members of a Switch: the two buttons, their text, and which one is lit. |
+| [`ISwitchSettingBase.SelectedButton`](/docs/reference/base/i-switch-setting-base-selected-button) | Enum | Which side of a Switch is lit. |
+
+## GearsAPI.Settings.Global
+
+The player's settings: tabs, categories and the global setting types.
+
+| Type | Kind | Summary |
+|---|---|---|
+| [`IModGlobalSettings`](/docs/reference/global/i-mod-global-settings) | Interface | The root of a mod's global settings: the tabs, and operations across the whole tree. |
+| [`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab) | Interface | A tab in the mod's settings page. A tab is not a setting. |
+| [`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category) | Interface | A category inside a tab. A category is itself a global setting. |
+| [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) | Interface | A setting that belongs to the player rather than to a world. |
+| [`OnSettingChangedEvent`](/docs/reference/global/on-setting-changed-event) | Delegate | Handler for `IGlobalModSetting.OnSettingChanged`. Carries no value. |
+| [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) | Interface | A global setting that holds a value of type `T`, with the applied-value event. |
+| [`ValueChangedEvent<T>`](/docs/reference/global/value-changed-event) | Delegate | Handler for `IGlobalValueSetting<T>.OnValueChanged`. |
+| [`ISelectorGlobalSetting<T>`](/docs/reference/global/i-selector-global-setting) | Interface | A global setting chosen from a list of allowed values. |
+| [`ISliderGlobalSetting<T>`](/docs/reference/global/i-slider-global-setting) | Interface | A global numeric setting dragged within a range. `int` and `float` only. |
+| [`ISwitchGlobalSetting<T>`](/docs/reference/global/i-switch-global-setting) | Interface | A global two-position setting. |
+| [`IColorSelectorGlobalSetting`](/docs/reference/global/i-color-selector-global-setting) | Interface | A global colour picker over `UnityEngine.Color`. |
+| [`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting) | Interface | A global key-binding row. Not a value setting. |
+
+## GearsAPI.Settings.World
+
+A save's settings: categories and the world setting types.
+
+| Type | Kind | Summary |
+|---|---|---|
+| [`IModWorldSettings`](/docs/reference/world/i-mod-world-settings) | Interface | The root of a mod's world settings. No tab level; categories sit directly here. |
+| [`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category) | Interface | A category of world settings. Like its global counterpart, itself a setting. |
+| [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting) | Interface | A setting that belongs to a save. No `RestartScope`, no `OnSettingChanged`. |
+| [`ISelectorWorldSetting<T>`](/docs/reference/world/i-selector-world-setting) | Interface | A world setting chosen from a list of allowed values. |
+| [`ISliderWorldSetting<T>`](/docs/reference/world/i-slider-world-setting) | Interface | A world numeric setting within a range. `int` and `float` only. |
+| [`ISwitchWorldSetting<T>`](/docs/reference/world/i-switch-world-setting) | Interface | A world two-position setting. |
+
+## GearsAPI.Attributes
+
+Binding, listener and serialization attributes.
+
+| Type | Kind | Summary |
+|---|---|---|
+| [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) | Abstract class | Base class of every attribute that names a setting by its path. |
+| [`SettingAttribute`](/docs/reference/attributes/setting-attribute) | Sealed class | Binds a static field or property to the setting its path names. |
+| [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute) | Abstract class | Base class of the four attributes that bind a static method to a setting's event. |
+| [`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute) | Sealed class | Binds a static method to `OnValueChanged`. Global value settings only. |
+| [`SettingOnSelectedAttribute`](/docs/reference/attributes/setting-on-selected-attribute) | Sealed class | Binds a static method to `OnSelected`. Global and world value settings. |
+| [`SettingOnChangedAttribute`](/docs/reference/attributes/setting-on-changed-attribute) | Sealed class | Binds a static method to `OnSettingChanged`. Global settings only. |
+| [`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute) | Sealed class | Binds a static method to `OnEnabled`. Works on every setting. |
+| [`SettingsSerializationProvider`](/docs/reference/attributes/settings-serialization-provider) | Sealed class | Marks a class as holding `[SettingParser]` and `[SettingFormatter]` methods. |
+| [`SettingParserAttribute`](/docs/reference/attributes/setting-parser-attribute) | Sealed class | Marks a static method as the parser for a value type. |
+| [`SettingFormatterAttribute`](/docs/reference/attributes/setting-formatter-attribute) | Sealed class | Marks a static method as the formatter for a value type. |
+| [`SettingFactoryAttribute`](/docs/reference/attributes/setting-factory-attribute) | Sealed class | Registers a setting family implementation for one value type. **Reserved.** |
+| [`SettingFactoryEnumAttribute`](/docs/reference/attributes/setting-factory-enum-attribute) | Sealed class | Registers a setting family implementation for every enum. **Reserved.** |
+| [`SettingFactoryFixedAttribute`](/docs/reference/attributes/setting-factory-fixed-attribute) | Sealed class | Registers an implementation of a non-generic setting interface. **Reserved.** |

@@ -1,0 +1,14 @@
+{
+  "title": "GearsAPI.Settings",
+  "description": "The mod-level contracts and the members every setting shares.",
+  "pages": [
+    "gears-settings-manager",
+    "i-gears-mod",
+    "i-gears-mod-api",
+    "i-mod-setting",
+    "on-setting-enabled-event",
+    "i-value-mod-setting",
+    "value-selected-event",
+    "setting-restart-scope"
+  ]
+}

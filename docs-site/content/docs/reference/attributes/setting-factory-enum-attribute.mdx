@@ -1,0 +1,42 @@
+---
+title: "SettingFactoryEnumAttribute"
+description: "Registers a setting family implementation for every enum. Reserved."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Factories/SettingFactoryEnumAttribute.cs" />
+
+```csharp
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class SettingFactoryEnumAttribute : Attribute
+```
+
+Registers an open generic class with one type parameter as the implementation of a setting
+family for every enum.
+
+**Inheritance:** `Object` → `Attribute` → `SettingFactoryEnumAttribute`\
+**Attributes:** `AttributeUsageAttribute`
+
+<Callout type="warn" title="Reserved">
+  Gears scans only its own assembly for this attribute, so it has no effect in a mod
+  assembly.
+</Callout>
+
+## Constructors
+
+### SettingFactoryEnumAttribute(Type)
+
+```csharp
+public SettingFactoryEnumAttribute(Type familyInterface)
+```
+
+Initializes the attribute with the open generic family interface.
+
+## Properties
+
+### FamilyInterface
+
+```csharp
+public Type FamilyInterface { get; }
+```
+
+Gets the open generic setting interface.

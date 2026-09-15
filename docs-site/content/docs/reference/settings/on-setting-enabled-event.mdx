@@ -1,0 +1,28 @@
+---
+title: "OnSettingEnabledEvent"
+description: "Handler for IModSetting.OnEnabled."
+---
+
+<TypeMeta kind="Delegate" namespace="GearsAPI.Settings" source="GearsAPI/Source/Settings/IModSetting.cs" />
+
+```csharp
+public delegate void OnSettingEnabledEvent(IModSetting setting, bool isEnabled);
+```
+
+Handler for [`IModSetting`](/docs/reference/settings/i-mod-setting)`.OnEnabled`. Raised only when `Enabled` is assigned a value
+different from the current one.
+
+## Parameters
+
+<TypeTable
+  type={{
+    setting: {
+      type: <><a href="/docs/reference/settings/i-mod-setting"><code>IModSetting</code></a></>,
+      description: <>The setting whose enabled state changed.</>,
+    },
+    isEnabled: {
+      type: <><code>Boolean</code></>,
+      description: <>The setting's new enabled state.</>,
+    },
+  }}
+/>

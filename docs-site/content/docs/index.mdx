@@ -1,0 +1,134 @@
+---
+title: Gears documentation
+description: Gears is a mod settings framework for 7 Days to Die. It gives a mod a settings page in the game's Mods menu, remembers what the player chose, syncs per-world settings from the server to every client, and lets both XML patches and C# code read those values.
+---
+
+Gears is a mod settings framework for 7 Days to Die. It gives a mod a settings page in the game's
+Mods menu, remembers what the player chose, syncs per-world settings from the server to every
+client, and lets both XML patches and C# code read those values.
+
+<Callout type="warn" title="Upgrading from an older Gears?">
+  This documentation replaces the older wiki, which described GearsAPI 2.x and the V1
+  `ModSettings.xml` schema. Neither loads any more. If you have a mod built on either, start with
+  [Upgrading to GearsAPI 3](/docs/upgrading-to-gearsapi-3).
+</Callout>
+
+| Component | Version |
+|---|---|
+| Gears (the mod players install) | 8.0.0 |
+| GearsAPI.dll (the assembly mods reference) | 3.0.0 |
+
+## Two ways to use Gears
+
+<Tabs items={['XML only', 'XML plus C#']}>
+  <Tab value="XML only">
+    Drop a `ModSettings.xml` next to your `ModInfo.xml` and Gears builds the settings page for you.
+    Read the values from your `Config/*.xml` patches with the `modsetting()` function. No C#, no
+    reference to any Gears assembly, and your mod keeps working if Gears is not installed (the
+    settings page and the patches that use it just do not appear).
+  </Tab>
+  <Tab value="XML plus C#">
+    Reference `GearsAPI.dll`, implement one interface, and Gears hands your code the typed settings
+    at startup and whenever the player applies a change. You can also create settings from code
+    instead of XML.
+  </Tab>
+</Tabs>
+
+## Reading order
+
+### Start here
+
+<Cards>
+  <Card
+    title="Getting Started"
+    href="/docs/getting-started"
+    description="A complete first ModSettings.xml, where it goes, and how to read it back from XML and from C#."
+  />
+  <Card
+    title="Setting Types"
+    href="/docs/setting-types"
+    description="What each of the five setting kinds looks like and when to use it, with screenshots."
+  />
+</Cards>
+
+### XML side
+
+<Cards>
+  <Card
+    title="ModSettings XML Reference"
+    href="/docs/xml/modsettings-reference"
+    description="Every element and attribute, what is required, and exactly what happens when something is wrong."
+  />
+  <Card
+    title="Localization"
+    href="/docs/xml/localization"
+    description="The keys your mod must supply."
+  />
+  <Card
+    title="Using Mod Settings in XML Patches"
+    href="/docs/xml/xml-patches"
+    description="modsetting() in conditionals and inline in attribute values."
+  />
+</Cards>
+
+### C# side
+
+<Cards>
+  <Card
+    title="C# Getting Started"
+    href="/docs/csharp/getting-started"
+    description="Referencing GearsAPI.dll, IGearsModApi, the startup lifecycle, and keeping Gears optional."
+  />
+  <Card
+    title="C# Global Settings"
+    href="/docs/csharp/global-settings"
+    description="Tabs, categories, the typed setting interfaces, the three-value model and events."
+  />
+  <Card
+    title="C# World Settings"
+    href="/docs/csharp/world-settings"
+    description="The per-save settings and how they differ."
+  />
+  <Card
+    title="C# Setting Listeners"
+    href="/docs/csharp/setting-listeners"
+    description="Attribute-based event wiring."
+  />
+  <Card
+    title="C# Custom Value Types"
+    href="/docs/csharp/custom-value-types"
+    description="Enums and your own parsers/formatters."
+  />
+  <Card
+    title="C# API Reference"
+    href="/docs/reference"
+    description="Every public type in GearsAPI 3.0.0."
+  />
+</Cards>
+
+### When something goes wrong
+
+<Cards>
+  <Card
+    title="Troubleshooting"
+    href="/docs/troubleshooting"
+    description="The log lines to look for and what they mean."
+  />
+  <Card
+    title="Upgrading to GearsAPI 3"
+    href="/docs/upgrading-to-gearsapi-3"
+    description="From V1 XML and from GearsAPI 2.x C#."
+  />
+</Cards>
+
+## What Gears reads from your mod folder
+
+| File | Purpose |
+|---|---|
+| `ModInfo.xml` | The game's own manifest. Gears uses `<Name>` as your mod's identity everywhere, and reads the optional `<Icon>` and `<Banner>` for the Mods menu. |
+| `ModSettings.xml` | Your settings, in the mod root next to `ModInfo.xml`. |
+| `Config/Localization.csv` | The game's localization file; every display key you use in `ModSettings.xml` needs a row here. |
+
+Gears writes two files of its own, which you never author by hand: the player's saved global
+values under the game's user data folder (`Gears\ModSettings.xml`), and each save's
+`WorldModSettings.xml` in the save folder.

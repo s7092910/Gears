@@ -1,0 +1,27 @@
+---
+title: "IGlobalValueSetting<T>"
+description: "A global setting that holds a value of type T, with the applied-value event."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/SettingTypes/IGlobalValueSetting.cs" />
+
+```csharp
+public interface IGlobalValueSetting<T> : IGlobalModSetting, IValueModSetting<T>
+```
+
+A global setting that holds a value of type `T`. Adds the applied-value event to
+[`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting).
+
+**Type parameters:** `T` — the value type.\
+**Implements:** [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)\
+**Derived:** [`ISelectorGlobalSetting<T>`](/docs/reference/global/i-selector-global-setting) · [`ISliderGlobalSetting<T>`](/docs/reference/global/i-slider-global-setting) · [`ISwitchGlobalSetting<T>`](/docs/reference/global/i-switch-global-setting) · [`IColorSelectorGlobalSetting`](/docs/reference/global/i-color-selector-global-setting)
+
+## Events
+
+### OnValueChanged
+
+```csharp
+event ValueChangedEvent<T> OnValueChanged;
+```
+
+Occurs when `SettingValue` changes to a different value: when the player saves, when a saved value is restored, or when code assigns it. Type [`ValueChangedEvent<T>`](/docs/reference/global/value-changed-event).

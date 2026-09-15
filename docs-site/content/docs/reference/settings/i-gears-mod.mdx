@@ -1,0 +1,106 @@
+---
+title: "IGearsMod"
+description: "What Gears knows about one loaded mod: its settings trees, icon and banner."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings" source="GearsAPI/Source/IGearsMod.cs" />
+
+```csharp
+public interface IGearsMod
+```
+
+What Gears knows about one loaded mod: the game's `Mod`, its global and world settings, and the
+optional icon and banner declared in `ModInfo.xml`. Handed to
+[`IGearsModApi`](/docs/reference/settings/i-gears-mod-api)`.InitMod` and returned by [`GearsSettingsManager`](/docs/reference/settings/gears-settings-manager).
+
+## Properties
+
+### Mod
+
+```csharp
+Mod Mod { get; }
+```
+
+Gets the game's `Mod` object for this mod.
+
+### GlobalSettings
+
+```csharp
+IModGlobalSettings GlobalSettings { get; }
+```
+
+Gets the mod's global settings tree as an [`IModGlobalSettings`](/docs/reference/global/i-mod-global-settings). Never `null`; empty for a mod that declares none.
+
+### WorldSettings
+
+```csharp
+IModWorldSettings WorldSettings { get; }
+```
+
+Gets the mod's world settings tree as an [`IModWorldSettings`](/docs/reference/world/i-mod-world-settings). Never `null`; empty for a mod that declares none.
+
+### BannerPath
+
+```csharp
+string BannerPath { get; set; }
+```
+
+Gets or sets the banner image path, relative to the mod folder. Seeded from `<Banner value>` in `ModInfo.xml`.
+
+### IconPath
+
+```csharp
+string IconPath { get; set; }
+```
+
+Gets or sets the icon image path, relative to the mod folder. Seeded from `<Icon value>` in `ModInfo.xml`.
+
+## Methods
+
+### HasGearsApi()
+
+```csharp
+bool HasGearsApi();
+```
+
+Returns `true` if at least one [`IGearsModApi`](/docs/reference/settings/i-gears-mod-api) implementation was found in the mod's assemblies.
+
+### HasGlobalSettings()
+
+```csharp
+bool HasGlobalSettings();
+```
+
+Returns `true` if the mod has at least one global tab.
+
+### HasWorldSettings()
+
+```csharp
+bool HasWorldSettings();
+```
+
+Returns `true` if the mod has at least one world setting.
+
+### HasBanner()
+
+```csharp
+bool HasBanner();
+```
+
+Returns `true` if `BannerPath` is set and the file exists.
+
+### HasIcon()
+
+```csharp
+bool HasIcon();
+```
+
+Returns `true` if `IconPath` is set and the file exists.
+
+### SaveSettings()
+
+```csharp
+bool SaveSettings();
+```
+
+Writes the player-level saved settings file now, including this mod's current global values. Returns `true` if the file exists afterwards.

@@ -1,0 +1,43 @@
+---
+title: "SettingParserAttribute"
+description: "Marks a static method as the parser for a value type."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Factories/SettingsParserAttribute.cs" />
+
+```csharp
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public sealed class SettingParserAttribute : Attribute
+```
+
+Marks a static method inside a
+[`[SettingsSerializationProvider]`](/docs/reference/attributes/settings-serialization-provider) class as the parser for
+a value type. The method must have the signature `static T Method(string)`; a mismatch throws
+`InvalidOperationException` when Gears scans it.
+
+**Inheritance:** `Object` → `Attribute` → `SettingParserAttribute`\
+**Attributes:** `AttributeUsageAttribute`
+
+<Callout>
+  Declared in `SettingsParserAttribute.cs` — the file name carries an extra `s` that the type name does not.
+</Callout>
+
+## Constructors
+
+### SettingParserAttribute(Type)
+
+```csharp
+public SettingParserAttribute(Type valueType)
+```
+
+Initializes the attribute for `valueType`.
+
+## Properties
+
+### ValueType
+
+```csharp
+public Type ValueType { get; }
+```
+
+Gets the type the method parses.

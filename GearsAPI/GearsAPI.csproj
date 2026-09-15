@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B7475708-7069-4372-83A1-CCB62F9A5855}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>GearsAPI</RootNamespace>
+    <AssemblyName>GearsAPI</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>Always</RunPostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\7DaysToDie_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="InControl">
+      <HintPath>..\..\7DaysToDie_Data\Managed\InControl.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="LogLibrary">
+      <HintPath>..\..\7DaysToDie_Data\Managed\LogLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="System">
+      <HintPath>..\..\7DaysToDie_Data\Managed\System.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Core">
+      <HintPath>..\..\7DaysToDie_Data\Managed\System.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Data">
+      <HintPath>..\..\7DaysToDie_Data\Managed\System.Data.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Data.DataSetExtensions">
+      <HintPath>..\..\7DaysToDie_Data\Managed\System.Data.DataSetExtensions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Xml">
+      <HintPath>..\..\7DaysToDie_Data\Managed\System.Xml.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Xml.Linq">
+      <HintPath>..\..\7DaysToDie_Data\Managed\System.Xml.Linq.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="mscorlib">
+      <HintPath>..\..\7DaysToDie_Data\Managed\mscorlib.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\..\7DaysToDie_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Source\Attributes\Factories\SettingFactoryAttribute.cs" />
+    <Compile Include="Source\Attributes\Factories\SettingFactoryEnumAttribute.cs" />
+    <Compile Include="Source\Attributes\Factories\SettingFactoryFixedAttribute.cs" />
+    <Compile Include="Source\Attributes\Factories\SettingFormatterAttribute.cs" />
+    <Compile Include="Source\Attributes\Factories\SettingsParserAttribute.cs" />
+    <Compile Include="Source\Attributes\Factories\SettingsSerializationProvider.cs" />
+    <Compile Include="Source\Attributes\Listeners\SettingListenerAttribute.cs" />
+    <Compile Include="Source\Attributes\SettingPathAttribute.cs" />
+    <Compile Include="Source\Attributes\Settings\SettingAttribute.cs" />
+    <Compile Include="Source\GearsApi.cs" />
+    <Compile Include="Source\GearsSettingsManager.cs" />
+    <Compile Include="Source\IGearsMod.cs" />
+    <Compile Include="Source\IGearsModApi.cs" />
+    <Compile Include="Source\Settings\Base\ISelectorSettingBase.cs" />
+    <Compile Include="Source\Settings\Base\ISliderSettingBase.cs" />
+    <Compile Include="Source\Settings\Base\ISwitchSettingBase.cs" />
+    <Compile Include="Source\Settings\Base\IValueModSettingBase.cs" />
+    <Compile Include="Source\Settings\Global\IGlobalModSetting.cs" />
+    <Compile Include="Source\Settings\Global\IModGlobalSettings.cs" />
+    <Compile Include="Source\Settings\Global\SettingTypes\IColorSelectorGlobalSetting.cs" />
+    <Compile Include="Source\Settings\IModSetting.cs" />
+    <Compile Include="Source\Settings\IValueModSetting.cs" />
+    <Compile Include="Source\Settings\SettingRestartScope.cs" />
+    <Compile Include="Source\Settings\World\IWorldModSetting.cs" />
+    <Compile Include="Source\Settings\World\IWorldModSettingsCategory.cs" />
+    <Compile Include="Source\Settings\World\IModWorldSettings.cs" />
+    <Compile Include="Source\Settings\Global\SettingTypes\IControlBindingSetting.cs" />
+    <Compile Include="Source\Settings\Global\SettingTypes\ISelectorGlobalSetting.cs" />
+    <Compile Include="Source\Settings\Global\SettingTypes\ISliderGlobalSetting.cs" />
+    <Compile Include="Source\Settings\Global\SettingTypes\ISwitchGlobalSetting.cs" />
+    <Compile Include="Source\Settings\Global\IGlobalModSettingsCategory.cs" />
+    <Compile Include="Source\Settings\Global\IGlobalModSettingsTab.cs" />
+    <Compile Include="Source\Settings\Global\SettingTypes\IGlobalValueSetting.cs" />
+    <Compile Include="Source\Settings\World\SettingTypes\ISelectorWorldSetting.cs" />
+    <Compile Include="Source\Settings\World\SettingTypes\ISliderWorldSetting.cs" />
+    <Compile Include="Source\Settings\World\SettingTypes\ISwitchWorldSetting.cs" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>XCOPY "$(SolutionDir)Gears\UI\" "$(SolutionDir)Release\00000-Gears\" /E /Y
+XCOPY "$(TargetPath)" "$(SolutionDir)Release\00000-Gears\" /E /Y</PostBuildEvent>
+  </PropertyGroup>
+</Project>

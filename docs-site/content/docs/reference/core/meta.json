@@ -1,0 +1,7 @@
+{
+  "title": "GearsAPI",
+  "description": "The assembly entry point.",
+  "pages": [
+    "gears-api"
+  ]
+}

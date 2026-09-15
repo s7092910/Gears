@@ -1,0 +1,66 @@
+---
+title: "IValueModSettingBase"
+description: "The non-generic face of a value setting: string in, string out."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Base" source="GearsAPI/Source/Settings/Base/IValueModSettingBase.cs" />
+
+```csharp
+public interface IValueModSettingBase : IModSetting
+```
+
+The non-generic face of a value setting, for code that handles settings without knowing their
+value type: string in, string out, through the type's registered parser and formatter.
+
+**Implements:** [`IModSetting`](/docs/reference/settings/i-mod-setting)\
+**Derived:** [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`ISelectorSettingBase`](/docs/reference/base/i-selector-setting-base) · [`ISliderSettingBase`](/docs/reference/base/i-slider-setting-base) · [`ISwitchSettingBase`](/docs/reference/base/i-switch-setting-base)
+
+## Methods
+
+### SetSettingValueFromString(String)
+
+```csharp
+void SetSettingValueFromString(string raw);
+```
+
+Parses `raw` with the value type's parser and assigns the applied value. An unparseable string is logged and the value is left unchanged.
+
+### SetDefaultValueFromString(String)
+
+```csharp
+void SetDefaultValueFromString(string raw);
+```
+
+Parses `raw` and assigns the default value. Same failure handling.
+
+### SetSelectedValueFromString(String)
+
+```csharp
+void SetSelectedValueFromString(string raw);
+```
+
+Parses `raw` and assigns the selected value. Same failure handling.
+
+### GetUiFormattedSettingValue()
+
+```csharp
+string GetUiFormattedSettingValue();
+```
+
+Returns the applied value as the player sees it: formatted with the UI formatter, prefixed with the localization prefix and passed through `Localization.Get`.
+
+### GetFormattedSelectedValue()
+
+```csharp
+string GetFormattedSelectedValue();
+```
+
+Returns the selected value as the player sees it.
+
+### GetSerializedFormattedSettingValue()
+
+```csharp
+string GetSerializedFormattedSettingValue();
+```
+
+Returns the applied value as written to the saved settings file and returned by `modsetting()`: formatted with the serialization formatter, no localization.

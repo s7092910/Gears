@@ -1,0 +1,50 @@
+---
+title: "SettingFactoryAttribute"
+description: "Registers a setting family implementation for one value type. Reserved."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Factories/SettingFactoryAttribute.cs" />
+
+```csharp
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
+public sealed class SettingFactoryAttribute : Attribute
+```
+
+Registers a class as the implementation of a setting family for one value type, for example
+`[SettingFactory(typeof(ISelectorGlobalSetting<>), typeof(int))]`.
+
+**Inheritance:** `Object` → `Attribute` → `SettingFactoryAttribute`\
+**Attributes:** `AttributeUsageAttribute`
+
+<Callout type="warn" title="Reserved">
+  Gears scans only its own assembly for this attribute, so it has no effect in a mod
+  assembly.
+</Callout>
+
+## Constructors
+
+### SettingFactoryAttribute(Type, Type)
+
+```csharp
+public SettingFactoryAttribute(Type familyInterface, Type valueType)
+```
+
+Initializes the attribute with the open generic family interface and the value type.
+
+## Properties
+
+### FamilyInterface
+
+```csharp
+public Type FamilyInterface { get; }
+```
+
+Gets the open generic setting interface, such as `typeof(`[`ISelectorGlobalSetting<>`](/docs/reference/global/i-selector-global-setting)`)`.
+
+### ValueType
+
+```csharp
+public Type ValueType { get; }
+```
+
+Gets the value type the class implements the family for.

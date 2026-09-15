@@ -1,0 +1,23 @@
+---
+title: "SettingRestartScope"
+description: "What a change to a global setting costs the player."
+---
+
+<TypeMeta kind="Enum" namespace="GearsAPI.Settings" source="GearsAPI/Source/Settings/SettingRestartScope.cs" />
+
+```csharp
+public enum SettingRestartScope
+```
+
+What a change to a global setting costs the player. Shown as a warning in the settings window;
+Gears does not itself reload or restart anything. Used by [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`.RestartScope`.
+
+**Inheritance:** `Object` → `ValueType` → `Enum` → `SettingRestartScope`
+
+## Fields
+
+| Name | Value | Description |
+|---|---|---|
+| `None` | 0 | The change takes effect without a reload. |
+| `Reload` | 1 | The change needs the world to be reloaded. |
+| `Restart` | 2 | The change needs the game to be restarted. |

@@ -1,0 +1,11 @@
+{
+  "title": "GearsAPI.Settings.Base",
+  "description": "Non-generic faces of the value settings, for type-agnostic code.",
+  "pages": [
+    "i-value-mod-setting-base",
+    "i-selector-setting-base",
+    "i-slider-setting-base",
+    "i-switch-setting-base",
+    "i-switch-setting-base-selected-button"
+  ]
+}

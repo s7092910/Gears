@@ -1,0 +1,80 @@
+---
+title: "IWorldModSettingsCategory"
+description: "A category of world settings. Like its global counterpart, itself a setting."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.World" source="GearsAPI/Source/Settings/World/IWorldModSettingsCategory.cs" />
+
+```csharp
+public interface IWorldModSettingsCategory : IWorldModSetting
+```
+
+A category of world settings. Like its global counterpart, a category is itself a setting.
+
+**Implements:** [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
+
+## Methods
+
+### GetSetting(String)
+
+```csharp
+IWorldModSetting GetSetting(string name);
+```
+
+Returns the [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting) named `name`, or `null`.
+
+### GetSetting&lt;T&gt;(String)
+
+```csharp
+T GetSetting<T>(string name) where T : class, IWorldModSetting;
+```
+
+Returns the setting named `name` as `T`, or `null` if there is none or it is not a `T`. `T` must be a class implementing [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting).
+
+### CreateSetting&lt;T&gt;(String, String)
+
+```csharp
+T CreateSetting<T>(string name, string displayKey) where T : class, IWorldModSetting;
+```
+
+Creates a setting of interface `T`. Same exceptions as the global version. Setting names must be unique across **all** of the mod’s world categories, because saved world values are looked up by name alone.
+
+### GetOrCreateSetting&lt;T&gt;(String, String)
+
+```csharp
+T GetOrCreateSetting<T>(string name, string displayName) where T : class, IWorldModSetting;
+```
+
+Returns the existing setting as `T`, or creates it.
+
+### AddSetting(IWorldModSetting)
+
+```csharp
+bool AddSetting(IWorldModSetting setting);
+```
+
+Adds an existing setting object. Returns `false` if the name is taken.
+
+### RemoveSetting(String)
+
+```csharp
+bool RemoveSetting(string settingName);
+```
+
+Removes the setting with that name.
+
+### RemoveSetting(IWorldModSetting)
+
+```csharp
+bool RemoveSetting(IWorldModSetting setting);
+```
+
+Removes that setting.
+
+### GetAllSettings()
+
+```csharp
+List<IWorldModSetting> GetAllSettings();
+```
+
+Returns the category itself followed by its settings, as a `List<`[`IWorldModSetting`](/docs/reference/world/i-world-mod-setting)`>`.

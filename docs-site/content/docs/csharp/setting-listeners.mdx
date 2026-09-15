@@ -1,0 +1,256 @@
+---
+title: C# Setting Listeners and Bindings
+description: Attribute-based wiring — tag static fields, properties and methods with the setting path and let BindSettingsClass do the lookup and subscription.
+---
+
+Instead of finding each setting by hand, tag static **fields**, **properties** and **methods** with
+an attribute naming the setting, then hand the class to `BindSettingsClass`. Tagged fields and
+properties are assigned the setting; tagged methods are subscribed to its events. Namespace:
+`GearsAPI.Attributes`.
+
+## The attributes
+
+```csharp
+public abstract class SettingPathAttribute : Attribute
+{
+    public string SettingPath { get; }
+}
+
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+public sealed class SettingAttribute : SettingPathAttribute                     // assign the setting to the member
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+public abstract class SettingListenerAttribute : SettingPathAttribute
+
+public sealed class SettingOnValueChangedAttribute : SettingListenerAttribute   // SettingValue changed (player saved)
+public sealed class SettingOnSelectedAttribute : SettingListenerAttribute       // SelectedValue changed (player clicked)
+public sealed class SettingOnChangedAttribute : SettingListenerAttribute        // the setting was applied
+public sealed class SettingOnEnabledAttribute : SettingListenerAttribute        // Enabled was turned on or off
+```
+
+Each takes the setting path as its only argument. A null or empty path throws
+`ArgumentException` from the attribute constructor, which surfaces the first time the class is
+inspected.
+
+## Paths
+
+| Settings | Format | Segments |
+|---|---|---|
+| Global | `"TabName.CategoryName.SettingName"` | exactly 3 |
+| World | `"CategoryName.SettingName"` | exactly 2 |
+
+The names are the `name` attributes from `ModSettings.xml` (or the names you passed to
+`Create…`), not the display keys.
+
+<Callout type="warn">
+  **Put global and world members on separate types.** Each `BindSettingsClass` call resolves
+  every tagged member on the type it is handed, using that side's segment count. A world path on a
+  type you pass to the global call is reported as a bad path format, and vice versa.
+</Callout>
+
+## Binding a settings class
+
+```csharp
+public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
+{
+    modSettings.BindSettingsClass(typeof(MyGlobalListeners));
+}
+
+public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
+{
+    worldSettings.BindSettingsClass(typeof(MyWorldListeners));
+}
+```
+
+One call does both halves: fields are bound first, then listeners are subscribed. That order means a
+handler can safely read any field the same call binds.
+
+Binding is **opt-in**: nothing scans for these attributes until you call `BindSettingsClass`. Call
+it from the matching `…Loaded` callback, once.
+
+<Callout type="warn" title="Do not bind the same type twice">
+  The two halves differ if you call it twice for the same type. Binding a field again just assigns
+  the same setting, so it is harmless. Subscribing a listener again adds a **second** handler, and
+  it will then run twice per change. This matters because `OnWorldSettingsLoaded` fires more than
+  once per session — once per world load or rejoin — while `OnGlobalSettingsLoaded` fires once per
+  session.
+</Callout>
+
+`BindSettingsClass(null)` throws `ArgumentNullException`. Every other problem is logged and that
+one member is skipped; the rest still bind.
+
+## Binding settings to fields and properties
+
+Tag a static field or a static property with `[Setting("…")]` and it is assigned the setting the
+path names:
+
+```csharp
+public static class MyGlobalListeners
+{
+    [Setting("General.Display.HudScale")]
+    private static ISliderGlobalSetting<float> hudScale;
+
+    [Setting("General.Display.Units")]
+    public static ISelectorGlobalSetting<string> Units { get; private set; }
+
+    public static float CurrentScale => hudScale.SettingValue;
+}
+```
+
+Either kind must be:
+
+- **Static.** A tagged instance field or property is reported and skipped.
+- **Declared as a type the setting actually is.** Any interface or class in the setting's own
+  hierarchy works: `IModSetting`, `IGlobalModSetting`, `IValueModSetting<T>`,
+  `ISliderGlobalSetting<T>`, even the concrete class. A mismatch — most often the wrong `T` — is
+  reported and the member is left alone.
+
+A **field** must additionally be assignable: neither `readonly` nor `const`. Both are reported and
+skipped.
+
+A **property** must additionally have a setter. `{ get; set; }` and `{ get; private set; }` both
+bind — the setter is called, so a property with a body runs whatever logic it contains. A get-only
+property (`{ get; }` or an expression-bodied `=> …`) has nothing to assign through and is reported
+and skipped.
+
+Members are only read from the type you pass; a tagged member inherited from a base type is not
+found. Two members may name the same setting. Any field initialiser runs before binding, so the
+bound setting wins.
+
+Tagging an auto-property's backing field with `[field: Setting("…")]` also works and binds through
+the field path, but tagging the property itself is simpler and gives a clearer error if something
+is wrong.
+
+## Method requirements
+
+- **Static.** Public or private both work. Instance methods are not seen.
+- Declared on the type you pass. Members inherited from a base type are not scanned.
+- The signature must match the event **exactly**, parameter types included:
+
+| Attribute | Required signature | Works on |
+|---|---|---|
+| `[SettingOnValueChanged("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | Global value settings |
+| `[SettingOnSelected("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | Global and World value settings |
+| `[SettingOnChanged("...")]` | `static void M(IGlobalModSetting setting)` | Global settings, including Color and Binding |
+| `[SettingOnEnabled("...")]` | `static void M(IModSetting setting, bool isEnabled)` | Every setting, Global and World |
+
+`OnEnabled` is declared on `IModSetting`, so it is the one listener that works on every
+setting type. It fires only when `Enabled` actually flips value, not on every assignment.
+
+`T` is the setting's value type: `int` for an `int` slider, `bool` for a `bool` switch,
+`UnityEngine.Color` for a colour, your enum for an enum selector. The first parameter is
+`IValueModSetting<T>`, not `IGlobalValueSetting<T>` or `ISliderGlobalSetting<T>`; a more derived
+parameter type does not match.
+
+A method may carry several attributes, so one method can listen to several settings.
+
+## Example
+
+```csharp
+using GearsAPI.Attributes;
+using GearsAPI.Settings;
+using GearsAPI.Settings.Global;
+using GearsAPI.Settings.World;
+using UnityEngine;
+
+public static class MyGlobalListeners
+{
+    [Setting("General.Display.HudScale")]
+    private static ISliderGlobalSetting<float> hudScale;
+
+    [Setting("General.Display.Units")]
+    private static ISelectorGlobalSetting<string> units;
+
+    [SettingOnValueChanged("General.Display.HudScale")]
+    private static void HudScaleSaved(IValueModSetting<float> setting, float newValue)
+    {
+        MyHud.Scale = newValue;
+    }
+
+    [SettingOnSelected("General.Display.HudScale")]
+    private static void HudScalePreview(IValueModSetting<float> setting, float newValue)
+    {
+        MyHud.PreviewScale(newValue);
+    }
+
+    [SettingOnValueChanged("General.Display.Units")]
+    private static void UnitsSaved(IValueModSetting<string> setting, string newValue)
+    {
+        MyHud.Units = newValue;
+    }
+
+    [SettingOnValueChanged("Colors.HUD.Accent")]
+    private static void AccentSaved(IValueModSetting<Color> setting, Color newValue)
+    {
+        MyHud.Accent = newValue;
+    }
+
+    [SettingOnChanged("General.Display.HudScale")]
+    [SettingOnChanged("General.Display.Units")]
+    private static void AnythingApplied(IGlobalModSetting setting)
+    {
+        MyHud.Redraw();
+    }
+
+    [SettingOnEnabled("General.Display.HudScale")]
+    private static void HudScaleEnabledChanged(IModSetting setting, bool isEnabled)
+    {
+        MyHud.ScaleOverrideActive = isEnabled;
+    }
+}
+
+public static class MyWorldListeners
+{
+    // [Setting] works the same on both sides, with the two-segment world path.
+    [Setting("Zombies.SpawnMultiplier")]
+    private static ISliderWorldSetting<int> spawnMultiplier;
+
+    // Only OnSelected exists on world settings; it fires while the host picks values.
+    [SettingOnSelected("Zombies.SpawnMultiplier")]
+    private static void SpawnPreview(IValueModSetting<int> setting, int newValue)
+    {
+    }
+
+    // OnEnabled is on IModSetting, so it works here too.
+    [SettingOnEnabled("Zombies.SpawnMultiplier")]
+    private static void SpawnEnabledChanged(IModSetting setting, bool isEnabled)
+    {
+    }
+}
+```
+
+## Log lines when something is off
+
+All from `[Gears]`, all skip just that member and carry on with the rest.
+
+### Listeners
+
+| Message | Cause |
+|---|---|
+| `[SettingOnValueChangedAttribute("…")] on 'Ns.Type.Method' must use the format "tabName.CategoryName.SettingName". Skipping registration of listener.` | wrong number of path segments (world: `"CategoryName.SettingName"`) |
+| `[SettingOnValueChangedAttribute] on 'Ns.Type.Method' references unknown setting "…". Skipping registration of listener.` | no setting at that path |
+| `[SettingOnChanged("…")] on '…' targets a setting that does not support OnSettingChanged (only global settings expose it). Skipping registration of listener.` | `[SettingOnChanged]` on a world path |
+| `[SettingOnValueChangedAttribute("…")] on '…' targets a setting that does not expose an 'OnValueChanged' event. Skipping registration of listener.` | `[SettingOnValueChanged]` on a world setting, or either value attribute on a Binding |
+| ``[SettingOnValueChangedAttribute] on '…' has an invalid signature, skipping registration of listener. Expected: static Void Method(IValueModSetting`1, Int32).`` | wrong parameter types, wrong count, non-void return, or not static |
+
+### Field bindings
+
+| Message | Cause |
+|---|---|
+| `[SettingAttribute("…")] on 'Ns.Type.field' must use the format "tabName.CategoryName.SettingName". Skipping binding of field.` | wrong number of path segments (world: `"CategoryName.SettingName"`) |
+| `[SettingAttribute] on 'Ns.Type.field' references unknown setting "…". Skipping binding of field.` | no setting at that path |
+| `[Setting("…")] on '…' is declared const and can never be assigned. Skipping binding of field.` | `const` field |
+| `[Setting("…")] on '…' is declared readonly and cannot be assigned. Remove readonly. Skipping binding of field.` | `static readonly` field, or the backing field behind a `[field: Setting]` on a get-only auto-property |
+| `[Setting("…")] on '…' is not static. Only static fields can be bound. Skipping binding of field.` | instance field |
+| `[Setting("…")] on '…' is declared as 'ISliderGlobalSetting<Single>' but the setting is a 'SliderSettingInt'. Skipping binding of field.` | the field's declared type does not fit the setting — usually the wrong `T` |
+
+### Property bindings
+
+| Message | Cause |
+|---|---|
+| `[SettingAttribute("…")] on 'Ns.Type.Property' must use the format "tabName.CategoryName.SettingName". Skipping binding of property.` | wrong number of path segments (world: `"CategoryName.SettingName"`) |
+| `[SettingAttribute] on 'Ns.Type.Property' references unknown setting "…". Skipping binding of property.` | no setting at that path |
+| `[Setting("…")] on '…' has no setter and cannot be assigned. Give it one, even a private one. Skipping binding of property.` | `{ get; }` or an expression-bodied property |
+| `[Setting("…")] on '…' is not static. Only static properties can be bound. Skipping binding of property.` | instance property |
+| `[Setting("…")] on '…' takes index parameters and cannot be assigned. Skipping binding of property.` | an indexed property (not reachable from C#, which has no static indexer) |
+| `[Setting("…")] on '…' is declared as 'ISliderGlobalSetting<Single>' but the setting is a 'SliderSettingInt'. Skipping binding of property.` | the property's declared type does not fit the setting — usually the wrong `T` |

@@ -1,0 +1,95 @@
+---
+title: "IModWorldSettings"
+description: "The root of a mod's world settings. No tab level; categories sit directly here."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.World" source="GearsAPI/Source/Settings/World/IModWorldSettings.cs" />
+
+```csharp
+public interface IModWorldSettings
+```
+
+The root of a mod's world settings. There is no tab level; categories sit directly here. Handed
+to [`IGearsModApi`](/docs/reference/settings/i-gears-mod-api)`.OnWorldSettingsLoaded`; also [`IGearsMod`](/docs/reference/settings/i-gears-mod)`.WorldSettings`.
+
+## Methods
+
+### GetCategory(String)
+
+```csharp
+IWorldModSettingsCategory GetCategory(string categoryName);
+```
+
+Returns the [`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category) named `categoryName`, or `null`.
+
+### CreateCategory(String, String)
+
+```csharp
+IWorldModSettingsCategory CreateCategory(string categoryName, string displayName);
+```
+
+Creates a category with the given name and display key. Throws `ArgumentException` on a duplicate name.
+
+### GetOrCreateCategory(String, String)
+
+```csharp
+IWorldModSettingsCategory GetOrCreateCategory(string categoryName, string displayName);
+```
+
+Returns the existing category, or creates it.
+
+### AddCategory(IWorldModSettingsCategory)
+
+```csharp
+bool AddCategory(IWorldModSettingsCategory category);
+```
+
+Adds an existing category object. Returns `false` if the name is taken.
+
+### RemoveCategory(String)
+
+```csharp
+bool RemoveCategory(string categoryName);
+```
+
+Removes the category with that name. Returns whether one was removed.
+
+### RemoveCategory(IWorldModSettingsCategory)
+
+```csharp
+bool RemoveCategory(IWorldModSettingsCategory category);
+```
+
+Removes that category. Returns whether it was removed.
+
+### GetAllCategories()
+
+```csharp
+List<IWorldModSettingsCategory> GetAllCategories();
+```
+
+Returns every category as a `List<`[`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category)`>`.
+
+### GetAllWorldSettings()
+
+```csharp
+List<IWorldModSetting> GetAllWorldSettings();
+```
+
+Returns every setting in every category, categories included, as a `List<`[`IWorldModSetting`](/docs/reference/world/i-world-mod-setting)`>`.
+
+### BindSettingsClass(Type)
+
+```csharp
+void BindSettingsClass(Type settingsType);
+```
+
+Scans `settingsType` for tagged static members carrying a `"Category.Setting"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnSelected]`](/docs/reference/attributes/setting-on-selected-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) and [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) are logged and skipped: world settings have neither event. Throws `ArgumentNullException` for `null`. Re-binding a field on a later world load is harmless; re-subscribing a listener adds a second handler.
+
+### SaveSettings()
+
+```csharp
+void SaveSettings();
+```
+
+Writes the player-level saved settings file. World values themselves are written to the save folder by the world settings screen and on world start, not by this call.

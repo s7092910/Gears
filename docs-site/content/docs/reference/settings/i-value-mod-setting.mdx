@@ -1,0 +1,71 @@
+---
+title: "IValueModSetting<T>"
+description: "A setting that holds a value of type T: the default, the applied value and the selected value."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings" source="GearsAPI/Source/Settings/IValueModSetting.cs" />
+
+```csharp
+public interface IValueModSetting<T> : IValueModSettingBase
+```
+
+A setting that holds a value of type `T`: the default, the applied value and the value currently
+selected in the UI. Implemented by every Selector, Slider, Switch and Color setting.
+
+**Type parameters:** `T` — the value type; `int`, `float`, `string`, `bool`, `UnityEngine.Color` or an enum.\
+**Implements:** [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)\
+**Derived:** [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) · [`ISelectorWorldSetting<T>`](/docs/reference/world/i-selector-world-setting) · [`ISliderWorldSetting<T>`](/docs/reference/world/i-slider-world-setting) · [`ISwitchWorldSetting<T>`](/docs/reference/world/i-switch-world-setting)
+
+## Properties
+
+### SettingValue
+
+```csharp
+T SettingValue { get; set; }
+```
+
+Gets or sets the applied value: what is saved to disk, returned by `modsetting()`, and what a mod should act on. Setting it to an equal value is a no-op.
+
+### DefaultValue
+
+```csharp
+T DefaultValue { get; set; }
+```
+
+Gets or sets the value `ResetToDefault()` returns to.
+
+### SelectedValue
+
+```csharp
+T SelectedValue { get; set; }
+```
+
+Gets or sets the value currently picked in the UI, possibly not yet applied. Setting it to an equal value is a no-op.
+
+## Events
+
+### OnSelected
+
+```csharp
+event ValueSelectedEvent<T> OnSelected;
+```
+
+Occurs when `SelectedValue` changes to a different value. Type [`ValueSelectedEvent<T>`](/docs/reference/settings/value-selected-event).
+
+## Methods
+
+### GetPreview(T)
+
+```csharp
+string GetPreview(T value);
+```
+
+Returns the preview image path registered for `value`, or `null`.
+
+### AddPreview(T, String)
+
+```csharp
+void AddPreview(T value, string path);
+```
+
+Registers an image to show while `value` is selected. The first image registered for a value wins.

@@ -1,0 +1,216 @@
+---
+title: C# Getting Started
+description: The assembly to reference, the one interface to implement, when each callback fires, and how to reach your settings without a callback.
+---
+
+Everything a C# mod needs to talk to Gears: the assembly to reference, the one interface to
+implement, when each callback fires, and how to reach your settings without a callback.
+
+## Referencing GearsAPI.dll
+
+Gears ships `GearsAPI.dll` inside its own mod folder. Add a reference to that file from your mod
+project and set **Copy Local** to false, so your mod folder does not carry a second copy. Gears
+loads the assembly; your code just uses the types in it.
+
+If your mod is built against one GearsAPI version and the player runs a different one, the
+mismatch shows up as a `TypeLoadException` inside your callback. Gears catches it and logs:
+
+```text
+[Gears] [GearsMod] '<Your Mod>' is using an outdated GearsAPI: it was built against v2.0.1.0 but Gears is running v3.0.0.0, so '<type>' could not be loaded. The mod needs rebuilding against the current GearsAPI.
+```
+
+Rebuild against the current `GearsAPI.dll` when you see it.
+
+## Keeping Gears optional
+
+Nothing in Gears requires your mod to hard-depend on it. Gears finds your `IGearsModApi` class
+by scanning; if Gears is absent, nothing scans and nothing is called. The one thing to watch is
+the .NET runtime: a method is only compiled when it first runs, and compiling a method that
+mentions a GearsAPI type needs `GearsAPI.dll` to be loadable. So keep every line that touches
+GearsAPI types inside classes and methods that only run when Gears is present, and gate the entry
+to them:
+
+```csharp
+public class MyModInit : IModApi
+{
+    public void InitMod(Mod mod)
+    {
+        // Your normal startup here. Do not mention GearsAPI types in this class.
+        if (ModManager.GetMod("Gears") != null)
+        {
+            // Safe: this method is only compiled and run when Gears is installed.
+            GearsBridge.Announce();
+        }
+    }
+}
+```
+
+Your `IGearsModApi` implementation is a separate class that Gears itself instantiates, so it
+never runs without Gears.
+
+If instead your mod **requires** Gears, say so in your mod's description and skip the gate.
+
+## The interface
+
+```csharp
+namespace GearsAPI.Settings
+{
+    public interface IGearsModApi
+    {
+        void InitMod(IGearsMod modInstance);
+        void OnGlobalSettingsLoaded(IModGlobalSettings modSettings);
+        void OnWorldSettingsLoaded(IModWorldSettings worldSettings);
+    }
+}
+```
+
+Gears finds implementations by scanning **every assembly of your mod** for concrete classes that
+implement [`IGearsModApi`](/docs/reference/settings/i-gears-mod-api):
+
+- Abstract classes, interfaces and open generic types are skipped even if they derive from it.
+- The class needs a **public parameterless constructor**. Without one it is skipped with a
+  warning naming the type.
+- Every matching class is instantiated, and every callback is invoked on every instance. One
+  class is the normal case; several are allowed.
+- A constructor that throws is logged and that class is skipped. An assembly whose types cannot be
+  enumerated is logged and skipped.
+
+## Lifecycle
+
+In order:
+
+1. **The game loads mods** and calls each mod's own `IModApi.InitMod`. Gears is not involved yet;
+   `GearsSettingsManager.GetMods()` returns an empty list here and `GetGearsMod(...)` returns
+   null.
+2. **`GameAwake`.** Gears now:
+   1. scans all loaded assemblies for `[SettingsSerializationProvider]` classes (custom value
+      types, see [C# Custom Value Types](/docs/csharp/custom-value-types));
+   2. builds one `IGearsMod` per loaded mod and reads `<Icon>`/`<Banner>` from `ModInfo.xml`;
+   3. finds and instantiates every `IGearsModApi`, for all mods;
+   4. calls **`InitMod(IGearsMod)`** on each. Your settings tree is still empty here: nothing has
+      been read from `ModSettings.xml`. This is the place to create settings from code if you
+      want them to exist before the file is read (see [C# Global Settings](/docs/csharp/global-settings));
+   5. parses every mod's `ModSettings.xml`, merging into whatever code created;
+   6. restores each player-level saved value into the global settings;
+   7. calls **`OnGlobalSettingsLoaded(IModGlobalSettings)`** on each mod. Global values are final
+      from here on until the player changes them.
+3. **World start.** `OnWorldSettingsLoaded(IModWorldSettings)` fires in one of three ways:
+   - **Hosting or single player:** when the world starts, after the save's `WorldModSettings.xml`
+     has been loaded (or defaults applied for a new save).
+   - **Joining a server:** when the server's world settings arrive with the other config files.
+   - **Joining a server that sent none:** every world setting is reset to its default, then the
+     callback fires.
+
+   It can fire **more than once per session** (leave a world, join another). It is **skipped for a
+   mod that has no world settings**.
+
+<Callout>
+  If one of your callbacks throws, Gears logs
+  `Error thrown in <Callback>() by <YourType> for <Your Mod>` with the exception and carries on:
+  your other `IGearsModApi` classes, and every other mod, still get the callback.
+</Callout>
+
+## Reaching settings without a callback
+
+```csharp
+namespace GearsAPI.Settings
+{
+    public abstract class GearsSettingsManager
+    {
+        public static List<IGearsMod> GetMods();
+        public static IGearsMod GetGearsMod(string modName);
+    }
+}
+```
+
+`modName` is the `<Name>` from `ModInfo.xml`, including another mod's. Both return empty/null
+before `GameAwake`, and `GetGearsMod` returns null for an unknown name.
+
+```csharp
+IGearsMod mine = GearsSettingsManager.GetGearsMod("MyMod");
+ISliderGlobalSetting<float> hudScale = mine?.GlobalSettings
+    .GetTab("General")?.GetCategory("Display")?
+    .GetSetting<ISliderGlobalSetting<float>>("HudScale");
+```
+
+## `IGearsMod`
+
+What Gears knows about one mod:
+
+```csharp
+public interface IGearsMod
+{
+    Mod Mod { get; }                        // the game's Mod object
+    IModGlobalSettings GlobalSettings { get; }   // never null
+    IModWorldSettings WorldSettings { get; }     // never null
+    string BannerPath { get; set; }          // from ModInfo.xml <Banner value>, relative to the mod folder
+    string IconPath { get; set; }            // from ModInfo.xml <Icon value>
+
+    bool HasGearsApi();        // at least one IGearsModApi was found
+    bool HasGlobalSettings();  // at least one global tab exists
+    bool HasWorldSettings();   // at least one world setting exists
+    bool HasBanner();          // BannerPath set and the file exists
+    bool HasIcon();            // IconPath set and the file exists
+    bool SaveSettings();       // write the player-level saved settings file now
+}
+```
+
+The full member list is at [`IGearsMod`](/docs/reference/settings/i-gears-mod).
+
+## A complete minimal implementation
+
+```csharp
+using GearsAPI.Attributes;
+using GearsAPI.Settings;
+using GearsAPI.Settings.Global;
+using GearsAPI.Settings.World;
+
+public class MyModGears : IGearsModApi
+{
+    public static float HudScale { get; private set; } = 1f;
+    public static bool FeralNights { get; private set; }
+
+    public void InitMod(IGearsMod modInstance)
+    {
+    }
+
+    public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
+    {
+        modSettings.BindSettingsClass(typeof(Global));
+
+        HudScale = Global.HudScale.SettingValue;
+    }
+
+    public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
+    {
+        worldSettings.BindSettingsClass(typeof(World));
+
+        FeralNights = World.FeralNights.SettingValue;
+    }
+
+    // Global and world members need separate types: each call resolves every path on the type it is
+    // given, and the two use different path formats.
+    private static class Global
+    {
+        // [Setting] finds the setting for you and assigns it to the field.
+        [Setting("General.Display.HudScale")]
+        public static ISliderGlobalSetting<float> HudScale;
+
+        [SettingOnValueChanged("General.Display.HudScale")]
+        private static void HudScaleChanged(IValueModSetting<float> setting, float newValue)
+        {
+            MyModGears.HudScale = newValue;
+        }
+    }
+
+    private static class World
+    {
+        [Setting("Zombies.FeralNights")]
+        public static ISwitchWorldSetting<bool> FeralNights;
+    }
+}
+```
+
+Next: [C# Global Settings](/docs/csharp/global-settings),
+[C# World Settings](/docs/csharp/world-settings),
+[C# Setting Listeners](/docs/csharp/setting-listeners).

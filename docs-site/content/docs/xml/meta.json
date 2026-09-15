@@ -1,0 +1,5 @@
+{
+  "title": "XML",
+  "description": "Authoring settings without writing any C#",
+  "pages": ["modsettings-reference", "localization", "xml-patches"]
+}

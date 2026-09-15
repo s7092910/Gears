@@ -1,0 +1,31 @@
+---
+title: "SettingAttribute"
+description: "Binds a static field or property to the setting its path names."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Settings/SettingAttribute.cs" />
+
+```csharp
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+public sealed class SettingAttribute : SettingPathAttribute
+```
+
+Binds a static field or property to the setting its path names. `BindSettingsClass` assigns
+the resolved setting into the member before it subscribes any listener on the same type. The member
+must be static, and its declared type must be one the setting actually implements — anything from
+[`IModSetting`](/docs/reference/settings/i-mod-setting) down to the concrete class. A field must additionally be
+neither `readonly` nor `const`; a property must additionally have a setter, which may be private.
+Anything else is logged and skipped. See [C# Setting Listeners](/docs/csharp/setting-listeners).
+
+**Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → `SettingAttribute`\
+**Attributes:** `AttributeUsageAttribute`
+
+## Constructors
+
+### SettingAttribute(String)
+
+```csharp
+public SettingAttribute(string settingPath)
+```
+
+Initializes the attribute with the setting path.

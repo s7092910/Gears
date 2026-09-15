@@ -1,0 +1,16 @@
+---
+title: "IColorSelectorGlobalSetting"
+description: "A global colour picker over UnityEngine.Color."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/SettingTypes/IColorSelectorGlobalSetting.cs" />
+
+```csharp
+public interface IColorSelectorGlobalSetting : IGlobalValueSetting<Color>
+```
+
+A global colour picker. Adds no members of its own; everything comes from
+[`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) with `T` = `UnityEngine.Color`. Serialized as `R,G,B` in 0–255.
+Only the setting's own preview image is shown.
+
+**Implements:** [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) · [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)

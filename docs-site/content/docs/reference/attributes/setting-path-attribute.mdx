@@ -1,0 +1,37 @@
+---
+title: "SettingPathAttribute"
+description: "Base class of every attribute that names a setting by its path."
+---
+
+<TypeMeta kind="Abstract class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/SettingPathAttribute.cs" />
+
+```csharp
+public abstract class SettingPathAttribute : Attribute
+```
+
+Base class of every attribute that names a setting by its path for `BindSettingsClass`.
+Cannot be applied directly. It declares no `AttributeUsage` of its own, because `AttributeUsage` is
+inherited — each concrete attribute below it declares its own targets.
+
+**Inheritance:** `Object` → `Attribute` → `SettingPathAttribute`\
+**Derived:** [`SettingAttribute`](/docs/reference/attributes/setting-attribute) · [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute)
+
+## Constructors
+
+### SettingPathAttribute(String)
+
+```csharp
+protected SettingPathAttribute(string settingPath)
+```
+
+Protected. Stores `settingPath`. Throws `ArgumentException` if it is `null` or whitespace.
+
+## Properties
+
+### SettingPath
+
+```csharp
+public string SettingPath { get; }
+```
+
+Gets the dot-separated path to the setting: `"Tab.Category.Setting"` for global settings, `"Category.Setting"` for world settings.

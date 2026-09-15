@@ -1,0 +1,254 @@
+---
+title: Setting Types
+description: A tour of the five kinds of setting Gears can put in front of a player — what each looks like, when to use it, the XML that declares it and the C# interface that reads it.
+---
+
+A tour of the five kinds of setting Gears can put in front of a player, what each one looks like,
+when to use it, the XML that declares it and the C# interface that reads it. For the attribute
+by attribute rules see the [ModSettings XML Reference](/docs/xml/modsettings-reference); for the C#
+detail see [C# Global Settings](/docs/csharp/global-settings).
+
+## How settings are organised
+
+A mod's settings live in two groups. **Global** settings belong to the player and apply in every
+world; **World** settings belong to a save and are chosen by the host, then sent to every client.
+
+```text
+Global                          World
+└── Tab                         └── Category
+    └── Category                    └── Setting
+        └── Setting
+```
+
+Tabs appear as a row of buttons across the top of the mod's settings page; a category is a
+heading within a tab, and the settings sit under it. World settings have no tabs.
+
+![Tabs](/images/Setting-Tabs.png)
+
+A tab is only a heading. A category is a little more: it can carry a caption, a description and
+a preview image, which show in the description pane when the player hovers over it.
+
+## Choosing a type
+
+| You want the player to… | Use | Value types | Global | World |
+|---|---|---|---|---|
+| pick one option from a fixed list | [Selector](#selector) | `int`, `float`, `string`, enum | yes | yes |
+| pick a number within a range | [Slider](#slider) | `int`, `float` | yes | yes |
+| turn something on or off, or choose between two things | [Switch](#switch) | `bool`, `string`, enum | yes | yes |
+| pick a colour | [Color](#color) | colour | yes | no |
+| rebind a key | [Binding](#binding) | none | yes | no |
+
+<Callout type="warn">
+  Every Selector, Slider, Switch and Color must declare a `type` and a `defaultValue`. A setting
+  missing either is dropped at load with a line in the log.
+</Callout>
+
+---
+
+## Selector
+
+![Selector](/images/Selector-Setting.png)
+
+A Selector shows one value at a time with arrows on either side to step through the allowed
+values. It is the right choice whenever there is a fixed, fairly short list of options: quality
+levels, a day of the week, a difficulty preset, a handful of numbers.
+
+The allowed values come from one of three places:
+
+- an explicit `<List allowedValues="…"/>`, comma separated;
+- an `<Incremental increment minValue maxValue/>` range, expanded to every step (`int` and
+  `float` only);
+- for an enum `type`, the enum's own members, in declaration order, with nothing else to write.
+
+Each value is shown through the optional `<Formatter ui="…"/>` and `<LocalizationPrefix/>`, so a
+`string` selector can show translated labels for its raw values, and `<Wrap wrap="true"/>` lets
+the last value step round to the first.
+
+```xml
+<Selector name="Units" displayKey="myModUnits" type="string" defaultValue="metric">
+	<List allowedValues="metric,imperial" />
+	<LocalizationPrefix prefix="myModUnits_" />
+	<Description key="myModUnitsDesc" />
+</Selector>
+
+<Selector name="Quality" displayKey="myModQuality" type="int" defaultValue="2">
+	<Incremental increment="1" minValue="0" maxValue="4" />
+	<Wrap wrap="true" />
+	<Preview>
+		<Image value="0" path="@modfolder(MyMod)://Textures/quality0.png" />
+		<Image value="4" path="@modfolder(MyMod)://Textures/quality4.png" />
+	</Preview>
+</Selector>
+
+<Selector name="Mode" displayKey="myModMode" type="MyMod.Difficulty" defaultValue="Normal" />
+```
+
+The second example also attaches a preview image to two of its values; the pane beside the
+setting shows the image for whichever value is selected.
+
+In C# a Selector is an [`ISelectorGlobalSetting<T>`](/docs/reference/global/i-selector-global-setting)
+(or [`ISelectorWorldSetting<T>`](/docs/reference/world/i-selector-world-setting)):
+
+```csharp
+ISelectorGlobalSetting<string> units = category.GetSetting<ISelectorGlobalSetting<string>>("Units");
+string current = units.SettingValue;          // "metric" or "imperial"
+string[] all = units.GetAllowedValues();       // { "metric", "imperial" }
+```
+
+## Slider
+
+![Slider](/images/Slider-Setting.png)
+
+A Slider is a bar the player drags, with arrows that nudge it one step. The current value is
+drawn over the bar. Use it for a number with many possible values where the exact figure matters
+less than roughly where it sits: a volume, a scale, a multiplier, a field of view.
+
+Sliders take `int` or `float` only, and the range comes from `<Incremental/>`. A `float` slider
+understands percent notation, so a range written as `50%` to `150%` is stored as `0.5` to `1.5`,
+and `<Formatter ui="0%"/>` shows it as a percentage again. `serialize` controls how the number is
+written to disk and what `modsetting()` returns.
+
+```xml
+<Slider name="HudScale" displayKey="myModHudScale" type="float" defaultValue="100%">
+	<Incremental increment="5%" minValue="50%" maxValue="150%" />
+	<Formatter ui="0%" serialize="0.00" />
+	<Description key="myModHudScaleDesc" />
+	<RestartScope scope="Reload" />
+</Slider>
+
+<Slider name="Fov" displayKey="myModFov" type="int" defaultValue="65">
+	<Incremental increment="5" minValue="45" maxValue="120" />
+</Slider>
+```
+
+The first example also declares a `<RestartScope/>`, which shows the player a reminder that the
+change needs the world reloaded.
+
+In C#:
+
+```csharp
+ISliderGlobalSetting<float> hudScale = category.GetSetting<ISliderGlobalSetting<float>>("HudScale");
+float scale = hudScale.SettingValue;           // 1.0f for "100%"
+float step = hudScale.Increment;               // 0.05f
+```
+
+## Switch
+
+![Switch](/images/Switch-Setting.png)
+
+A Switch is two buttons side by side; the lit one is the current value. It is the on/off control,
+and also works for any either/or choice: metric or imperial, left or right, easy or hard.
+
+The two sides come from the `type`:
+
+- a `bool` switch is `false` on the left and `true` on the right with nothing more to write;
+- a `string` switch names its sides with `<Buttons left="…" right="…"/>`;
+- an enum switch takes the first two members of the enum, or the two you name in `<Buttons/>`.
+
+The button labels are the raw values unless a `<LocalizationPrefix/>` turns them into
+localization keys, which is how a `bool` switch reads "Off" and "On" instead of "False" and
+"True".
+
+```xml
+<Switch name="ShowHints" displayKey="myModShowHints" type="bool" defaultValue="true">
+	<LocalizationPrefix prefix="myModOnOff_" />   <!-- keys myModOnOff_False and myModOnOff_True -->
+	<Description key="myModShowHintsDesc" />
+</Switch>
+
+<Switch name="Units" displayKey="myModUnits" type="string" defaultValue="metric">
+	<Buttons left="metric" right="imperial" />
+</Switch>
+
+<Switch name="Hardcore" displayKey="myModHardcore" type="MyMod.Difficulty" defaultValue="Easy">
+	<Buttons left="Easy" right="Hard" />
+</Switch>
+```
+
+In C#:
+
+```csharp
+ISwitchGlobalSetting<bool> hints = category.GetSetting<ISwitchGlobalSetting<bool>>("ShowHints");
+bool show = hints.SettingValue;
+```
+
+## Color
+
+A Color setting opens the game's own colour picker and shows the chosen colour as a swatch. Use
+it for anything the player might want to tint: HUD text, a marker, an outline. It is always a
+colour, so it needs no `type`, and its `defaultValue` is written as red, green and blue in the
+range 0 to 255.
+
+<Callout>
+  Color settings are **global only**. They take a single preview image; a picker cannot show one
+  image per colour, so `<Image value="…"/>` is ignored with a warning.
+</Callout>
+
+```xml
+<Color name="Accent" displayKey="myModAccent" defaultValue="255,128,0">
+	<Description key="myModAccentDesc" />
+</Color>
+```
+
+In C# a Color is an [`IColorSelectorGlobalSetting`](/docs/reference/global/i-color-selector-global-setting),
+a value setting over `UnityEngine.Color`:
+
+```csharp
+IColorSelectorGlobalSetting accent = category.GetSetting<IColorSelectorGlobalSetting>("Accent");
+Color tint = accent.SettingValue;
+```
+
+In an XML patch, `modsetting()` returns it as `R,G,B`, which the game's UI colour attributes
+accept directly.
+
+## Binding
+
+![Binding](/images/Control-Binding-Setting.png)
+
+A Binding is a row in the mod's settings page where the player rebinds one of your mod's
+controls, using the same control the game's own Controls screen uses; the cross clears the
+binding. It has no value of its own: the key lives with the game's `PlayerAction` behind it.
+
+<Callout type="warn">
+  A Binding is the one setting type that needs C#. The XML only creates the row; until your code
+  assigns the `PlayerAction`, the row shows **- Missing PlayerAction -** as in the screenshot above.
+</Callout>
+
+Bindings are **global only**, take no `type` and no `defaultValue`, and are not written to the
+saved settings file; the binding is stored wherever your `PlayerAction` set stores it.
+
+```xml
+<Binding name="Boost" displayKey="myModBoost">
+	<Description key="myModBoostDesc" />
+</Binding>
+```
+
+```csharp
+public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
+{
+    IControlBindingSetting boost = modSettings
+        .GetTab("Controls")?.GetCategory("Vehicle")?
+        .GetSetting<IControlBindingSetting>("Boost");
+
+    if (boost != null)
+    {
+        boost.PlayerAction = MyVehicleActions.Instance.Boost;   // an InControl.PlayerAction your mod owns
+    }
+}
+```
+
+---
+
+## What every type shares
+
+Whatever the type, a setting can carry:
+
+- a `displayKey`, the label on the left;
+- a `<Caption key=""/>` and `<Description key=""/>`, shown in the pane when the setting is
+  hovered or selected;
+- a `<Preview><Image path=""/></Preview>`, an image for that pane;
+- on global settings, a `<RestartScope scope=""/>` of `Reload` or `Restart`.
+
+And every value setting (all but Binding) keeps three values: the **default** it resets to, the
+**applied** value that is saved and that your mod acts on, and the **selected** value the player is
+currently looking at but has not yet saved. The [C# Global Settings](/docs/csharp/global-settings)
+page explains how those three interact.

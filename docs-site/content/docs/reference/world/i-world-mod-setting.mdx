@@ -1,0 +1,25 @@
+---
+title: "IWorldModSetting"
+description: "A setting that belongs to a save. No RestartScope, no OnSettingChanged."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.World" source="GearsAPI/Source/Settings/World/IWorldModSetting.cs" />
+
+```csharp
+public interface IWorldModSetting : IModSetting
+```
+
+A setting that belongs to a save. Has no `RestartScope` and no `OnSettingChanged`.
+
+**Implements:** [`IModSetting`](/docs/reference/settings/i-mod-setting)\
+**Derived:** [`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category) · [`ISelectorWorldSetting<T>`](/docs/reference/world/i-selector-world-setting) · [`ISliderWorldSetting<T>`](/docs/reference/world/i-slider-world-setting) · [`ISwitchWorldSetting<T>`](/docs/reference/world/i-switch-world-setting)
+
+## Properties
+
+### Category
+
+```csharp
+IWorldModSettingsCategory Category { get; }
+```
+
+Gets the [`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category) this setting belongs to.

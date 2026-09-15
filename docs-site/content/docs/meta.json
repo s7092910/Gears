@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "index",
+    "---Start here---",
+    "getting-started",
+    "setting-types",
+    "---XML---",
+    "xml",
+    "---C#---",
+    "csharp",
+    "---Reference---",
+    "reference",
+    "troubleshooting",
+    "---Upgrading---",
+    "upgrading-to-gearsapi-3"
+  ]
+}

@@ -1,0 +1,44 @@
+---
+title: "ISwitchWorldSetting<T>"
+description: "A world two-position setting."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.World" source="GearsAPI/Source/Settings/World/SettingTypes/ISwitchWorldSetting.cs" />
+
+```csharp
+public interface ISwitchWorldSetting<T> : IWorldModSetting, IValueModSetting<T>, ISwitchSettingBase
+```
+
+A world two-position setting. Implemented for `bool`, `string` and any enum, with the same side
+defaults as the global version.
+
+**Type parameters:** `T` — `bool`, `string` or an enum.\
+**Implements:** [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting) · [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`ISwitchSettingBase`](/docs/reference/base/i-switch-setting-base) · [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
+
+## Properties
+
+### LeftValue
+
+```csharp
+T LeftValue { get; set; }
+```
+
+Gets or sets the value the left button selects.
+
+### RightValue
+
+```csharp
+T RightValue { get; set; }
+```
+
+Gets or sets the value the right button selects.
+
+## Methods
+
+### SetSwitchValues(T, T)
+
+```csharp
+void SetSwitchValues(T leftValue, T rightValue);
+```
+
+Sets `LeftValue` and `RightValue` together.

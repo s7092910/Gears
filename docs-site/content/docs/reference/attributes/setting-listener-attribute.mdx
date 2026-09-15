@@ -1,0 +1,28 @@
+---
+title: "SettingListenerAttribute"
+description: "Base class of the four attributes that bind a static method to a setting's event."
+---
+
+<TypeMeta kind="Abstract class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Listeners/SettingListenerAttribute.cs" />
+
+```csharp
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+public abstract class SettingListenerAttribute : SettingPathAttribute
+```
+
+Base class of the four attributes that bind a static method to a setting's event through
+`BindSettingsClass`. Cannot be applied directly.
+
+**Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → `SettingListenerAttribute`\
+**Derived:** [`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute) · [`SettingOnSelectedAttribute`](/docs/reference/attributes/setting-on-selected-attribute) · [`SettingOnChangedAttribute`](/docs/reference/attributes/setting-on-changed-attribute) · [`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute)\
+**Attributes:** `AttributeUsageAttribute`
+
+## Constructors
+
+### SettingListenerAttribute(String)
+
+```csharp
+protected SettingListenerAttribute(string settingPath)
+```
+
+Protected. Passes `settingPath` to the base constructor.

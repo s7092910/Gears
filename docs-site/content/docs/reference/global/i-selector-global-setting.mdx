@@ -1,0 +1,42 @@
+---
+title: "ISelectorGlobalSetting<T>"
+description: "A global setting chosen from a list of allowed values."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/SettingTypes/ISelectorGlobalSetting.cs" />
+
+```csharp
+public interface ISelectorGlobalSetting<T> : IGlobalValueSetting<T>, ISelectorSettingBase
+```
+
+A global setting chosen from a list of allowed values. Implemented for `int`, `float`, `string`
+and any enum. An enum selector starts with every declared member as its allowed values.
+
+**Type parameters:** `T` — `int`, `float`, `string` or an enum.\
+**Implements:** [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) · [`ISelectorSettingBase`](/docs/reference/base/i-selector-setting-base) · [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
+
+## Methods
+
+### SetAllowedValues(T[])
+
+```csharp
+void SetAllowedValues(T[] values);
+```
+
+Replaces the allowed values with `values`, in that order.
+
+### SetAllowedValues(T, T, T)
+
+```csharp
+void SetAllowedValues(T increment, T min, T max);
+```
+
+Replaces the allowed values with `min`, `min + increment`, … up to and including `max`. `increment` must be greater than 0 and `min` no greater than `max`, or the call is logged and ignored. Logged and ignored on a non-numeric `T`.
+
+### GetAllowedValues()
+
+```csharp
+T[] GetAllowedValues();
+```
+
+Returns the allowed values as `T[]`, in selection order. The matching entry in `GetAllowedValuesDisplay()` is how each one is shown.

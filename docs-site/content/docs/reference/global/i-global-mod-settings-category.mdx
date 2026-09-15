@@ -1,0 +1,81 @@
+---
+title: "IGlobalModSettingsCategory"
+description: "A category inside a tab. A category is itself a global setting."
+---
+
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/IGlobalModSettingsCategory.cs" />
+
+```csharp
+public interface IGlobalModSettingsCategory : IGlobalModSetting
+```
+
+A category inside a tab. A category is itself a global setting, which gives it a caption,
+description and preview image; its `RestartScope` always reads `None`.
+
+**Implements:** [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
+
+## Methods
+
+### GetSetting(String)
+
+```csharp
+IGlobalModSetting GetSetting(string name);
+```
+
+Returns the [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) named `name`, or `null`.
+
+### GetSetting&lt;T&gt;(String)
+
+```csharp
+T GetSetting<T>(string name) where T : class, IGlobalModSetting;
+```
+
+Returns the setting named `name` as `T`, or `null` if there is none or it is not a `T`. `T` must be a class implementing [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting).
+
+### CreateSetting&lt;T&gt;(String, String)
+
+```csharp
+T CreateSetting<T>(string name, string displayKey) where T : class, IGlobalModSetting;
+```
+
+Creates a setting of interface `T` with the given name and display key. Throws `ArgumentException` if `T` is not a known setting interface, `InvalidOperationException` if its value type has no implementation or no registered parser, and `ArgumentException` on a duplicate name.
+
+### GetOrCreateSetting&lt;T&gt;(String, String)
+
+```csharp
+T GetOrCreateSetting<T>(string name, string displayName) where T : class, IGlobalModSetting;
+```
+
+Returns the existing setting as `T`, or creates it.
+
+### AddSetting(IGlobalModSetting)
+
+```csharp
+bool AddSetting(IGlobalModSetting setting);
+```
+
+Adds an existing setting object. Returns `false` if the name is taken.
+
+### RemoveSetting(String)
+
+```csharp
+bool RemoveSetting(string settingName);
+```
+
+Removes the setting with that name. Returns whether one was removed.
+
+### RemoveSetting(IGlobalModSetting)
+
+```csharp
+bool RemoveSetting(IGlobalModSetting setting);
+```
+
+Removes that setting. Returns whether it was removed.
+
+### GetAllSettings()
+
+```csharp
+List<IGlobalModSetting> GetAllSettings();
+```
+
+Returns the category itself followed by its settings, as a `List<`[`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`>`.
