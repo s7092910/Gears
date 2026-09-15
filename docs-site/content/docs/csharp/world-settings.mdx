@@ -22,67 +22,20 @@ IModWorldSettings
     └── IWorldModSetting             (GetSetting / CreateSetting / GetOrCreateSetting)
 ```
 
-```csharp
-public interface IModWorldSettings
-{
-    IWorldModSettingsCategory GetCategory(string categoryName);
-    IWorldModSettingsCategory CreateCategory(string categoryName, string displayName);   // throws on a duplicate
-    IWorldModSettingsCategory GetOrCreateCategory(string categoryName, string displayName);
-    bool AddCategory(IWorldModSettingsCategory category);
-    bool RemoveCategory(string categoryName);
-    bool RemoveCategory(IWorldModSettingsCategory category);
-    List<IWorldModSettingsCategory> GetAllCategories();
-    List<IWorldModSetting> GetAllWorldSettings();
-    void BindSettingsClass(Type settingsType);           // [SettingOnSelected] only; see below
-    void SaveSettings();
-}
-
-public interface IWorldModSetting : IModSetting
-{
-    IWorldModSettingsCategory Category { get; }
-}
-
-public interface IWorldModSettingsCategory : IWorldModSetting
-{
-    IWorldModSetting GetSetting(string name);
-    T GetSetting<T>(string name) where T : class, IWorldModSetting;
-    T CreateSetting<T>(string name, string displayKey) where T : class, IWorldModSetting;
-    T GetOrCreateSetting<T>(string name, string displayName) where T : class, IWorldModSetting;
-    bool AddSetting(IWorldModSetting setting);
-    bool RemoveSetting(string settingName);
-    bool RemoveSetting(IWorldModSetting setting);
-    List<IWorldModSetting> GetAllSettings();
-}
-```
+The lookups mirror the global side exactly — `GetCategory` / `CreateCategory` /
+`GetOrCreateCategory` on [`IModWorldSettings`](/docs/reference/world/i-mod-world-settings), and
+`GetSetting` / `CreateSetting` / `GetOrCreateSetting` on
+[`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category).
+[`IWorldModSetting`](/docs/reference/world/i-world-mod-setting) itself adds only `Category` on top
+of `IModSetting`.
 
 ## The setting interfaces
 
-```csharp
-public interface ISelectorWorldSetting<T> : IWorldModSetting, IValueModSetting<T>, ISelectorSettingBase
-{
-    void SetAllowedValues(T[] values);
-    void SetAllowedValues(T increment, T min, T max);
-    T[] GetAllowedValues();
-}
-
-public interface ISliderWorldSetting<T> : IWorldModSetting, IValueModSetting<T>, ISliderSettingBase where T : struct
-{
-    T Increment { get; }
-    T Min { get; }
-    T Max { get; }
-    void SetAllowedValues(T increment, T min, T max);
-}
-
-public interface ISwitchWorldSetting<T> : IWorldModSetting, IValueModSetting<T>, ISwitchSettingBase
-{
-    T LeftValue { get; set; }
-    T RightValue { get; set; }
-    void SetSwitchValues(T leftValue, T rightValue);
-}
-```
-
-Same members, same value types (Selector: `int`, `float`, `string`, enum; Slider: `int`,
-`float`; Switch: `bool`, `string`, enum), same three-value model (`DefaultValue`, `SettingValue`,
+[`ISelectorWorldSetting<T>`](/docs/reference/world/i-selector-world-setting),
+[`ISliderWorldSetting<T>`](/docs/reference/world/i-slider-world-setting) and
+[`ISwitchWorldSetting<T>`](/docs/reference/world/i-switch-world-setting) have the same members,
+the same value types (Selector: `int`, `float`, `string`, enum; Slider: `int`, `float`; Switch:
+`bool`, `string`, enum) and the same three-value model (`DefaultValue`, `SettingValue`,
 `SelectedValue`) as their global counterparts.
 
 ## What world settings do not have

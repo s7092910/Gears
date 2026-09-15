@@ -10,23 +10,13 @@ properties are assigned the setting; tagged methods are subscribed to its events
 
 ## The attributes
 
-```csharp
-public abstract class SettingPathAttribute : Attribute
-{
-    public string SettingPath { get; }
-}
-
-[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-public sealed class SettingAttribute : SettingPathAttribute                     // assign the setting to the member
-
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public abstract class SettingListenerAttribute : SettingPathAttribute
-
-public sealed class SettingOnValueChangedAttribute : SettingListenerAttribute   // SettingValue changed (player saved)
-public sealed class SettingOnSelectedAttribute : SettingListenerAttribute       // SelectedValue changed (player clicked)
-public sealed class SettingOnChangedAttribute : SettingListenerAttribute        // the setting was applied
-public sealed class SettingOnEnabledAttribute : SettingListenerAttribute        // Enabled was turned on or off
-```
+| Attribute | Goes on | Binds to |
+|---|---|---|
+| [`[Setting]`](/docs/reference/attributes/setting-attribute) | a static field or property | assigns the setting itself to the member |
+| [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) | a static method | `SettingValue` changed — the player saved |
+| [`[SettingOnSelected]`](/docs/reference/attributes/setting-on-selected-attribute) | a static method | `SelectedValue` changed — the player clicked |
+| [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) | a static method | `Enabled` was turned on or off |
+| [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) | a static method | the setting was applied |
 
 Each takes the setting path as its only argument. A null or empty path throws
 `ArgumentException` from the attribute constructor, which surfaces the first time the class is
