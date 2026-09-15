@@ -7,7 +7,12 @@
     "dev": "next dev",
     "start": "serve out",
     "types:check": "next typegen && tsc --noEmit",
-    "lint": "eslint"
+    "lint": "eslint",
+    "gen:api": "node scripts/gen-api-reference.mjs",
+    "gen:api:check": "node scripts/gen-api-reference.mjs --check",
+    "gen:api:report": "node scripts/gen-api-reference.mjs --report",
+    "check:links": "node scripts/check-links.mjs",
+    "check": "npm run gen:api:check && npm run check:links"
   },
   "dependencies": {
     "cn": "^0.2.6",

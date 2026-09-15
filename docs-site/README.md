@@ -5,6 +5,11 @@ This is a Next.js application generated with
 
 It is a Next.js app with [Static Export](https://nextjs.org/docs/app/guides/static-exports) configured.
 
+Build:
+```bash
+npm run build
+```
+
 Run development server:
 
 ```bash
@@ -15,7 +20,7 @@ pnpm dev
 yarn dev
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+Open http://localhost:3000/Gears/ with your browser to see the result.
 
 ## Explore
 

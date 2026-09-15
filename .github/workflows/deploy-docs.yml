@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'docs-site/**'
+      # The API reference is generated from these, so a source change can make it stale.
+      - 'GearsAPI/Source/**'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
@@ -34,6 +36,11 @@ jobs:
           cache-dependency-path: docs-site/package-lock.json
 
       - run: npm ci
+
+      # Fails if GearsAPI/Source has changed without regenerating the reference, or if any
+      # internal doc link is dangling.
+      - name: Check generated reference and links
+        run: npm run check
 
       - run: npm run build
 
