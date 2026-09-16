@@ -107,17 +107,45 @@ function preprocess(source) {
   return rows;
 }
 
-/** Pull `<summary>` out of a `///` block, flattened to one line. */
-function docSummary(lines) {
+/** Collapse a multi-line doc fragment to one flowing line. Inline tags are left intact. */
+function flatten(s) {
+  return s.split('\n').map((l) => l.trim()).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim() || null;
+}
+
+/** Inner text of the first `<tag>...</tag>`, or null. */
+function extractTag(text, tag) {
+  const m = text.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i'));
+  return m ? m[1] : null;
+}
+
+/** Every `<tag name="x">...</tag>`, keyed by name. */
+function extractNamed(text, tag) {
+  const re = new RegExp(`<${tag}\\s+name="([^"]+)"\\s*>([\\s\\S]*?)</${tag}>`, 'gi');
+  const out = {};
+  let m;
+  while ((m = re.exec(text))) out[m[1]] = flatten(m[2]);
+  return Object.keys(out).length ? out : null;
+}
+
+/**
+ * Parse a `///` block into its structural pieces: `<summary>`, `<remarks>`, `<note>`,
+ * `<typeparam>` and `<param>`. Prose-level inline tags -- `<see cref>`, `<c>`, `<paramref>` --
+ * are left intact in the extracted text; resolving them into links/markdown is the renderer's
+ * job, since only it knows the rest of the type model.
+ */
+function parseDoc(lines) {
   if (!lines || !lines.length) return null;
   const joined = lines.join('\n');
-  const m = joined.match(/<summary>([\s\S]*?)<\/summary>/);
-  const body = (m ? m[1] : joined)
-    .replace(/<see\s+cref="[A-Za-z]:?([^"]+)"\s*\/>/gi, '$1')
-    .replace(/<paramref\s+name="([^"]+)"\s*\/>/gi, '$1')
-    .replace(/<\/?(c|para|remarks|summary|returns|value)>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ');
-  return body.split('\n').map((l) => l.trim()).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim() || null;
+  const summary = flatten(extractTag(joined, 'summary') ?? joined);
+  const remarks = extractTag(joined, 'remarks');
+  const note = extractTag(joined, 'note');
+  return {
+    summary,
+    remarks: remarks ? flatten(remarks) : null,
+    note: note ? flatten(note) : null,
+    typeParams: extractNamed(joined, 'typeparam'),
+    params: extractNamed(joined, 'param'),
+  };
 }
 
 const countChar = (s, ch) => {
@@ -254,7 +282,7 @@ export function parseFile(source, file) {
       constraints,
       modifiers: mods,
       attributes: attrs,
-      doc: docSummary(doc),
+      doc: parseDoc(doc),
       file,
       declaringType: parent ? parent.name : null,
       members: [],
@@ -289,7 +317,7 @@ export function parseFile(source, file) {
         constraints: '',
         modifiers: mods,
         attributes: attrs,
-        doc: docSummary(doc),
+        doc: parseDoc(doc),
         file,
         declaringType: t ? t.name : null,
         signature: `${clean};`,
@@ -314,7 +342,7 @@ export function parseFile(source, file) {
           signature: entry.trim(),
           modifiers: [],
           params: [],
-          doc: docSummary(doc),
+          doc: parseDoc(doc),
         });
       }
       return;
@@ -337,7 +365,7 @@ export function parseFile(source, file) {
             signature: `${head} { ${[...new Set(accessors)].map((a) => a + ';').join(' ')} }`,
             modifiers: mods,
             params: [],
-            doc: docSummary(doc),
+            doc: parseDoc(doc),
           });
           return;
         }
@@ -361,7 +389,7 @@ export function parseFile(source, file) {
         signature: `${clean};`,
         modifiers: mods,
         params: [],
-        doc: docSummary(doc),
+        doc: parseDoc(doc),
       });
       return;
     }
@@ -384,7 +412,7 @@ export function parseFile(source, file) {
         signature: `${clean};`,
         modifiers: mods,
         params: [],
-        doc: docSummary(doc),
+        doc: parseDoc(doc),
       });
     }
   }
@@ -435,7 +463,7 @@ export function parseFile(source, file) {
       signature,
       modifiers: mods,
       attributes: attrs,
-      doc: docSummary(doc),
+      doc: parseDoc(doc),
     };
   }
 

@@ -87,7 +87,7 @@
       "AddPreview(T, String)": "Registers an image to show while `value` is selected. The first image registered for a value wins."
     }
   },
-  "SelectedChangedEvent<T>": {
+  "OnSelectedChangedEvent<T>": {
     "summary": "Handler for `IValueModSetting<T>.OnSelectedChanged`.",
     "description": "Handler for [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting)`.OnSelectedChanged`.",
     "members": {
@@ -167,7 +167,7 @@
       "GetOrCreateTab(String, String)": "Returns the existing tab named `name`, or creates it with the given display key.",
       "GetTabs()": "Returns every tab as a `List<`[`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab)`>`.",
       "GetAllGlobalSettings()": "Returns every setting in every category of every tab, categories included, as a `List<`[`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`>`.",
-      "BindSettingsClass(Type)": "Scans `settingsType` for tagged static members carrying a `\"Tab.Category.Setting\"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute), [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute), [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. Throws `ArgumentNullException` for `null`; every other problem is logged and that one member skipped. See [C# Setting Listeners](/docs/csharp/setting-listeners).",
+      "BindSettingsClass(Type)": "Scans `settingsType` for tagged static members carrying a `\"Tab.Category.Setting\"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute), [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute), [`[SettingOnApplied]`](/docs/reference/attributes/setting-on-applied-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. Throws `ArgumentNullException` for `null`; every other problem is logged and that one member skipped. See [C# Setting Listeners](/docs/csharp/setting-listeners).",
       "SaveSettings()": "Writes the player-level saved settings file now."
     }
   },
@@ -293,7 +293,7 @@
       "RemoveCategory(IWorldModSettingsCategory)": "Removes that category. Returns whether it was removed.",
       "GetAllCategories()": "Returns every category as a `List<`[`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category)`>`.",
       "GetAllWorldSettings()": "Returns every setting in every category, categories included, as a `List<`[`IWorldModSetting`](/docs/reference/world/i-world-mod-setting)`>`.",
-      "BindSettingsClass(Type)": "Scans `settingsType` for tagged static members carrying a `\"Category.Setting\"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) and [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) are logged and skipped: world settings have neither event. Throws `ArgumentNullException` for `null`. Re-binding a field on a later world load is harmless; re-subscribing a listener adds a second handler.",
+      "BindSettingsClass(Type)": "Scans `settingsType` for tagged static members carrying a `\"Category.Setting\"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) and [`[SettingOnApplied]`](/docs/reference/attributes/setting-on-applied-attribute) are logged and skipped: world settings have neither event. Throws `ArgumentNullException` for `null`. Re-binding a field on a later world load is harmless; re-subscribing a listener adds a second handler.",
       "SaveSettings()": "Writes the player-level saved settings file. World values themselves are written to the save folder by the world settings screen and on world start, not by this call."
     }
   },
