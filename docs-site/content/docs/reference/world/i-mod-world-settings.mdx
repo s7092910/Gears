@@ -84,7 +84,7 @@ Returns every setting in every category, categories included, as a `List<`[`IWor
 void BindSettingsClass(Type settingsType);
 ```
 
-Scans `settingsType` for tagged static members carrying a `"Category.Setting"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnSelected]`](/docs/reference/attributes/setting-on-selected-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) and [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) are logged and skipped: world settings have neither event. Throws `ArgumentNullException` for `null`. Re-binding a field on a later world load is harmless; re-subscribing a listener adds a second handler.
+Scans `settingsType` for tagged static members carrying a `"Category.Setting"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) and [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) are logged and skipped: world settings have neither event. Throws `ArgumentNullException` for `null`. Re-binding a field on a later world load is harmless; re-subscribing a listener adds a second handler.
 
 ### SaveSettings()
 

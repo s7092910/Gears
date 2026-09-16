@@ -6,7 +6,7 @@
     "i-global-mod-settings-tab",
     "i-global-mod-settings-category",
     "i-global-mod-setting",
-    "on-setting-changed-event",
+    "on-setting-applied-event",
     "i-global-value-setting",
     "value-changed-event",
     "i-selector-global-setting",

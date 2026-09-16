@@ -170,4 +170,12 @@ Sets the selected value back to the applied value.
 void ApplyCurrentChange();
 ```
 
-Commits the selected value as the applied value, raising `OnValueChanged` and, on a global setting, `OnSettingChanged`.
+Commits the selected value as the applied value, raising `OnValueChanged` and, on a global setting, `OnSettingApplied`.
+
+### RefreshUI()
+
+```csharp
+void RefreshUI();
+```
+
+Refreshes the UI for this setting if it is currently being displayed to the user

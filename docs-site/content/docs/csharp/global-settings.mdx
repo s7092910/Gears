@@ -92,11 +92,11 @@ three-value model below:
 |---|---|
 | `ResetToDefault()` | selected value ← default value. The applied value is untouched. |
 | `DiscardCurrentChange()` | selected value ← applied value. |
-| `ApplyCurrentChange()` | applied value ← selected value, raising `OnValueChanged` and, on a global setting, `OnSettingChanged`. |
+| `ApplyCurrentChange()` | applied value ← selected value, raising `OnValueChanged` and, on a global setting, `OnSettingApplied`. |
 
 [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) adds what only a player-level
 setting has: a [`RestartScope`](/docs/reference/settings/setting-restart-scope), the `Category` and
-`Tab` it belongs to, and the `OnSettingChanged` event raised by `ApplyCurrentChange()`.
+`Tab` it belongs to, and the `OnSettingApplied` event raised by `ApplyCurrentChange()`.
 
 ## The three values
 
@@ -105,17 +105,17 @@ Every value setting holds three values of its type `T`:
 | Property | Meaning | Changed by |
 |---|---|---|
 | `DefaultValue` | what `Reset` goes back to | `defaultValue` in XML, or you |
-| `SettingValue` | the **applied** value: saved to disk, read by `modsetting()`, what your mod should act on | the player pressing Save (or Apply), the saved-settings restore, or you |
+| `SettingValue` | the **applied** value: saved to disk, read by `modsetting()`, what your mod should act on | the player pressing Apply, the saved-settings restore, or you |
 | `SelectedValue` | what the player currently has picked in the UI, possibly not yet applied | the UI, `ResetToDefault`, `DiscardCurrentChange`, or you |
 
 All three live on [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting), which also
-carries the per-value preview images and the `OnSelected` event.
+carries the per-value preview images and the `OnSelectedChanged` event.
 [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) adds `OnValueChanged` on
 top.
 
 Read `SettingValue` when you want the value the player has committed to. Subscribe to
-`OnValueChanged` to react when that changes. `OnSelected` fires on every click in the menu, before
-the player has saved; use it for live previews only.
+`OnValueChanged` to react when that changes. `OnSelectedChanged` fires on every click in the menu, before
+the player has saved the settings; use it for live previews only.
 
 <Callout>
   Every setter is a no-op when the new value equals the old one, so the events fire only on real

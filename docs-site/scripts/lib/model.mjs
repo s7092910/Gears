@@ -27,7 +27,7 @@ export const SECTIONS = [
     blurb: 'The mod-level contracts and the members every setting shares.',
     order: [
       'GearsSettingsManager', 'IGearsMod', 'IGearsModApi', 'IModSetting',
-      'OnSettingEnabledEvent', 'IValueModSetting<T>', 'ValueSelectedEvent<T>',
+      'OnSettingEnabledEvent', 'IValueModSetting<T>', 'OnSelectedChangedEvent<T>',
       'SettingRestartScope',
     ],
   },
@@ -44,7 +44,7 @@ export const SECTIONS = [
     blurb: "The player's settings: tabs, categories and the global setting types.",
     order: [
       'IModGlobalSettings', 'IGlobalModSettingsTab', 'IGlobalModSettingsCategory',
-      'IGlobalModSetting', 'OnSettingChangedEvent', 'IGlobalValueSetting<T>',
+      'IGlobalModSetting', 'OnSettingAppliedEvent', 'IGlobalValueSetting<T>',
       'ValueChangedEvent<T>', 'ISelectorGlobalSetting<T>', 'ISliderGlobalSetting<T>',
       'ISwitchGlobalSetting<T>', 'IColorSelectorGlobalSetting', 'IControlBindingSetting',
     ],
@@ -62,8 +62,8 @@ export const SECTIONS = [
     blurb: 'Binding, listener and serialization attributes.',
     order: [
       'SettingPathAttribute', 'SettingAttribute', 'SettingListenerAttribute',
-      'SettingOnValueChangedAttribute', 'SettingOnSelectedAttribute',
-      'SettingOnChangedAttribute', 'SettingOnEnabledAttribute',
+      'SettingOnValueChangedAttribute', 'SettingOnSelectedChangedAttribute',
+      'SettingOnAppliedAttribute', 'SettingOnEnabledAttribute',
       'SettingsSerializationProvider', 'SettingParserAttribute', 'SettingFormatterAttribute',
       'SettingFactoryAttribute', 'SettingFactoryEnumAttribute', 'SettingFactoryFixedAttribute',
     ],

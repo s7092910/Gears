@@ -63,7 +63,7 @@
       "AddPreview(String)": "Sets the setting's own preview image path. The last call wins.",
       "ResetToDefault()": "Sets the selected value to the default value. The applied value is untouched.",
       "DiscardCurrentChange()": "Sets the selected value back to the applied value.",
-      "ApplyCurrentChange()": "Commits the selected value as the applied value, raising `OnValueChanged` and, on a global setting, `OnSettingChanged`."
+      "ApplyCurrentChange()": "Commits the selected value as the applied value, raising `OnValueChanged` and, on a global setting, `OnSettingApplied`."
     }
   },
   "OnSettingEnabledEvent": {
@@ -82,14 +82,14 @@
       "SettingValue": "Gets or sets the applied value: what is saved to disk, returned by `modsetting()`, and what a mod should act on. Setting it to an equal value is a no-op.",
       "DefaultValue": "Gets or sets the value `ResetToDefault()` returns to.",
       "SelectedValue": "Gets or sets the value currently picked in the UI, possibly not yet applied. Setting it to an equal value is a no-op.",
-      "OnSelected": "Occurs when `SelectedValue` changes to a different value. Type [`ValueSelectedEvent<T>`](/docs/reference/settings/value-selected-event).",
+      "OnSelectedChanged": "Occurs when `SelectedValue` changes to a different value. Type [`OnSelectedChangedEvent<T>`](/docs/reference/settings/on-selected-changed-event).",
       "GetPreview(T)": "Returns the preview image path registered for `value`, or `null`.",
       "AddPreview(T, String)": "Registers an image to show while `value` is selected. The first image registered for a value wins."
     }
   },
-  "ValueSelectedEvent<T>": {
-    "summary": "Handler for `IValueModSetting<T>.OnSelected`.",
-    "description": "Handler for [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting)`.OnSelected`.",
+  "SelectedChangedEvent<T>": {
+    "summary": "Handler for `IValueModSetting<T>.OnSelectedChanged`.",
+    "description": "Handler for [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting)`.OnSelectedChanged`.",
     "members": {
       "param:setting": "The setting whose selection changed.",
       "param:newSelectedValue": "The new selected value."
@@ -167,7 +167,7 @@
       "GetOrCreateTab(String, String)": "Returns the existing tab named `name`, or creates it with the given display key.",
       "GetTabs()": "Returns every tab as a `List<`[`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab)`>`.",
       "GetAllGlobalSettings()": "Returns every setting in every category of every tab, categories included, as a `List<`[`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`>`.",
-      "BindSettingsClass(Type)": "Scans `settingsType` for tagged static members carrying a `\"Tab.Category.Setting\"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute), [`[SettingOnSelected]`](/docs/reference/attributes/setting-on-selected-attribute), [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. Throws `ArgumentNullException` for `null`; every other problem is logged and that one member skipped. See [C# Setting Listeners](/docs/csharp/setting-listeners).",
+      "BindSettingsClass(Type)": "Scans `settingsType` for tagged static members carrying a `\"Tab.Category.Setting\"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute), [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute), [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. Throws `ArgumentNullException` for `null`; every other problem is logged and that one member skipped. See [C# Setting Listeners](/docs/csharp/setting-listeners).",
       "SaveSettings()": "Writes the player-level saved settings file now."
     }
   },
@@ -207,17 +207,17 @@
   },
   "IGlobalModSetting": {
     "summary": "A setting that belongs to the player rather than to a world.",
-    "description": "A setting that belongs to the player rather than to a world: it knows its tab and category, can\nwarn about a reload or restart, and raises `OnSettingChanged` when applied.",
+    "description": "A setting that belongs to the player rather than to a world: it knows its tab and category, can\nwarn about a reload or restart, and raises `OnSettingApplied` when applied.",
     "members": {
       "RestartScope": "Gets or sets what a change costs the player, as a [`SettingRestartScope`](/docs/reference/settings/setting-restart-scope): `None`, `Reload` or `Restart`. Always `None` on a category.",
       "Category": "Gets the [`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category) this setting belongs to.",
       "Tab": "Gets the [`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab) this setting belongs to.",
-      "OnSettingChanged": "Occurs when `ApplyCurrentChange()` runs, whether or not the value differs. Type [`OnSettingChangedEvent`](/docs/reference/global/on-setting-changed-event)."
+      "OnSettingApplied": "Occurs when `ApplyCurrentChange()` runs, whether or not the value differs. Type [`OnSettingAppliedEvent`](/docs/reference/global/on-setting-applied-event)."
     }
   },
-  "OnSettingChangedEvent": {
-    "summary": "Handler for `IGlobalModSetting.OnSettingChanged`. Carries no value.",
-    "description": "Handler for [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`.OnSettingChanged`. Carries no value; read `SettingValue`\nfrom the setting if it is a value setting.",
+  "OnSettingAppliedEvent": {
+    "summary": "Handler for `IGlobalModSetting.OnSettingApplied`. Carries no value.",
+    "description": "Handler for [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`.OnSettingApplied`. Carries no value; read `SettingValue`\nfrom the setting if it is a value setting.",
     "members": {
       "param:setting": "The setting that was applied."
     }
@@ -293,7 +293,7 @@
       "RemoveCategory(IWorldModSettingsCategory)": "Removes that category. Returns whether it was removed.",
       "GetAllCategories()": "Returns every category as a `List<`[`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category)`>`.",
       "GetAllWorldSettings()": "Returns every setting in every category, categories included, as a `List<`[`IWorldModSetting`](/docs/reference/world/i-world-mod-setting)`>`.",
-      "BindSettingsClass(Type)": "Scans `settingsType` for tagged static members carrying a `\"Category.Setting\"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnSelected]`](/docs/reference/attributes/setting-on-selected-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) and [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) are logged and skipped: world settings have neither event. Throws `ArgumentNullException` for `null`. Re-binding a field on a later world load is harmless; re-subscribing a listener adds a second handler.",
+      "BindSettingsClass(Type)": "Scans `settingsType` for tagged static members carrying a `\"Category.Setting\"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) and [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) are logged and skipped: world settings have neither event. Throws `ArgumentNullException` for `null`. Re-binding a field on a later world load is harmless; re-subscribing a listener adds a second handler.",
       "SaveSettings()": "Writes the player-level saved settings file. World values themselves are written to the save folder by the world settings screen and on world start, not by this call."
     }
   },
@@ -312,15 +312,15 @@
     }
   },
   "IWorldModSetting": {
-    "summary": "A setting that belongs to a save. No `RestartScope`, no `OnSettingChanged`.",
-    "description": "A setting that belongs to a save. Has no `RestartScope` and no `OnSettingChanged`.",
+    "summary": "A setting that belongs to a save. No `RestartScope`, no `OnSettingApplied`.",
+    "description": "A setting that belongs to a save. Has no `RestartScope` and no `OnSettingApplied`.",
     "members": {
       "Category": "Gets the [`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category) this setting belongs to."
     }
   },
   "ISelectorWorldSetting<T>": {
     "summary": "A world setting chosen from a list of allowed values.",
-    "description": "A world setting chosen from a list of allowed values. Implemented for `int`, `float`, `string`\nand any enum. Raises `OnSelected` only; there is no `OnValueChanged` on world settings.",
+    "description": "A world setting chosen from a list of allowed values. Implemented for `int`, `float`, `string`\nand any enum. Raises `OnSelectedChanged` only; there is no `OnValueChanged` on world settings.",
     "typeParams": "`T` — `int`, `float`, `string` or an enum.",
     "members": {
       "SetAllowedValues(T[])": "Replaces the allowed values with `values`, in that order.",
@@ -378,18 +378,18 @@
       "SettingOnValueChangedAttribute(String)": "Initializes the attribute with the setting path."
     }
   },
-  "SettingOnSelectedAttribute": {
-    "summary": "Binds a static method to `OnSelected`. Global and world value settings.",
-    "description": "Binds a static method to the named setting's `OnSelected` event\n([`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting)), which fires when the value selected in the UI changes. Global and\nworld value settings. Required method signature:\n`static void M(IValueModSetting<T> setting, T newValue)`.",
+  "SettingOnSelectedChangedAttribute": {
+    "summary": "Binds a static method to `OnSelectedChanged`. Global and world value settings.",
+    "description": "Binds a static method to the named setting's `OnSelectedChanged` event\n([`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting)), which fires when the value selected in the UI changes. Global and\nworld value settings. Required method signature:\n`static void M(IValueModSetting<T> setting, T newValue)`.",
     "members": {
-      "SettingOnSelectedAttribute(String)": "Initializes the attribute with the setting path."
+      "SettingOnSelectedChangedAttribute(String)": "Initializes the attribute with the setting path."
     }
   },
-  "SettingOnChangedAttribute": {
-    "summary": "Binds a static method to `OnSettingChanged`. Global settings only.",
-    "description": "Binds a static method to the named setting's `OnSettingChanged` event\n([`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)), which fires when the setting is applied. Global settings only,\nincluding Color and Binding. Required method signature: `static void M(IGlobalModSetting setting)`.",
+  "SettingOnAppliedAttribute": {
+    "summary": "Binds a static method to `OnSettingApplied`. Global settings only.",
+    "description": "Binds a static method to the named setting's `OnSettingApplied` event\n([`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)), which fires when the setting is applied. Global settings only,\nincluding Color and Binding. Required method signature: `static void M(IGlobalModSetting setting)`.",
     "members": {
-      "SettingOnChangedAttribute(String)": "Initializes the attribute with the setting path."
+      "SettingOnAppliedAttribute(String)": "Initializes the attribute with the setting path."
     }
   },
   "SettingOnEnabledAttribute": {

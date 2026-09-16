@@ -10,7 +10,7 @@ public interface IGlobalModSetting : IModSetting
 ```
 
 A setting that belongs to the player rather than to a world: it knows its tab and category, can
-warn about a reload or restart, and raises `OnSettingChanged` when applied.
+warn about a reload or restart, and raises `OnSettingApplied` when applied.
 
 **Implements:** [`IModSetting`](/docs/reference/settings/i-mod-setting)\
 **Derived:** [`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category) · [`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting) · [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting)
@@ -43,10 +43,10 @@ Gets the [`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-
 
 ## Events
 
-### OnSettingChanged
+### OnSettingApplied
 
 ```csharp
-event OnSettingChangedEvent OnSettingChanged;
+event OnSettingAppliedEvent OnSettingApplied;
 ```
 
-Occurs when `ApplyCurrentChange()` runs, whether or not the value differs. Type [`OnSettingChangedEvent`](/docs/reference/global/on-setting-changed-event).
+Occurs when `ApplyCurrentChange()` runs, whether or not the value differs. Type [`OnSettingAppliedEvent`](/docs/reference/global/on-setting-applied-event).

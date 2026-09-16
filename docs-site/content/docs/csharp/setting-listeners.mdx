@@ -14,9 +14,10 @@ properties are assigned the setting; tagged methods are subscribed to its events
 |---|---|---|
 | [`[Setting]`](/docs/reference/attributes/setting-attribute) | a static field or property | assigns the setting itself to the member |
 | [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) | a static method | `SettingValue` changed — the player saved |
-| [`[SettingOnSelected]`](/docs/reference/attributes/setting-on-selected-attribute) | a static method | `SelectedValue` changed — the player clicked |
+| [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) | a static method | `SelectedValue` changed — the player used the UI to change the 
+value in the setting being displayed to the user|
 | [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) | a static method | `Enabled` was turned on or off |
-| [`[SettingOnChanged]`](/docs/reference/attributes/setting-on-changed-attribute) | a static method | the setting was applied |
+| [`[SettingOnApplied]`](/docs/reference/attributes/setting-on-applied-attribute) | a static method | the setting was applied |
 
 Each takes the setting path as its only argument. A null or empty path throws
 `ArgumentException` from the attribute constructor, which surfaces the first time the class is
@@ -120,8 +121,8 @@ is wrong.
 | Attribute | Required signature | Works on |
 |---|---|---|
 | `[SettingOnValueChanged("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | Global value settings |
-| `[SettingOnSelected("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | Global and World value settings |
-| `[SettingOnChanged("...")]` | `static void M(IGlobalModSetting setting)` | Global settings, including Color and Binding |
+| `[SettingOnSelectedChanged("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | Global and World value settings |
+| `[SettingOnApplied("...")]` | `static void M(IGlobalModSetting setting)` | Global settings, including Color and Binding |
 | `[SettingOnEnabled("...")]` | `static void M(IModSetting setting, bool isEnabled)` | Every setting, Global and World |
 
 `OnEnabled` is declared on `IModSetting`, so it is the one listener that works on every
@@ -157,7 +158,7 @@ public static class MyGlobalListeners
         MyHud.Scale = newValue;
     }
 
-    [SettingOnSelected("General.Display.HudScale")]
+    [SettingOnSelectedChanged("General.Display.HudScale")]
     private static void HudScalePreview(IValueModSetting<float> setting, float newValue)
     {
         MyHud.PreviewScale(newValue);
@@ -175,8 +176,8 @@ public static class MyGlobalListeners
         MyHud.Accent = newValue;
     }
 
-    [SettingOnChanged("General.Display.HudScale")]
-    [SettingOnChanged("General.Display.Units")]
+    [SettingOnApplied("General.Display.HudScale")]
+    [SettingOnApplied("General.Display.Units")]
     private static void AnythingApplied(IGlobalModSetting setting)
     {
         MyHud.Redraw();
@@ -195,8 +196,8 @@ public static class MyWorldListeners
     [Setting("Zombies.SpawnMultiplier")]
     private static ISliderWorldSetting<int> spawnMultiplier;
 
-    // Only OnSelected exists on world settings; it fires while the host picks values.
-    [SettingOnSelected("Zombies.SpawnMultiplier")]
+    // Only OnSelectedChanged exists on world settings; it fires while the host picks values.
+    [SettingOnSelectedChanged("Zombies.SpawnMultiplier")]
     private static void SpawnPreview(IValueModSetting<int> setting, int newValue)
     {
     }
@@ -219,7 +220,7 @@ All from `[Gears]`, all skip just that member and carry on with the rest.
 |---|---|
 | `[SettingOnValueChangedAttribute("…")] on 'Ns.Type.Method' must use the format "tabName.CategoryName.SettingName". Skipping registration of listener.` | wrong number of path segments (world: `"CategoryName.SettingName"`) |
 | `[SettingOnValueChangedAttribute] on 'Ns.Type.Method' references unknown setting "…". Skipping registration of listener.` | no setting at that path |
-| `[SettingOnChanged("…")] on '…' targets a setting that does not support OnSettingChanged (only global settings expose it). Skipping registration of listener.` | `[SettingOnChanged]` on a world path |
+| `[SettingOnApplied("…")] on '…' targets a setting that does not support OnSettingApplied (only global settings expose it). Skipping registration of listener.` | `[SettingOnApplied]` on a world path |
 | `[SettingOnValueChangedAttribute("…")] on '…' targets a setting that does not expose an 'OnValueChanged' event. Skipping registration of listener.` | `[SettingOnValueChanged]` on a world setting, or either value attribute on a Binding |
 | ``[SettingOnValueChangedAttribute] on '…' has an invalid signature, skipping registration of listener. Expected: static Void Method(IValueModSetting`1, Int32).`` | wrong parameter types, wrong count, non-void return, or not static |
 

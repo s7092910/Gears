@@ -45,14 +45,14 @@ the same value types (Selector: `int`, `float`, `string`, enum; Slider: `int`, `
 | Tabs | no | categories sit directly on the mod |
 | `Color`, `Binding` | no | both are per-player concerns |
 | `RestartScope` | no | a world value is applied with the save, there is nothing to restart |
-| `OnSettingChanged` | no | there is no per-player Save step to hook |
+| `OnSettingApplied` | no | there is no per-player Save step to hook |
 | `OnValueChanged` | **no** | the applied value arrives with the world; read `SettingValue` in `OnWorldSettingsLoaded` |
 | `OnSelected` | yes | fires while the host is picking values in the world settings screen |
 
 <Callout type="warn">
   Because `OnValueChanged` does not exist on world settings, `[SettingOnValueChanged]` and
-  `[SettingOnChanged]` attributes on a world path are logged and skipped by `BindSettingsClass`;
-  only `[SettingOnSelected]` binds. See [C# Setting Listeners](/docs/csharp/setting-listeners).
+  `[SettingOnApplied]` attributes on a world path are logged and skipped by `BindSettingsClass`;
+  only `[SettingOnSelectedChanged]` binds. See [C# Setting Listeners](/docs/csharp/setting-listeners).
 </Callout>
 
 ## When the values are trustworthy

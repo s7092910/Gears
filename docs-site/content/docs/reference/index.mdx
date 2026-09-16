@@ -36,7 +36,7 @@ The mod-level contracts and the members every setting shares.
 | [`IModSetting`](/docs/reference/settings/i-mod-setting) | Interface | The members every setting shares, including categories. |
 | [`OnSettingEnabledEvent`](/docs/reference/settings/on-setting-enabled-event) | Delegate | Handler for `IModSetting.OnEnabled`. |
 | [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) | Interface | A setting that holds a value of type `T`: the default, the applied value and the selected value. |
-| [`ValueSelectedEvent<T>`](/docs/reference/settings/value-selected-event) | Delegate | Handler for `IValueModSetting<T>.OnSelected`. |
+| [`OnSelectedChangedEvent<T>`](/docs/reference/settings/on-selected-changed-event) | Delegate |  |
 | [`SettingRestartScope`](/docs/reference/settings/setting-restart-scope) | Enum | What a change to a global setting costs the player. |
 
 ## GearsAPI.Settings.Base
@@ -61,7 +61,7 @@ The player's settings: tabs, categories and the global setting types.
 | [`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab) | Interface | A tab in the mod's settings page. A tab is not a setting. |
 | [`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category) | Interface | A category inside a tab. A category is itself a global setting. |
 | [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) | Interface | A setting that belongs to the player rather than to a world. |
-| [`OnSettingChangedEvent`](/docs/reference/global/on-setting-changed-event) | Delegate | Handler for `IGlobalModSetting.OnSettingChanged`. Carries no value. |
+| [`OnSettingAppliedEvent`](/docs/reference/global/on-setting-applied-event) | Delegate | Handler for `IGlobalModSetting.OnSettingApplied`. Carries no value. |
 | [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) | Interface | A global setting that holds a value of type `T`, with the applied-value event. |
 | [`ValueChangedEvent<T>`](/docs/reference/global/value-changed-event) | Delegate | Handler for `IGlobalValueSetting<T>.OnValueChanged`. |
 | [`ISelectorGlobalSetting<T>`](/docs/reference/global/i-selector-global-setting) | Interface | A global setting chosen from a list of allowed values. |
@@ -78,7 +78,7 @@ A save's settings: categories and the world setting types.
 |---|---|---|
 | [`IModWorldSettings`](/docs/reference/world/i-mod-world-settings) | Interface | The root of a mod's world settings. No tab level; categories sit directly here. |
 | [`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category) | Interface | A category of world settings. Like its global counterpart, itself a setting. |
-| [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting) | Interface | A setting that belongs to a save. No `RestartScope`, no `OnSettingChanged`. |
+| [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting) | Interface | A setting that belongs to a save. No `RestartScope`, no `OnSettingApplied`. |
 | [`ISelectorWorldSetting<T>`](/docs/reference/world/i-selector-world-setting) | Interface | A world setting chosen from a list of allowed values. |
 | [`ISliderWorldSetting<T>`](/docs/reference/world/i-slider-world-setting) | Interface | A world numeric setting within a range. `int` and `float` only. |
 | [`ISwitchWorldSetting<T>`](/docs/reference/world/i-switch-world-setting) | Interface | A world two-position setting. |
@@ -93,8 +93,8 @@ Binding, listener and serialization attributes.
 | [`SettingAttribute`](/docs/reference/attributes/setting-attribute) | Sealed class | Binds a static field or property to the setting its path names. |
 | [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute) | Abstract class | Base class of the four attributes that bind a static method to a setting's event. |
 | [`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute) | Sealed class | Binds a static method to `OnValueChanged`. Global value settings only. |
-| [`SettingOnSelectedAttribute`](/docs/reference/attributes/setting-on-selected-attribute) | Sealed class | Binds a static method to `OnSelected`. Global and world value settings. |
-| [`SettingOnChangedAttribute`](/docs/reference/attributes/setting-on-changed-attribute) | Sealed class | Binds a static method to `OnSettingChanged`. Global settings only. |
+| [`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute) | Sealed class | Binds a static method to `OnSelectedChanged`. Global and world value settings. |
+| [`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute) | Sealed class | Binds a static method to `OnSettingApplied`. Global settings only. |
 | [`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute) | Sealed class | Binds a static method to `OnEnabled`. Works on every setting. |
 | [`SettingsSerializationProvider`](/docs/reference/attributes/settings-serialization-provider) | Sealed class | Marks a class as holding `[SettingParser]` and `[SettingFormatter]` methods. |
 | [`SettingParserAttribute`](/docs/reference/attributes/setting-parser-attribute) | Sealed class | Marks a static method as the parser for a value type. |

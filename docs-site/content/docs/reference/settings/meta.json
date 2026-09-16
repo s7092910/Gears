@@ -8,7 +8,7 @@
     "i-mod-setting",
     "on-setting-enabled-event",
     "i-value-mod-setting",
-    "value-selected-event",
+    "on-selected-changed-event",
     "setting-restart-scope"
   ]
 }
