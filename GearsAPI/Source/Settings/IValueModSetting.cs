@@ -9,7 +9,7 @@ namespace GearsAPI.Settings
 {
     public interface IValueModSetting<T> : IValueModSettingBase
     {
-        event ValueSelectedEvent<T> OnSelected;
+        event SelectedChangedEvent<T> OnSelectedChanged;
 
         //The Setting's Saved Value
         T SettingValue { get; set; }
@@ -27,5 +27,5 @@ namespace GearsAPI.Settings
     }
 
     //If the Selected Value has been changed
-    public delegate void ValueSelectedEvent<T>(IValueModSetting<T> setting, T newSelectedValue);
+    public delegate void SelectedChangedEvent<T>(IValueModSetting<T> setting, T newSelectedValue);
 }

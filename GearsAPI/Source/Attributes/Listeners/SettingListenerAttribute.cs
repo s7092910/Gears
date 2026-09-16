@@ -20,15 +20,15 @@ namespace GearsAPI.Attributes
     }
 
     //Binds to IGlobalModSetting.OnSettingChanged - fires whenever the setting is applied
-    public sealed class SettingOnChangedAttribute : SettingListenerAttribute
+    public sealed class SettingOnAppliedAttribute : SettingListenerAttribute
     {
-        public SettingOnChangedAttribute(string settingPath) : base(settingPath) { }
+        public SettingOnAppliedAttribute(string settingPath) : base(settingPath) { }
     }
 
-    //Binds to IValueModSetting<T>.OnSelected - fires when the UI-selected value changes
-    public sealed class SettingOnSelectedAttribute : SettingListenerAttribute
+    //Binds to IValueModSetting<T>.OnSelectedChanged - fires when the UI-selected value changes
+    public sealed class SettingOnSelectedChangedAttribute : SettingListenerAttribute
     {
-        public SettingOnSelectedAttribute(string settingPath) : base(settingPath) { }
+        public SettingOnSelectedChangedAttribute(string settingPath) : base(settingPath) { }
     }
 
     //Binds to IModSetting.OnEnabled - fires when the setting is enabled or disabled

@@ -47,6 +47,11 @@ namespace GearsAPI.Settings
 
         void ApplyCurrentChange();
 
+        /// <summary>
+        /// Refreshes the UI for this setting if it is currently being displayed to the user
+        /// </summary>
+        void RefreshUI();
+
     }
 
     public delegate void OnSettingEnabledEvent(IModSetting setting, bool isEnabled);

@@ -10,7 +10,7 @@ namespace GearsAPI.Settings.Global
         /// </summary>
         SettingRestartScope RestartScope { get; set; }
 
-        event OnSettingChangedEvent OnSettingChanged;
+        event OnSettingAppliedEvent OnSettingApplied;
 
         IGlobalModSettingsCategory Category { get; }
 
@@ -18,7 +18,7 @@ namespace GearsAPI.Settings.Global
 
     }
 
-    public delegate void OnSettingChangedEvent(IGlobalModSetting setting);
+    public delegate void OnSettingAppliedEvent(IGlobalModSetting setting);
 
 }
 
