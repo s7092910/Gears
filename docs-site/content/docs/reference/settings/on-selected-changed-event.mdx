@@ -1,0 +1,27 @@
+---
+title: "OnSelectedChangedEvent<T>"
+description: "Handler for IValueModSetting<T>.OnSelectedChanged."
+---
+
+<TypeMeta kind="Delegate" namespace="GearsAPI.Settings" source="GearsAPI/Source/Settings/IValueModSetting.cs" />
+
+```csharp
+public delegate void OnSelectedChangedEvent<T>(IValueModSetting<T> setting, T newSelectedValue);
+```
+
+Handler for [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting)`.OnSelectedChanged`.
+
+## Parameters
+
+<TypeTable
+  type={{
+    setting: {
+      type: <><a href="/docs/reference/settings/i-value-mod-setting"><code>IValueModSetting&lt;T&gt;</code></a></>,
+      description: <>The setting whose selection changed.</>,
+    },
+    newSelectedValue: {
+      type: <><code>T</code></>,
+      description: <>The new selected value.</>,
+    },
+  }}
+/>

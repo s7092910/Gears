@@ -1,0 +1,24 @@
+---
+title: "OnSettingAppliedEvent"
+description: "Handler for IGlobalModSetting.OnSettingApplied. Carries no value."
+---
+
+<TypeMeta kind="Delegate" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/IGlobalModSetting.cs" />
+
+```csharp
+public delegate void OnSettingAppliedEvent(IGlobalModSetting setting);
+```
+
+Handler for [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`.OnSettingApplied`. Carries no value; read `SettingValue`
+from the setting if it is a value setting.
+
+## Parameters
+
+<TypeTable
+  type={{
+    setting: {
+      type: <><a href="/docs/reference/global/i-global-mod-setting"><code>IGlobalModSetting</code></a></>,
+      description: <>The setting that was applied.</>,
+    },
+  }}
+/>

@@ -1,0 +1,27 @@
+---
+title: "SettingOnSelectedChangedAttribute"
+description: "Binds a static method to OnSelectedChanged. Global and world value settings."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Listeners/SettingListenerAttribute.cs" />
+
+```csharp
+public sealed class SettingOnSelectedChangedAttribute : SettingListenerAttribute
+```
+
+Binds a static method to the named setting's `OnSelectedChanged` event
+([`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting)), which fires when the value selected in the UI changes. Global and
+world value settings. Required method signature:
+`static void M(IValueModSetting<T> setting, T newValue)`.
+
+**Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute) → `SettingOnSelectedChangedAttribute`
+
+## Constructors
+
+### SettingOnSelectedChangedAttribute(String)
+
+```csharp
+public SettingOnSelectedChangedAttribute(string settingPath)
+```
+
+Initializes the attribute with the setting path.
