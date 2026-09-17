@@ -150,7 +150,7 @@ export function buildModel(repoRoot, opts = {}) {
           bases: t.bases,
           constraints: t.constraints,
           attributes: t.attributes ?? [],
-          xmlDoc: t.doc ?? null,
+          summary: t.doc?.summary ?? null,
           declaringType: t.declaringType,
           nested: (t.nested ?? []).map((n) => `${t.name}.${n.name}`),
           decl: declarationOf(t),
@@ -170,7 +170,7 @@ export function buildModel(repoRoot, opts = {}) {
             signature: m.signature,
             value: m.value,
             params: m.params ?? [],
-            xmlDoc: m.doc ?? null,
+            summary: m.doc?.summary ?? null,
           });
         }
 
@@ -181,7 +181,7 @@ export function buildModel(repoRoot, opts = {}) {
           if (!hides.has(mk)) {
             node.members.unshift({
               key: mk, name: t.name, kind: 'constructor',
-              signature: `public ${t.name}()`, params: [], xmlDoc: null, implicit: true,
+              signature: `public ${t.name}()`, params: [], summary: null, implicit: true,
             });
           }
         }

@@ -80,7 +80,7 @@ function renderType(t) {
 
   out.push('---');
   out.push(`title: ${yamlString(t.display)}`);
-  out.push(`description: ${yamlString(p.summary ?? t.xmlDoc ?? '')}`);
+  out.push(`description: ${yamlString(p.summary ?? t.summary ?? '')}`);
   out.push('---');
   out.push('');
   out.push(`<TypeMeta kind="${t.kindLabel}" namespace="${t.namespace}" source="${t.source}" />`);
@@ -89,7 +89,7 @@ function renderType(t) {
   out.push(t.decl);
   out.push('```');
   out.push('');
-  out.push((p.description ?? t.xmlDoc ?? '_No description yet._').trim());
+  out.push((p.description ?? t.summary ?? '_No description yet._').trim());
   out.push('');
 
   const facts = [];
@@ -131,7 +131,7 @@ function renderType(t) {
     out.push('| Name | Value | Description |');
     out.push('|---|---|---|');
     for (const m of t.members) {
-      out.push(`| \`${m.name}\` | ${m.value} | ${p.members?.[m.key] ?? m.xmlDoc ?? ''} |`);
+      out.push(`| \`${m.name}\` | ${m.value} | ${p.members?.[m.key] ?? m.summary ?? ''} |`);
     }
     out.push('');
   } else {
@@ -147,7 +147,7 @@ function renderType(t) {
         out.push(m.signature);
         out.push('```');
         out.push('');
-        out.push(p.members?.[m.key] ?? m.xmlDoc ?? '_No description yet._');
+        out.push(p.members?.[m.key] ?? m.summary ?? '_No description yet._');
         out.push('');
       }
     }
@@ -204,7 +204,7 @@ function renderIndex(bySection) {
     out.push('|---|---|---|');
     for (const t of rows) {
       const p = prose[t.key] ?? {};
-      out.push(`| [\`${t.display}\`](${url(t)}) | ${t.kindLabel} | ${p.summary ?? t.xmlDoc ?? ''} |`);
+      out.push(`| [\`${t.display}\`](${url(t)}) | ${t.kindLabel} | ${p.summary ?? t.summary ?? ''} |`);
     }
     out.push('');
   }
@@ -223,12 +223,25 @@ for (const t of model.types.values()) {
 
   const known = new Set(Object.keys(p.members ?? {}));
   for (const m of t.members) {
-    if (!known.has(m.key) && !m.xmlDoc) report.missingProse.push(`${t.key}#${m.key}`);
+    if (!known.has(m.key) && !m.summary) report.missingProse.push(`${t.key}#${m.key}`);
     known.delete(m.key);
   }
   for (const k of known) {
     if (k.startsWith('param:')) continue; // delegate parameters, checked below
     report.staleProse.push(`${t.key}#${k}`);
+  }
+  // Every prose value is expected to be a string; a non-string value (usually an object left
+  // over from an earlier schema) would stringify to `[object Object]` in the rendered page.
+  for (const key of ['summary', 'description', 'note', 'typeParams']) {
+    const v = p[key];
+    if (v !== undefined && typeof v !== 'string') {
+      report.warnings.push(`${t.key}.${key}: prose value is ${typeof v}, expected string`);
+    }
+  }
+  for (const [k, v] of Object.entries(p.members ?? {})) {
+    if (typeof v !== 'string') {
+      report.warnings.push(`${t.key}#${k}: prose value is ${typeof v}, expected string`);
+    }
   }
   if (t.kind === 'delegate') {
     for (const a of t.params ?? []) {
