@@ -9,8 +9,7 @@ description: "The members every setting shares, including categories."
 public interface IModSetting
 ```
 
-The members every setting shares, including categories: identity, display text, enabled state,
-the change flags, preview images, and the three operations the settings window performs.
+The members every setting shares, including categories: identity, display text, enabled state, the change flags, preview images, and the three operations the settings window performs.
 
 **Derived:** [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting)
 
@@ -178,4 +177,4 @@ Commits the selected value as the applied value, raising `OnValueChanged` and, o
 void RefreshUI();
 ```
 
-[object Object]
+Refreshes the UI for this setting if it is currently being displayed to the user

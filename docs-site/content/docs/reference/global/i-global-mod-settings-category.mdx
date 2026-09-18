@@ -9,8 +9,7 @@ description: "A category inside a tab. A category is itself a global setting."
 public interface IGlobalModSettingsCategory : IGlobalModSetting
 ```
 
-A category inside a tab. A category is itself a global setting, which gives it a caption,
-description and preview image; its `RestartScope` always reads `None`.
+A category inside a tab. A category is itself a global setting, which gives it a caption, description and preview image; its `RestartScope` always reads `None`.
 
 **Implements:** [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
 
@@ -78,4 +77,4 @@ Removes that setting. Returns whether it was removed.
 List<IGlobalModSetting> GetAllSettings();
 ```
 
-Returns the category itself followed by its settings, as a `List<`[`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`>`.
+Returns the category itself followed by its settings, as a `List<IGlobalModSetting>`.

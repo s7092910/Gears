@@ -9,8 +9,7 @@ description: "The root of a mod's world settings. No tab level; categories sit d
 public interface IModWorldSettings
 ```
 
-The root of a mod's world settings. There is no tab level; categories sit directly here. Handed
-to [`IGearsModApi`](/docs/reference/settings/i-gears-mod-api)`.OnWorldSettingsLoaded`; also [`IGearsMod`](/docs/reference/settings/i-gears-mod)`.WorldSettings`.
+The root of a mod's world settings. There is no tab level; categories sit directly here. Handed to [`IGearsModApi.OnWorldSettingsLoaded`](/docs/reference/settings/i-gears-mod-api); also [`IGearsMod.WorldSettings`](/docs/reference/settings/i-gears-mod).
 
 ## Methods
 
@@ -68,7 +67,7 @@ Removes that category. Returns whether it was removed.
 List<IWorldModSettingsCategory> GetAllCategories();
 ```
 
-Returns every category as a `List<`[`IWorldModSettingsCategory`](/docs/reference/world/i-world-mod-settings-category)`>`.
+Returns every category as a `List<IWorldModSettingsCategory>`.
 
 ### GetAllWorldSettings()
 
@@ -76,7 +75,7 @@ Returns every category as a `List<`[`IWorldModSettingsCategory`](/docs/reference
 List<IWorldModSetting> GetAllWorldSettings();
 ```
 
-Returns every setting in every category, categories included, as a `List<`[`IWorldModSetting`](/docs/reference/world/i-world-mod-setting)`>`.
+Returns every setting in every category, categories included, as a `List<IWorldModSetting>`.
 
 ### BindSettingsClass(Type)
 
@@ -84,7 +83,7 @@ Returns every setting in every category, categories included, as a `List<`[`IWor
 void BindSettingsClass(Type settingsType);
 ```
 
-Scans `settingsType` for tagged static members carrying a `"Category.Setting"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) and [`[SettingOnApplied]`](/docs/reference/attributes/setting-on-applied-attribute) are logged and skipped: world settings have neither event. Throws `ArgumentNullException` for `null`. Re-binding a field on a later world load is harmless; re-subscribing a listener adds a second handler.
+Scans `settingsType` for tagged static members carrying a `"Category.Setting"` path. Fields and properties tagged [[`SettingAttribute`](/docs/reference/attributes/setting-attribute)] are assigned the named setting first, then methods tagged [[`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute)] or [[`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute)] are subscribed. [[`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute)] and [[`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute)] are logged and skipped: world settings have neither event. Throws `ArgumentNullException` for `null`. Re-binding a field on a later world load is harmless; re-subscribing a listener adds a second handler.
 
 ### SaveSettings()
 

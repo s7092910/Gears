@@ -19,37 +19,37 @@ npm run check            # gen:api:check + check:links
 | `Implements` (transitive), `Derived` (direct), `Inheritance` chain, `Nested types` | derived from the base lists across the whole assembly |
 | Enum member values | read from source, including implicit `0, 1, 2…` |
 | URL slug, section folder, sidebar order | derived from the type name and `SECTIONS` in `lib/model.mjs` |
-| Type summaries and per-member descriptions | `api-prose.json`, falling back to `///` XML doc comments |
+| Type summaries and per-member descriptions | `///` XML doc comments in `GearsAPI/Source` |
 
-The split matters: **nothing structural is hand-maintained**, so a signature on the site cannot
-drift from the assembly. Prose is hand-written because the XML doc comments in `GearsAPI/Source`
-are too sparse to carry a reference (11 of 36 files have any at all).
+**Nothing on the page is hand-maintained.** Everything, prose included, is parsed from
+`GearsAPI/Source`, so a page can never drift from the assembly. There is no separate prose file —
+document a member the same way you'd document it for IntelliSense, and the site picks it up on the
+next `npm run gen:api`.
 
 ## Changing a description
 
-Edit `api-prose.json`, then `npm run gen:api`. Keys are:
+Edit the `///` doc comment on the type or member in `GearsAPI/Source`, then `npm run gen:api`.
+Supported tags:
 
-```jsonc
+```csharp
+/// <summary>One line; used in frontmatter and the index tables.</summary>
+/// <remarks>The paragraph under the declaration. Omit to fall back to the summary.</remarks>
+/// <typeparam name="T">Only meaningful on a generic type.</typeparam>
+/// <note>Rendered as a Callout.</note>
+/// <reserved/>                       <!-- renders the "Reserved" warning -->
+public interface IValueModSetting<T>
 {
-  "IValueModSetting<T>": {            // type key: name plus generic parameters
-    "summary": "…",                   // one line; used in frontmatter and the index tables
-    "description": "…",               // the paragraph under the declaration
-    "typeParams": "`T` — …",          // optional, only for generic types
-    "note": "…",                      // optional, rendered as a Callout
-    "reserved": true,                 // optional, renders the "Reserved" warning
-    "members": {
-      "SettingValue": "…",            // properties, events, enum members: bare name
-      "AddPreview(T, String)": "…",   // methods/constructors: name + .NET-style parameter types
-      "param:setting": "…"            // delegate parameters
-    }
-  }
+    /// <summary>Properties, events, methods, constructors and enum members all take one of these.</summary>
+    T SettingValue { get; set; }
 }
 ```
 
-Member keys use the .NET API browser convention — `string` is `String`, `int` is `Int32`, and
-overloads are distinguished by their parameter list (`CreateTab(String)` vs
-`CreateTab(String, String)`). Run `gen:api:report` if you are unsure of a key; it prints the exact
-one for anything missing.
+Inside any of those tags, `<see cref="IGearsMod"/>` becomes a link to that type's page (or plain
+code if the name isn't a GearsAPI type — game and .NET types are never linked), `<c>text</c>` and
+`<paramref name="x"/>`/`<typeparamref name="x"/>` become code spans, and literal `<`/`>` must be
+escaped as `&lt;`/`&gt;` since raw angle brackets aren't legal inside XML doc comment text. A
+delegate's `<param name="x">` tags go on the delegate's own declaration line. Run `gen:api:report`
+if you want to see exactly which types/members currently have no `///` summary at all.
 
 ## Adding a type to the assembly
 
@@ -57,16 +57,16 @@ Nothing breaks. The new type is picked up automatically, lands at the end of its
 section, and the report tells you what it still needs:
 
 ```
-source has it, prose does not (2):
-  IMyNewThing (description)
+undocumented (no /// summary) (2):
+  IMyNewThing (type)
   IMyNewThing#DoTheThing(String)
 
 parser warnings (1):
   IMyNewThing is not in the settings reading order (appended at the end)
 ```
 
-Add a `summary` and `description` to `api-prose.json`, place the type in that section's `order`
-array in `lib/model.mjs`, and regenerate. A member that has a `///` summary needs no prose entry.
+Add a `<summary>` to the type and place it in that section's `order` array in `lib/model.mjs`, and
+regenerate.
 
 A type in a namespace that is not in `SECTIONS` is skipped with a warning — add the namespace
 there to publish it.
@@ -75,11 +75,10 @@ there to publish it.
 
 | File | Role |
 |---|---|
-| `gen-api-reference.mjs` | renders the pages, `meta.json` files and the index; drift report; `--check` |
+| `gen-api-reference.mjs` | renders the pages, `meta.json` files and the index; undocumented-member report; `--check` |
 | `lib/csharp.mjs` | the C# declaration parser (line-oriented, skips method bodies) |
 | `lib/model.mjs` | namespace→section map, reading order, and all derived relationships |
 | `lib/dump.mjs` | debug aid: `node scripts/lib/dump.mjs` prints everything the parser found |
-| `api-prose.json` | the hand-written prose |
 | `check-links.mjs` | audits every internal doc link and heading anchor |
 | `check-subpath.mjs` | verifies the export works under `/Gears/`, as GitHub Pages serves it |
 

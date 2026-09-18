@@ -4,11 +4,12 @@
  *
  *   node scripts/gen-api-reference.mjs           write the pages
  *   node scripts/gen-api-reference.mjs --check   fail if the pages are stale (for CI)
- *   node scripts/gen-api-reference.mjs --report  only print the prose/source drift report
+ *   node scripts/gen-api-reference.mjs --report  only print the undocumented-member report
  *
- * Signatures, kinds, inheritance, Implements/Derived and enum values are all derived from the
- * source. Prose lives in scripts/api-prose.json, keyed by type and member. Anything the source
- * has and the prose store does not is reported rather than silently shipped blank.
+ * Everything — signatures, kinds, inheritance, Implements/Derived, enum values, and every scrap
+ * of prose — comes from `///` XML doc comments in GearsAPI/Source. There is no separate prose
+ * store: a member with no doc comment renders as "_No description yet._" and is called out by
+ * the report below.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,18 +20,22 @@ const HERE = import.meta.dirname;
 const SITE = path.resolve(HERE, '..');
 const REPO = path.resolve(SITE, '..');
 const OUT = path.join(SITE, 'content', 'docs', 'reference');
-const PROSE_FILE = path.join(HERE, 'api-prose.json');
 
 const args = new Set(process.argv.slice(2));
 const CHECK = args.has('--check');
 const REPORT_ONLY = args.has('--report');
 
-/** Members that exist but are deliberately not documented. */
+/**
+ * Members that exist but are deliberately not documented: implicit parameterless constructors
+ * that mods have no reason to call directly, and the internal singleton behind the static
+ * `GearsSettingsManager` methods.
+ */
 const HIDDEN = {
+  GearsApi: ['GearsApi()'],
+  SettingsSerializationProvider: ['SettingsSerializationProvider()'],
   GearsSettingsManager: ['instance'],
 };
 
-const prose = JSON.parse(fs.readFileSync(PROSE_FILE, 'utf8'));
 const model = buildModel(REPO, { hidden: HIDDEN });
 
 // ---------------------------------------------------------------- helpers
@@ -45,6 +50,46 @@ function link(name, label) {
 }
 
 const linkAll = (names) => names.map((n) => link(n)).join(' · ');
+
+function decodeEntities(s) {
+  return s
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
+/** Resolve a `cref` value (curly braces stand in for `<>` on a generic type) to a doc link, or
+ * plain code if it names something outside GearsAPI. Falls back to the declaring type for a
+ * member-qualified cref such as `IModSetting.OnEnabled`. */
+function docLink(cref, label) {
+  const name = cref.replace(/\{/g, '<').replace(/\}/g, '>');
+  const text = label ?? name;
+  let t = model.resolve(name);
+  if (!t) {
+    const dot = name.lastIndexOf('.');
+    if (dot > 0) t = model.resolve(name.slice(0, dot));
+  }
+  return t ? `[\`${text}\`](${url(t)})` : `\`${text}\``;
+}
+
+/**
+ * Render a fragment of parsed XML doc text (see `parseDoc` in lib/csharp.mjs) as the same
+ * markdown hand-written prose uses: `<see cref>` becomes a link (or plain code for a type outside
+ * GearsAPI), `<paramref>`/`<typeparamref>` and `<c>` become code spans, and the `&lt;&gt;`
+ * escaping XML requires around literal angle brackets is undone.
+ */
+function renderXmlText(raw) {
+  if (raw == null) return null;
+  let s = String(raw);
+  s = s.replace(/<see\s+cref="([^"]+)"\s*\/>/g, (_, cref) => docLink(cref));
+  s = s.replace(/<see\s+cref="([^"]+)"\s*>([\s\S]*?)<\/see>/g, (_, cref, label) => docLink(cref, decodeEntities(label.trim())));
+  s = s.replace(/<paramref\s+name="([^"]+)"\s*\/>/g, (_, n) => `\`${n}\``);
+  s = s.replace(/<typeparamref\s+name="([^"]+)"\s*\/>/g, (_, n) => `\`${n}\``);
+  s = s.replace(/<c>([\s\S]*?)<\/c>/g, (_, code) => `\`${decodeEntities(code)}\``);
+  return decodeEntities(s);
+}
 
 function yamlString(s) {
   const plain = String(s ?? '').replace(/\*\*/g, '').replace(/`/g, '');
@@ -75,12 +120,19 @@ const GROUP_ORDER = [
 // ---------------------------------------------------------------- rendering
 
 function renderType(t) {
-  const p = prose[t.key] ?? {};
+  const xd = t.xmlDoc ?? {};
   const out = [];
+
+  const summary = renderXmlText(xd.summary) ?? '';
+  const description = renderXmlText(xd.remarks) ?? renderXmlText(xd.summary) ?? '_No description yet._';
+  const typeParamsText = xd.typeParams
+    ? Object.entries(xd.typeParams).map(([n, d]) => `\`${n}\` — ${renderXmlText(d)}`).join('; ')
+    : null;
+  const note = renderXmlText(xd.note);
 
   out.push('---');
   out.push(`title: ${yamlString(t.display)}`);
-  out.push(`description: ${yamlString(p.summary ?? t.xmlDoc ?? '')}`);
+  out.push(`description: ${yamlString(summary)}`);
   out.push('---');
   out.push('');
   out.push(`<TypeMeta kind="${t.kindLabel}" namespace="${t.namespace}" source="${t.source}" />`);
@@ -89,11 +141,11 @@ function renderType(t) {
   out.push(t.decl);
   out.push('```');
   out.push('');
-  out.push((p.description ?? t.xmlDoc ?? '_No description yet._').trim());
+  out.push(description.trim());
   out.push('');
 
   const facts = [];
-  if (t.typeParams.length && p.typeParams) facts.push(`**Type parameters:** ${p.typeParams}`);
+  if (t.typeParams.length && typeParamsText) facts.push(`**Type parameters:** ${typeParamsText}`);
   if (t.inheritance) {
     // The chain ends at this type; render that last hop as plain code rather than a self-link,
     // and by its short name (a nested type is `SelectedButton` here, not the qualified form).
@@ -111,16 +163,16 @@ function renderType(t) {
   }
   if (facts.length) { out.push(facts.join('\\\n')); out.push(''); }
 
-  if (p.reserved) {
+  if (xd.reserved) {
     out.push('<Callout type="warn" title="Reserved">');
     out.push('  Gears scans only its own assembly for this attribute, so it has no effect in a mod');
     out.push('  assembly.');
     out.push('</Callout>');
     out.push('');
   }
-  if (p.note) {
+  if (note) {
     out.push('<Callout>');
-    out.push(`  ${p.note}`);
+    out.push(`  ${note}`);
     out.push('</Callout>');
     out.push('');
   }
@@ -131,7 +183,8 @@ function renderType(t) {
     out.push('| Name | Value | Description |');
     out.push('|---|---|---|');
     for (const m of t.members) {
-      out.push(`| \`${m.name}\` | ${m.value} | ${p.members?.[m.key] ?? m.xmlDoc ?? ''} |`);
+      const desc = renderXmlText(m.xmlDoc?.summary) ?? '';
+      out.push(`| \`${m.name}\` | ${m.value} | ${desc} |`);
     }
     out.push('');
   } else {
@@ -147,7 +200,7 @@ function renderType(t) {
         out.push(m.signature);
         out.push('```');
         out.push('');
-        out.push(p.members?.[m.key] ?? m.xmlDoc ?? '_No description yet._');
+        out.push(renderXmlText(m.xmlDoc?.summary) ?? '_No description yet._');
         out.push('');
       }
     }
@@ -159,7 +212,7 @@ function renderType(t) {
     out.push('<TypeTable');
     out.push('  type={{');
     for (const a of t.params) {
-      const desc = p.members?.[`param:${a.name}`] ?? '';
+      const desc = renderXmlText(xd.params?.[a.name]) ?? '';
       out.push(`    ${a.name}: {`);
       out.push(`      type: ${toJsx(link(a.type, typeLabel(a.type)))},`);
       out.push(`      description: ${toJsx(desc)},`);
@@ -203,45 +256,32 @@ function renderIndex(bySection) {
     out.push('| Type | Kind | Summary |');
     out.push('|---|---|---|');
     for (const t of rows) {
-      const p = prose[t.key] ?? {};
-      out.push(`| [\`${t.display}\`](${url(t)}) | ${t.kindLabel} | ${p.summary ?? t.xmlDoc ?? ''} |`);
+      const summary = renderXmlText(t.xmlDoc?.summary) ?? '';
+      out.push(`| [\`${t.display}\`](${url(t)}) | ${t.kindLabel} | ${summary} |`);
     }
     out.push('');
   }
   return out.join('\n');
 }
 
-// ---------------------------------------------------------------- drift report
+// ---------------------------------------------------------------- undocumented-member report
 
-const report = { missingProse: [], staleProse: [], missingSummary: [], warnings: model.warnings };
+const report = { undocumented: [], warnings: model.warnings };
 
 for (const t of model.types.values()) {
-  const p = prose[t.key];
-  if (!p) { report.missingProse.push(`${t.key} (whole type)`); continue; }
-  if (!p.summary) report.missingSummary.push(t.key);
-  if (!p.description) report.missingProse.push(`${t.key} (description)`);
-
-  const known = new Set(Object.keys(p.members ?? {}));
+  if (!t.xmlDoc?.summary) report.undocumented.push(`${t.key} (type)`);
   for (const m of t.members) {
-    if (!known.has(m.key) && !m.xmlDoc) report.missingProse.push(`${t.key}#${m.key}`);
-    known.delete(m.key);
-  }
-  for (const k of known) {
-    if (k.startsWith('param:')) continue; // delegate parameters, checked below
-    report.staleProse.push(`${t.key}#${k}`);
+    if (!m.xmlDoc?.summary) report.undocumented.push(`${t.key}#${m.key}`);
   }
   if (t.kind === 'delegate') {
     for (const a of t.params ?? []) {
-      if (!(p.members ?? {})[`param:${a.name}`]) report.missingProse.push(`${t.key}#param:${a.name}`);
+      if (!t.xmlDoc?.params?.[a.name]) report.undocumented.push(`${t.key}#param:${a.name}`);
     }
   }
 }
-for (const key of Object.keys(prose)) {
-  if (!model.types.has(key)) report.staleProse.push(`${key} (type no longer in source)`);
-}
 
 function printReport() {
-  const n = report.missingProse.length + report.staleProse.length + report.missingSummary.length + report.warnings.length;
+  const n = report.undocumented.length + report.warnings.length;
   console.log(`\n--- drift report ---`);
   console.log(`types: ${model.types.size}, documented members: ${[...model.types.values()].reduce((a, t) => a + t.members.length, 0)}`);
   const section = (title, list) => {
@@ -249,11 +289,9 @@ function printReport() {
     console.log(`\n${title} (${list.length}):`);
     for (const x of list) console.log(`  ${x}`);
   };
-  section('source has it, prose does not', report.missingProse);
-  section('prose has it, source does not', report.staleProse);
-  section('missing summary', report.missingSummary);
+  section('undocumented (no /// summary)', report.undocumented);
   section('parser warnings', report.warnings);
-  if (n === 0) console.log('\nno drift - source and prose agree');
+  if (n === 0) console.log('\nno drift - everything has a /// summary');
   return n;
 }
 

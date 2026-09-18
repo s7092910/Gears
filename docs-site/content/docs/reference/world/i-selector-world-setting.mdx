@@ -9,8 +9,7 @@ description: "A world setting chosen from a list of allowed values."
 public interface ISelectorWorldSetting<T> : IWorldModSetting, IValueModSetting<T>, ISelectorSettingBase
 ```
 
-A world setting chosen from a list of allowed values. Implemented for `int`, `float`, `string`
-and any enum. Raises `OnSelectedChanged` only; there is no `OnValueChanged` on world settings.
+A world setting chosen from a list of allowed values. Implemented for `int`, `float`, `string` and any enum. Raises `OnSelectedChanged` only; there is no `OnValueChanged` on world settings.
 
 **Type parameters:** `T` — `int`, `float`, `string` or an enum.\
 **Implements:** [`IWorldModSetting`](/docs/reference/world/i-world-mod-setting) · [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`ISelectorSettingBase`](/docs/reference/base/i-selector-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting) · [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base)
@@ -39,4 +38,4 @@ Replaces the allowed values with the range `min` to `max` in steps of `increment
 T[] GetAllowedValues();
 ```
 
-Returns the allowed values as `T[]`.
+The values themselves, in the order they are selected through. The matching entry in [`ISelectorSettingBase.GetAllowedValuesDisplay`](/docs/reference/base/i-selector-setting-base) is how each one is rendered.

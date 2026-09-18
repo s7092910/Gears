@@ -37,7 +37,7 @@ Returns the setting named `name` as `T`, or `null` if there is none or it is not
 T CreateSetting<T>(string name, string displayKey) where T : class, IWorldModSetting;
 ```
 
-Creates a setting of interface `T`. Same exceptions as the global version. Setting names must be unique across **all** of the mod’s world categories, because saved world values are looked up by name alone.
+Creates a setting of interface `T`. Same exceptions as the global version. Setting names must be unique across **all** of the mod's world categories, because saved world values are looked up by name alone.
 
 ### GetOrCreateSetting&lt;T&gt;(String, String)
 
@@ -77,4 +77,4 @@ Removes that setting.
 List<IWorldModSetting> GetAllSettings();
 ```
 
-Returns the category itself followed by its settings, as a `List<`[`IWorldModSetting`](/docs/reference/world/i-world-mod-setting)`>`.
+Returns the category itself followed by its settings, as a `List<IWorldModSetting>`.

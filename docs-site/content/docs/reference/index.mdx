@@ -89,16 +89,16 @@ Binding, listener and serialization attributes.
 
 | Type | Kind | Summary |
 |---|---|---|
-| [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) | Abstract class | Base class of every attribute that names a setting by its path. |
-| [`SettingAttribute`](/docs/reference/attributes/setting-attribute) | Sealed class | Binds a static field or property to the setting its path names. |
-| [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute) | Abstract class | Base class of the four attributes that bind a static method to a setting's event. |
+| [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) | Abstract class | Base for any attribute that names a setting by its path. The path is "tabName.CategoryName.SettingName" for global settings and "CategoryName.SettingName" for world settings. |
+| [`SettingAttribute`](/docs/reference/attributes/setting-attribute) | Sealed class | Binds a static field or property to the setting its path names. Pass the declaring type to `BindSettingsClass` and the member is assigned the resolved setting. A field must be static and neither `readonly` nor `const`; a property must be static and have a setter, which may be private. |
+| [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute) | Abstract class | Base for attributes that bind a static method to a setting's event. The setting path must be in the form "tabName.CategoryName.SettingName" for global settings and "CategoryName.SettingName" for world settings. |
 | [`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute) | Sealed class | Binds a static method to `OnValueChanged`. Global value settings only. |
 | [`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute) | Sealed class | Binds a static method to `OnSelectedChanged`. Global and world value settings. |
 | [`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute) | Sealed class | Binds a static method to `OnSettingApplied`. Global settings only. |
 | [`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute) | Sealed class | Binds a static method to `OnEnabled`. Works on every setting. |
-| [`SettingsSerializationProvider`](/docs/reference/attributes/settings-serialization-provider) | Sealed class | Marks a class as holding `[SettingParser]` and `[SettingFormatter]` methods. |
+| [`SettingsSerializationProvider`](/docs/reference/attributes/settings-serialization-provider) | Sealed class | Marks a class as holding [[`SettingParserAttribute`](/docs/reference/attributes/setting-parser-attribute)] and [[`SettingFormatterAttribute`](/docs/reference/attributes/setting-formatter-attribute)] methods. |
 | [`SettingParserAttribute`](/docs/reference/attributes/setting-parser-attribute) | Sealed class | Marks a static method as the parser for a value type. |
 | [`SettingFormatterAttribute`](/docs/reference/attributes/setting-formatter-attribute) | Sealed class | Marks a static method as the formatter for a value type. |
-| [`SettingFactoryAttribute`](/docs/reference/attributes/setting-factory-attribute) | Sealed class | Registers a setting family implementation for one value type. **Reserved.** |
-| [`SettingFactoryEnumAttribute`](/docs/reference/attributes/setting-factory-enum-attribute) | Sealed class | Registers a setting family implementation for every enum. **Reserved.** |
-| [`SettingFactoryFixedAttribute`](/docs/reference/attributes/setting-factory-fixed-attribute) | Sealed class | Registers an implementation of a non-generic setting interface. **Reserved.** |
+| [`SettingFactoryAttribute`](/docs/reference/attributes/setting-factory-attribute) | Sealed class | Registers a setting family implementation for one value type. |
+| [`SettingFactoryEnumAttribute`](/docs/reference/attributes/setting-factory-enum-attribute) | Sealed class | Registers a setting family implementation for every enum. |
+| [`SettingFactoryFixedAttribute`](/docs/reference/attributes/setting-factory-fixed-attribute) | Sealed class | Registers an implementation of a non-generic setting interface. |

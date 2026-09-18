@@ -1,6 +1,6 @@
 ---
 title: "SettingListenerAttribute"
-description: "Base class of the four attributes that bind a static method to a setting's event."
+description: "Base for attributes that bind a static method to a setting's event. The setting path must be in the form \"tabName.CategoryName.SettingName\" for global settings and \"CategoryName.SettingName\" for world settings."
 ---
 
 <TypeMeta kind="Abstract class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Listeners/SettingListenerAttribute.cs" />
@@ -10,8 +10,7 @@ description: "Base class of the four attributes that bind a static method to a s
 public abstract class SettingListenerAttribute : SettingPathAttribute
 ```
 
-Base class of the four attributes that bind a static method to a setting's event through
-`BindSettingsClass`. Cannot be applied directly.
+Base for attributes that bind a static method to a setting's event. The setting path must be in the form "tabName.CategoryName.SettingName" for global settings and "CategoryName.SettingName" for world settings.
 
 **Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → `SettingListenerAttribute`\
 **Derived:** [`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute) · [`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute) · [`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute) · [`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute)\

@@ -9,8 +9,7 @@ description: "A setting that belongs to the player rather than to a world."
 public interface IGlobalModSetting : IModSetting
 ```
 
-A setting that belongs to the player rather than to a world: it knows its tab and category, can
-warn about a reload or restart, and raises `OnSettingApplied` when applied.
+A setting that belongs to the player rather than to a world: it knows its tab and category, can warn about a reload or restart, and raises `OnSettingApplied` when applied.
 
 **Implements:** [`IModSetting`](/docs/reference/settings/i-mod-setting)\
 **Derived:** [`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category) · [`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting) · [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting)
@@ -23,7 +22,7 @@ warn about a reload or restart, and raises `OnSettingApplied` when applied.
 SettingRestartScope RestartScope { get; set; }
 ```
 
-Gets or sets what a change costs the player, as a [`SettingRestartScope`](/docs/reference/settings/setting-restart-scope): `None`, `Reload` or `Restart`. Always `None` on a category.
+What changing this setting costs the player. Global settings only: a world setting belongs to a save and is applied along with it, so it has nothing to restart.
 
 ### Category
 

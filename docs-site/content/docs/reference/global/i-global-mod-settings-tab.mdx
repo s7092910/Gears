@@ -9,8 +9,7 @@ description: "A tab in the mod's settings page. A tab is not a setting."
 public interface IGlobalModSettingsTab
 ```
 
-A tab in the mod's settings page. A tab is not a setting: it has a tooltip rather than a caption
-and description, and no preview or restart scope.
+A tab in the mod's settings page. A tab is not a setting: it has a tooltip rather than a caption and description, and no preview or restart scope.
 
 ## Properties
 
@@ -94,7 +93,7 @@ Removes that category. Returns whether it was removed.
 List<IGlobalModSettingsCategory> GetAllCategories();
 ```
 
-Returns every category as a `List<`[`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category)`>`.
+Returns every category as a `List<IGlobalModSettingsCategory>`.
 
 ### GetAllModSettings()
 
@@ -102,7 +101,7 @@ Returns every category as a `List<`[`IGlobalModSettingsCategory`](/docs/referenc
 List<IGlobalModSetting> GetAllModSettings();
 ```
 
-Returns every setting in every category of this tab, categories included, as a `List<`[`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`>`.
+Returns every setting in every category of this tab, categories included, as a `List<IGlobalModSetting>`.
 
 ### HasToolTip()
 

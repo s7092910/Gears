@@ -129,9 +129,9 @@ function extractNamed(text, tag) {
 
 /**
  * Parse a `///` block into its structural pieces: `<summary>`, `<remarks>`, `<note>`,
- * `<typeparam>` and `<param>`. Prose-level inline tags -- `<see cref>`, `<c>`, `<paramref>` --
- * are left intact in the extracted text; resolving them into links/markdown is the renderer's
- * job, since only it knows the rest of the type model.
+ * `<typeparam>`, `<param>` and the self-closing `<reserved/>` marker. Prose-level inline tags --
+ * `<see cref>`, `<c>`, `<paramref>` -- are left intact in the extracted text; resolving them into
+ * links/markdown is the renderer's job, since only it knows the rest of the type model.
  */
 function parseDoc(lines) {
   if (!lines || !lines.length) return null;
@@ -143,6 +143,7 @@ function parseDoc(lines) {
     summary,
     remarks: remarks ? flatten(remarks) : null,
     note: note ? flatten(note) : null,
+    reserved: /<reserved\s*\/>/i.test(joined),
     typeParams: extractNamed(joined, 'typeparam'),
     params: extractNamed(joined, 'param'),
   };
@@ -210,6 +211,16 @@ export function parseFile(source, file) {
 
     const opens = countChar(pending, '{');
     const closes = countChar(pending, '}');
+
+    // Enum members are comma-terminated, not semicolon-terminated, and never open a brace of
+    // their own. Flush each one as soon as its trailing comma is seen, so a preceding `///`
+    // block attaches to the member it actually documents rather than to the whole enum body
+    // (the last member, with no trailing comma, still falls through to the closing-brace flush).
+    if (opens === 0 && curType()?.kind === 'enum' && /,$/.test(pending.trim())) {
+      handleMember(pending, docBuf, attrBuf);
+      pending = ''; docBuf = []; attrBuf = [];
+      continue;
+    }
 
     // No brace yet and no terminator: an unfinished header, keep reading.
     if (opens === 0 && !/;$/.test(pending)) continue;

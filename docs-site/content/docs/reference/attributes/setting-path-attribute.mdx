@@ -1,6 +1,6 @@
 ---
 title: "SettingPathAttribute"
-description: "Base class of every attribute that names a setting by its path."
+description: "Base for any attribute that names a setting by its path. The path is \"tabName.CategoryName.SettingName\" for global settings and \"CategoryName.SettingName\" for world settings."
 ---
 
 <TypeMeta kind="Abstract class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/SettingPathAttribute.cs" />
@@ -9,9 +9,7 @@ description: "Base class of every attribute that names a setting by its path."
 public abstract class SettingPathAttribute : Attribute
 ```
 
-Base class of every attribute that names a setting by its path for `BindSettingsClass`.
-Cannot be applied directly. It declares no `AttributeUsage` of its own, because `AttributeUsage` is
-inherited — each concrete attribute below it declares its own targets.
+Base class of every attribute that names a setting by its path for `BindSettingsClass`. Cannot be applied directly. This class deliberately declares no `AttributeUsage` of its own, because `AttributeUsage` is inherited — each concrete attribute below it declares its own targets.
 
 **Inheritance:** `Object` → `Attribute` → `SettingPathAttribute`\
 **Derived:** [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute) · [`SettingAttribute`](/docs/reference/attributes/setting-attribute)

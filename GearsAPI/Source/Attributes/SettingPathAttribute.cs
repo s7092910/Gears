@@ -8,13 +8,23 @@ namespace GearsAPI.Attributes
     /// world settings.
     /// </summary>
     /// <remarks>
-    /// This class deliberately declares no <see cref="AttributeUsage"/>. AttributeUsage is inherited
-    /// by derived attribute classes, so every concrete attribute below this one must declare its own.
+    /// Base class of every attribute that names a setting by its path for <c>BindSettingsClass</c>.
+    /// Cannot be applied directly. This class deliberately declares no <see cref="AttributeUsage"/> of
+    /// its own, because <c>AttributeUsage</c> is inherited — each concrete attribute below it declares
+    /// its own targets.
     /// </remarks>
     public abstract class SettingPathAttribute : Attribute
     {
+        /// <summary>
+        /// Gets the dot-separated path to the setting: <c>"Tab.Category.Setting"</c> for global settings,
+        /// <c>"Category.Setting"</c> for world settings.
+        /// </summary>
         public string SettingPath { get; }
 
+        /// <summary>
+        /// Protected. Stores <paramref name="settingPath"/>. Throws <c>ArgumentException</c> if it is
+        /// <c>null</c> or whitespace.
+        /// </summary>
         protected SettingPathAttribute(string settingPath)
         {
             if (string.IsNullOrWhiteSpace(settingPath))

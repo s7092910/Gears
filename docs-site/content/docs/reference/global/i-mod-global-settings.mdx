@@ -9,8 +9,7 @@ description: "The root of a mod's global settings: the tabs, and operations acro
 public interface IModGlobalSettings
 ```
 
-The root of a mod's global settings: the tabs, and operations across the whole tree. Handed to
-[`IGearsModApi`](/docs/reference/settings/i-gears-mod-api)`.OnGlobalSettingsLoaded`; also [`IGearsMod`](/docs/reference/settings/i-gears-mod)`.GlobalSettings`.
+The root of a mod's global settings: the tabs, and operations across the whole tree. Handed to [`IGearsModApi.OnGlobalSettingsLoaded`](/docs/reference/settings/i-gears-mod-api); also [`IGearsMod.GlobalSettings`](/docs/reference/settings/i-gears-mod).
 
 ## Methods
 
@@ -60,7 +59,7 @@ Returns the existing tab named `name`, or creates it with the given display key.
 List<IGlobalModSettingsTab> GetTabs();
 ```
 
-Returns every tab as a `List<`[`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab)`>`.
+Returns every tab as a `List<IGlobalModSettingsTab>`.
 
 ### GetAllGlobalSettings()
 
@@ -68,7 +67,7 @@ Returns every tab as a `List<`[`IGlobalModSettingsTab`](/docs/reference/global/i
 List<IGlobalModSetting> GetAllGlobalSettings();
 ```
 
-Returns every setting in every category of every tab, categories included, as a `List<`[`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting)`>`.
+Returns every setting in every category of every tab, categories included, as a `List<IGlobalModSetting>`.
 
 ### BindSettingsClass(Type)
 
@@ -76,7 +75,7 @@ Returns every setting in every category of every tab, categories included, as a 
 void BindSettingsClass(Type settingsType);
 ```
 
-Scans `settingsType` for tagged static members carrying a `"Tab.Category.Setting"` path. Fields and properties tagged [`[Setting]`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute), [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute), [`[SettingOnApplied]`](/docs/reference/attributes/setting-on-applied-attribute) or [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. Throws `ArgumentNullException` for `null`; every other problem is logged and that one member skipped. See [C# Setting Listeners](/docs/csharp/setting-listeners).
+Scans `settingsType` for tagged static members carrying a `"Tab.Category.Setting"` path. Fields and properties tagged [[`SettingAttribute`](/docs/reference/attributes/setting-attribute)] are assigned the named setting first, then methods tagged [[`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute)], [[`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute)], [[`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute)] or [[`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute)] are subscribed. Throws `ArgumentNullException` for `null`; every other problem is logged and that one member skipped. See the C# Setting Listeners guide.
 
 ### SaveSettings()
 

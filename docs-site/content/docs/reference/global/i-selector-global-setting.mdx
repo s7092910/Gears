@@ -9,8 +9,7 @@ description: "A global setting chosen from a list of allowed values."
 public interface ISelectorGlobalSetting<T> : IGlobalValueSetting<T>, ISelectorSettingBase
 ```
 
-A global setting chosen from a list of allowed values. Implemented for `int`, `float`, `string`
-and any enum. An enum selector starts with every declared member as its allowed values.
+A global setting chosen from a list of allowed values. Implemented for `int`, `float`, `string` and any enum. An enum selector starts with every declared member as its allowed values.
 
 **Type parameters:** `T` — `int`, `float`, `string` or an enum.\
 **Implements:** [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) · [`ISelectorSettingBase`](/docs/reference/base/i-selector-setting-base) · [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) · [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
@@ -39,4 +38,4 @@ Replaces the allowed values with `min`, `min + increment`, … up to and includi
 T[] GetAllowedValues();
 ```
 
-Returns the allowed values as `T[]`, in selection order. The matching entry in `GetAllowedValuesDisplay()` is how each one is shown.
+The values themselves, in the order they are selected through. The matching entry in [`ISelectorSettingBase.GetAllowedValuesDisplay`](/docs/reference/base/i-selector-setting-base) is how each one is rendered.

@@ -1,6 +1,6 @@
 ---
 title: "SettingsSerializationProvider"
-description: "Marks a class as holding [SettingParser] and [SettingFormatter] methods."
+description: "Marks a class as holding [[SettingParserAttribute](/docs/reference/attributes/setting-parser-attribute)] and [[SettingFormatterAttribute](/docs/reference/attributes/setting-formatter-attribute)] methods."
 ---
 
 <TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Factories/SettingsSerializationProvider.cs" />
@@ -10,21 +10,7 @@ description: "Marks a class as holding [SettingParser] and [SettingFormatter] me
 public sealed class SettingsSerializationProvider : Attribute
 ```
 
-Marks a class as holding [`[SettingParser]`](/docs/reference/attributes/setting-parser-attribute) and
-[`[SettingFormatter]`](/docs/reference/attributes/setting-formatter-attribute) methods. Gears scans every loaded
-assembly for classes with this attribute at `GameAwake`. The class name has no `Attribute`
-suffix; write `[SettingsSerializationProvider]`. See
-[C# Custom Value Types](/docs/csharp/custom-value-types).
+Marks a class as holding [[`SettingParserAttribute`](/docs/reference/attributes/setting-parser-attribute)] and [[`SettingFormatterAttribute`](/docs/reference/attributes/setting-formatter-attribute)] methods. Gears scans every loaded assembly for classes with this attribute at `GameAwake`. The class name has no `Attribute` suffix; write `[SettingsSerializationProvider]`. See C# Custom Value Types.
 
 **Inheritance:** `Object` → `Attribute` → `SettingsSerializationProvider`\
 **Attributes:** `AttributeUsageAttribute`
-
-## Constructors
-
-### SettingsSerializationProvider()
-
-```csharp
-public SettingsSerializationProvider()
-```
-
-Initializes the attribute.
