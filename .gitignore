@@ -27,7 +27,6 @@
 .vs/
 packages/
 Release/
-Images/
 TestResults/
 # The GitHub wiki clone. It has its own .git and is no longer the source of truth.
 **/bin/
