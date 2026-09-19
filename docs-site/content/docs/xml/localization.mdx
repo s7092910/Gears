@@ -1,44 +1,48 @@
 ---
-title: Localization
-description: Every localization key Gears will ask your mod for, and what happens when one is missing.
+title: Localize Your Settings
+description: Every localization key Gears asks your mod for, where you declare each one, and what the player sees when a key is missing.
 ---
 
-Every piece of text Gears shows for your mod comes from a key you put in your mod's
-`Config/Localization.csv`, looked up with the game's `Localization.Get`. Gears ships no text for
-your settings. This page lists every key it will ask for and what happens when it is missing.
+Every piece of text Gears shows for your mod comes from a key in your mod's
+`Config/Localization.csv`, which Gears reads through the game's `Localization.Get`. Gears ships no
+text for your settings. Use this page to work out which keys you need to supply.
 
-## The rule for missing keys
+## What happens when a key is missing
 
-`Localization.Get` returns the key itself when it has no translation. A missing key therefore
-shows up in the menu as raw text such as `myModHudScale`, never as a blank. That makes typos
-easy to spot in game, and it means a `displayKey` that happens to be readable English will
-"work" without a CSV row. Prefer a real key anyway so the text can be translated.
+`Localization.Get` returns the key itself when it has no translation, so a missing key shows in the
+menu as raw text such as `myModHudScale`. It never shows as a blank.
+
+That makes a typo easy to spot while you play. It also means a `displayKey` that happens to read as
+English "works" with no row in the CSV file. Write a real key anyway, so that someone can translate
+the text later.
 
 ## Keys Gears looks up
 
-| Where you write it | Key used | If empty or absent |
+| Where you write it | Key Gears uses | If it is empty or absent |
 |---|---|---|
-| `<Tab displayKey="">` | that key | falls back to the Tab's `name` (itself looked up as a key) |
+| `<Tab displayKey="">` | that key | falls back to the tab's `name`, which Gears also looks up as a key |
 | `<Tab tooltipKey="">` | that key | no tooltip |
 | `<Category displayKey="">` | that key | falls back to `name` |
 | `<Selector/Slider/Switch/Color/Binding displayKey="">` | that key | falls back to `name` |
-| `<Caption key="">` on a setting or Category | that key | falls back to the display name |
-| `<Description key="">` on a setting or Category | that key | nothing shown |
-| `<LocalizationPrefix prefix="P">` on a Selector | `P` + each allowed value, and `P` + the current and selected value | the raw value is shown when there is no prefix |
-| `<LocalizationPrefix prefix="P">` on a Switch | `P` + left value, `P` + right value, `P` + current and selected value | the raw value is shown |
+| `<Caption key="">` on a setting or category | that key | falls back to the display name |
+| `<Description key="">` on a setting or category | that key | nothing is shown |
+| `<LocalizationPrefix prefix="P">` on a Selector | `P` plus each allowed value, and `P` plus the current and selected value | the raw value is shown when there is no prefix |
+| `<LocalizationPrefix prefix="P">` on a Switch | `P` plus the left value, `P` plus the right value, and `P` plus the current and selected value | the raw value is shown |
 
-<Callout>
-  The prefix is joined to the value **without a separator**. Put any separator you want inside the
-  prefix itself (`prefix="myModUnits_"`).
+<Callout type="warn">
+  Gears joins the prefix to the value **with no separator**. Put any separator you want inside the
+  prefix itself, such as `prefix="myModUnits_"`.
 </Callout>
 
-For a Selector the "value" that gets prefixed is the value **after the `ui` formatter**. With
+On a Selector, the value that Gears prefixes is the value **after the `ui` formatter** has run. With
 `<Formatter ui="000">` and a prefix of `q`, the value `7` looks up `q007`.
 
-The same lookups happen for settings created from C#: `DisplayKey`, `CaptionKey`,
-`DescriptionKey` and `LocalizationPrefix` on the setting objects are the same strings.
+Settings you create from C# use the same lookups. `DisplayKey`, `CaptionKey`, `DescriptionKey` and
+`LocalizationPrefix` on the setting objects are the same strings.
 
 ## Worked example
+
+This Selector:
 
 ```xml
 <Selector name="Units" displayKey="myModUnits" type="string" defaultValue="metric">
@@ -49,22 +53,22 @@ The same lookups happen for settings created from C#: `DisplayKey`, `CaptionKey`
 </Selector>
 ```
 
-needs these rows:
+needs these five rows:
 
 ```csv title="Config/Localization.csv"
 Key,File,Type,UsedInMainMenu,NoTranslate,english
 myModUnits,UI,Menu,x,,Units
 myModUnitsCaption,UI,Menu,x,,Unit system
-myModUnitsDesc,UI,Menu,x,,Which unit system the HUD uses.
+myModUnitsDesc,UI,Menu,x,,Which unit system the heads-up display uses.
 myModUnits_metric,UI,Menu,x,,Metric
 myModUnits_imperial,UI,Menu,x,,Imperial
 ```
 
-`UsedInMainMenu` is marked `x` because the Mods menu is reachable from the main menu, before a
-world is loaded. Rows without it are not available there.
+Mark `UsedInMainMenu` with an `x` on every row. The Mods menu opens from the main menu, before a
+world is loaded, and the game does not make rows without that mark available there.
 
 ## Keys that belong to Gears
 
-The Mods window chrome (buttons, headers, the Enabled/Disabled labels, the sort options) is
-localized by Gears' own `Localization.csv`. You do not need to supply any of those, and you should
-not reuse their keys (`gearsUI…`, `gearsSortBy…`) for your own text.
+Gears localizes the Mods window itself — the buttons, headers, Enabled and Disabled labels, and sort
+options — from its own `Localization.csv`. You do not need to supply any of those keys. Do not reuse
+them for your own text either: they are the keys beginning `gearsUI` and `gearsSortBy`.

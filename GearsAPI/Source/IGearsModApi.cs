@@ -11,7 +11,7 @@ namespace GearsAPI.Settings
     /// The callback contract a C# mod implements to be told about its settings. Gears scans every
     /// assembly of a mod for concrete classes implementing this interface, instantiates each through its
     /// public parameterless constructor, and invokes every callback on every instance. See
-    /// C# Getting Started for the order and timing.
+    /// the Get Started with C# guide for the order and timing.
     /// </remarks>
     public interface IGearsModApi
     {
@@ -26,7 +26,7 @@ namespace GearsAPI.Settings
         void OnGlobalSettingsLoaded(IModGlobalSettings modSettings);
 
         /// <summary>
-        /// Called when a world's settings become known: on world start when hosting, when the server's settings arrive when joining, or after a reset to defaults when the server sent none. May fire more than once per session. Not called for a mod with no world settings.
+        /// Called when a world's settings become known: on world start when hosting, when the server's settings arrive when joining, or after a reset to defaults when the server sent none. May fire more than once per session. Not called for a mod with no world settings, and not called on the host for the <c>Empty</c> and <c>Playtesting</c> worlds the prefab editor uses.
         /// </summary>
         void OnWorldSettingsLoaded(IModWorldSettings worldSettings);
 

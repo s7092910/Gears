@@ -37,7 +37,7 @@ namespace GearsAPI.Settings
         string DescriptionKey { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the setting can be changed in the menu. Starts <c>true</c>.
+        /// Gets or sets whether the setting can be changed in the menu. Starts <c>true</c>. On a global value setting, while this is <c>false</c> assigning <c>SelectedValue</c> still changes the value but raises no <c>OnSelectedChanged</c>, and <c>ApplyCurrentChange()</c> does nothing at all. World settings have no such gate.
         /// </summary>
         bool Enabled { get; set; }
 
@@ -97,7 +97,7 @@ namespace GearsAPI.Settings
         void AddPreview(string path);
 
         /// <summary>
-        /// Sets the selected value to the default value. The applied value is untouched.
+        /// Sets the selected value to the default value. The applied value is untouched, so call <c>ApplyCurrentChange()</c> after it to reset the value the mod acts on.
         /// </summary>
         void ResetToDefault();
 
@@ -107,7 +107,7 @@ namespace GearsAPI.Settings
         void DiscardCurrentChange();
 
         /// <summary>
-        /// Commits the selected value as the applied value, raising <c>OnValueChanged</c> and, on a global setting, <c>OnSettingApplied</c>.
+        /// Commits the selected value as the applied value, raising <c>OnValueChanged</c> and, on a global setting, <c>OnSettingApplied</c>. Does nothing on a global setting whose <c>Enabled</c> is <c>false</c>.
         /// </summary>
         void ApplyCurrentChange();
 

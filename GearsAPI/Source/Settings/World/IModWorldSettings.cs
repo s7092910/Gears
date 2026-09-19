@@ -55,10 +55,10 @@ namespace GearsAPI.Settings.World
 
         /// <summary>
         /// Scans <paramref name="settingsType"/> for tagged static members carrying a <c>"Category.Setting"</c>
-        /// path. Fields and properties tagged [<see cref="SettingAttribute"/>] are assigned the named setting
-        /// first, then methods tagged [<see cref="SettingOnSelectedChangedAttribute"/>] or
-        /// [<see cref="SettingOnEnabledAttribute"/>] are subscribed. [<see cref="SettingOnValueChangedAttribute"/>]
-        /// and [<see cref="SettingOnAppliedAttribute"/>] are logged and skipped: world settings have neither
+        /// path. Fields and properties tagged <see cref="SettingAttribute"/> are assigned the named setting
+        /// first, then methods tagged <see cref="SettingOnSelectedChangedAttribute"/> or
+        /// <see cref="SettingOnEnabledAttribute"/> are subscribed. <see cref="SettingOnValueChangedAttribute"/>
+        /// and <see cref="SettingOnAppliedAttribute"/> are logged and skipped: world settings have neither
         /// event. Throws <c>ArgumentNullException</c> for <c>null</c>. Re-binding a field on a later world load
         /// is harmless; re-subscribing a listener adds a second handler.
         /// </summary>

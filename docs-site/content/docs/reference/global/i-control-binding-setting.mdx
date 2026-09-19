@@ -9,7 +9,7 @@ description: "A global key-binding row. Not a value setting."
 public interface IControlBindingSetting : IGlobalModSetting
 ```
 
-A global key-binding row. Not a value setting: it has no `SettingValue`, is not saved by Gears, and returns an empty string from `modsetting()`. The mod attaches the game `PlayerAction` the row rebinds.
+A global key-binding row. Not a value setting: it has no `SettingValue`, is not saved by Gears, and returns an empty string from `modsetting()`. The mod attaches the game `PlayerAction` the row rebinds. The inherited operations act on that `PlayerAction` rather than on a stored value. `ResetToDefault()` calls `PlayerAction.ResetBindings()`, `DiscardCurrentChange()` puts back the binding recorded when `PlayerAction` was assigned or last applied, and `ApplyCurrentChange()` records the current binding as the new baseline and raises `OnSettingApplied`. `IsChanged` compares the action's binding against that baseline, and `IsDefault` is always `false`.
 
 **Implements:** [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) · [`IModSetting`](/docs/reference/settings/i-mod-setting)
 
@@ -21,7 +21,7 @@ A global key-binding row. Not a value setting: it has no `SettingValue`, is not 
 PlayerAction PlayerAction { get; set; }
 ```
 
-Gets or sets the `InControl.PlayerAction` this row rebinds. `null` until the mod assigns it.
+Gets or sets the `InControl.PlayerAction` this row rebinds. `null` until the mod assigns it, and the row reads "- Missing PlayerAction -" until then. Assigning it records the action's current binding as the baseline that `IsChanged` and `DiscardCurrentChange()` work against, so assign it once the action set exists.
 
 ## Methods
 
@@ -31,4 +31,4 @@ Gets or sets the `InControl.PlayerAction` this row rebinds. `null` until the mod
 void ClearBinding();
 ```
 
-Removes every binding from `PlayerAction`.
+Removes every binding from `PlayerAction`, which is what the row's clear button does. Does nothing when no `PlayerAction` has been assigned.

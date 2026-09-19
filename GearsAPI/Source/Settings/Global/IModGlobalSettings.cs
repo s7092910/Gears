@@ -57,12 +57,12 @@ namespace GearsAPI.Settings.Global
 
         /// <summary>
         /// Scans <paramref name="settingsType"/> for tagged static members carrying a
-        /// <c>"Tab.Category.Setting"</c> path. Fields and properties tagged [<see cref="SettingAttribute"/>]
+        /// <c>"Tab.Category.Setting"</c> path. Fields and properties tagged <see cref="SettingAttribute"/>
         /// are assigned the named setting first, then methods tagged
-        /// [<see cref="SettingOnValueChangedAttribute"/>], [<see cref="SettingOnSelectedChangedAttribute"/>],
-        /// [<see cref="SettingOnAppliedAttribute"/>] or [<see cref="SettingOnEnabledAttribute"/>] are
+        /// <see cref="SettingOnValueChangedAttribute"/>, <see cref="SettingOnSelectedChangedAttribute"/>,
+        /// <see cref="SettingOnAppliedAttribute"/> or <see cref="SettingOnEnabledAttribute"/> are
         /// subscribed. Throws <c>ArgumentNullException</c> for <c>null</c>; every other problem is logged
-        /// and that one member skipped. See the C# Setting Listeners guide.
+        /// and that one member skipped. See the Bind Settings with Attributes guide.
         /// </summary>
         void BindSettingsClass(Type settingsType);
 

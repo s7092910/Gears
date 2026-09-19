@@ -15,7 +15,7 @@ namespace GearsAPI.Settings
         protected static GearsSettingsManager instance;
 
         /// <summary>
-        /// Returns every loaded mod as a <c>List&lt;IGearsMod&gt;</c>, in the game's load order. Returns an empty list before Gears has initialised.
+        /// Returns every loaded mod as a <c>List&lt;IGearsMod&gt;</c>, in the game's load order. Returns an empty list before Gears has initialized.
         /// </summary>
         public static List<IGearsMod> GetMods()
         {
@@ -27,7 +27,7 @@ namespace GearsAPI.Settings
         }
 
         /// <summary>
-        /// Returns the <see cref="IGearsMod"/> whose <c>ModInfo.xml</c> <c>&lt;Name&gt;</c> equals <c>modName</c>, or <c>null</c> if there is none or Gears has not initialised.
+        /// Returns the <see cref="IGearsMod"/> whose <c>ModInfo.xml</c> <c>&lt;Name&gt;</c> equals <c>modName</c>, or <c>null</c> if there is none or Gears has not initialized.
         /// </summary>
         public static IGearsMod GetGearsMod(string modName)
         {

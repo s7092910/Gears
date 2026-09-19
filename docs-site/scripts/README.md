@@ -51,6 +51,14 @@ escaped as `&lt;`/`&gt;` since raw angle brackets aren't legal inside XML doc co
 delegate's `<param name="x">` tags go on the delegate's own declaration line. Run `gen:api:report`
 if you want to see exactly which types/members currently have no `///` summary at all.
 
+Two limits are worth knowing before you write a long comment:
+
+- **`<remarks>` counts on a type only.** A member renders its `<summary>` and nothing else, so a
+  `<remarks>` block on a property or method is parsed and then silently dropped. Put the whole member
+  description in its `<summary>`, however long it runs.
+- **`<para>` is not supported** and leaks into the page as literal text. Everything inside a tag is
+  flattened into one paragraph, so separate ideas with sentences rather than markup.
+
 ## Adding a type to the assembly
 
 Nothing breaks. The new type is picked up automatically, lands at the end of its namespace

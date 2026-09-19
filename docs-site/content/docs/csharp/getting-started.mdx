@@ -1,125 +1,134 @@
 ---
-title: C# Getting Started
-description: The assembly to reference, the one interface to implement, when each callback fires, and how to reach your settings without a callback.
+title: Get Started with C#
+description: Reference GearsAPI.dll, implement IGearsModApi, learn when each callback fires, and reach your settings without a callback.
 ---
 
-Everything a C# mod needs to talk to Gears: the assembly to reference, the one interface to
-implement, when each callback fires, and how to reach your settings without a callback.
+Follow this page to connect a C# mod to Gears. You reference one assembly, implement one interface,
+and Gears hands you your settings when they are ready.
 
-## Referencing GearsAPI.dll
+Two terms appear throughout. A **global setting** belongs to the player and applies in every world.
+A **world setting** belongs to one world and is chosen by the host.
+
+## Reference GearsAPI.dll
 
 Gears ships `GearsAPI.dll` inside its own mod folder. Add a reference to that file from your mod
-project. Whether you also ship a copy of it depends on whether Gears is optional for your users:
+project. Whether you also ship a copy of it depends on whether Gears is optional for your players:
 
 | Your mod | Copy Local | Result |
 |---|---|---|
-| **requires** Gears | false | Gears loads the assembly; your mod folder carries no second copy. |
+| **requires** Gears | false | Gears loads the assembly, and your mod folder carries no second copy. |
 | treats Gears as **optional** | **true** | `GearsAPI.dll` sits in your own mod folder, so the types still resolve for a player who does not have Gears installed. |
 
 <Callout type="warn" title="Optional means shipping the DLL">
-  If you want your mod to work for players without Gears, `GearsAPI.dll` must be present in **your**
-  mod's folder. Without Gears installed nothing else provides the assembly, and the runtime needs it
-  to be loadable the moment it compiles any method that mentions a GearsAPI type.
+  To keep your mod working for players without Gears, `GearsAPI.dll` must be present in **your**
+  mod's folder. Nothing else provides the assembly when Gears is absent, and the runtime needs it to
+  be loadable the moment it compiles any method that mentions a GearsAPI type.
 </Callout>
 
-If your mod is built against one GearsAPI version and the player runs a different one, the
-mismatch shows up as a `TypeLoadException` inside your callback. Gears catches it and logs:
+When your mod is built against one GearsAPI version and the player runs a different one, the
+mismatch surfaces as a `TypeLoadException` inside your callback. Gears catches it and logs:
 
 ```text
 [Gears] [GearsMod] '<Your Mod>' is using an outdated GearsAPI: it was built against v2.0.1.0 but Gears is running v3.0.0.0, so '<type>' could not be loaded. The mod needs rebuilding against the current GearsAPI.
 ```
 
-Rebuild against the current `GearsAPI.dll` when you see it.
+Rebuild against the current `GearsAPI.dll` when you see that line.
 
-## Keeping Gears optional
+## Keep Gears optional
 
-Nothing in Gears requires your mod to hard-depend on it. Gears finds your `IGearsModApi` class
-by scanning; if Gears is absent, nothing scans and nothing is called.
+Nothing in Gears requires your mod to depend on it. Gears finds your `IGearsModApi` class by
+scanning, so when Gears is absent, nothing scans and nothing is called.
 
 Two things make that work. The first is shipping `GearsAPI.dll` in your own mod folder, as above.
-The second is the .NET runtime: a method is only compiled when it first runs, and compiling a
-method that mentions a GearsAPI type needs `GearsAPI.dll` to be loadable. So keep every line that
-touches GearsAPI types inside classes and methods that only run when Gears is present, and gate
-the entry to them:
+The second is the .NET runtime: a method is compiled only when it first runs, and compiling a method
+that mentions a GearsAPI type needs `GearsAPI.dll` to be loadable.
+
+So keep every line that touches a GearsAPI type inside classes and methods that run only when Gears
+is present, and gate the entry to them:
 
 ```csharp
 public class MyModInit : IModApi
 {
     public void InitMod(Mod mod)
     {
-        // Your normal startup here. Do not mention GearsAPI types in this class.
+        // Your normal startup goes here. Do not mention a GearsAPI type in this class.
         if (ModManager.GetMod("Gears") != null)
         {
-            // Safe: this method is only compiled and run when Gears is installed.
+            // GearsBridge is your own class, and every GearsAPI type your mod uses lives in it or
+            // in a class it reaches. This method is compiled and run only when Gears is installed.
             GearsBridge.Announce();
         }
     }
 }
 ```
 
-Your `IGearsModApi` implementation is a separate class that Gears itself instantiates, so it
-never runs without Gears.
+Your `IGearsModApi` implementation is a separate class that Gears itself instantiates, so it never
+runs without Gears.
 
-If instead your mod **requires** Gears, say so in your mod's description and skip the gate.
+If your mod **requires** Gears instead, say so in your mod's description and skip the gate.
 
-## The interface
+## Implement IGearsModApi
 
 A C# mod talks to Gears through one interface in `GearsAPI.Settings`,
-[`IGearsModApi`](/docs/reference/settings/i-gears-mod-api). It has three callbacks — `InitMod`,
-`OnGlobalSettingsLoaded` and `OnWorldSettingsLoaded` — fired in the order below.
+[`IGearsModApi`](/docs/reference/settings/i-gears-mod-api). It has three callbacks: `InitMod`,
+`OnGlobalSettingsLoaded` and `OnWorldSettingsLoaded`. They fire in the order described in
+[Startup order](#startup-order).
 
 Gears finds implementations by scanning **every assembly of your mod** for concrete classes that
-implement it:
+implement the interface. To be found, your class must meet these rules:
 
-- Abstract classes, interfaces and open generic types are skipped even if they derive from it.
-- The class needs a **public parameterless constructor**. Without one it is skipped with a
+- It must be concrete. Gears skips abstract classes, interfaces and open generic types even when
+  they derive from `IGearsModApi`.
+- It must have a **public parameterless constructor**. Without one, Gears skips it and logs a
   warning naming the type.
-- Every matching class is instantiated, and every callback is invoked on every instance. One
-  class is the normal case; several are allowed.
-- A constructor that throws is logged and that class is skipped. An assembly whose types cannot be
-  enumerated is logged and skipped.
 
-## Lifecycle
+Gears instantiates every matching class and invokes every callback on every instance. One class is
+the normal case, and several are allowed.
 
-In order:
+A constructor that throws is logged, and Gears skips that class. An assembly whose types cannot be
+enumerated is logged and skipped as well.
 
-1. **The game loads mods** and calls each mod's own `IModApi.InitMod`. Gears is not involved yet;
-   `GearsSettingsManager.GetMods()` returns an empty list here and `GetGearsMod(...)` returns
-   null.
-2. **`GameAwake`.** Gears now:
-   1. scans all loaded assemblies for `[SettingsSerializationProvider]` classes (custom value
-      types, see [C# Custom Value Types](/docs/csharp/custom-value-types));
-   2. builds one `IGearsMod` per loaded mod and reads `<Icon>`/`<Banner>` from `ModInfo.xml`;
-   3. finds and instantiates every `IGearsModApi`, for all mods;
-   4. calls **`InitMod(IGearsMod)`** on each. Your settings tree is still empty here: nothing has
-      been read from `ModSettings.xml`. This is the place to create settings from code if you
-      want them to exist before the file is read (see [C# Global Settings](/docs/csharp/global-settings));
-   5. parses every mod's `ModSettings.xml`, merging into whatever code created;
-   6. restores each player-level saved value into the global settings;
-   7. calls **`OnGlobalSettingsLoaded(IModGlobalSettings)`** on each mod. Global values are final
-      from here on until the player changes them.
+## Startup order
+
+Gears calls your callbacks in this order:
+
+1. **The game loads mods** and calls each mod's own `IModApi.InitMod`. Gears is not involved yet.
+   `GearsSettingsManager.GetMods()` returns an empty list here, and `GetGearsMod(...)` returns null.
+2. **`GameAwake`.** Gears now does the following, in order:
+   1. Scans all loaded assemblies for `[SettingsSerializationProvider]` classes. See
+      [Use Custom Value Types](/docs/csharp/custom-value-types).
+   2. Builds one `IGearsMod` per loaded mod and reads `<Icon>` and `<Banner>` from `ModInfo.xml`.
+   3. Finds and instantiates every `IGearsModApi`, for every mod.
+   4. Calls **`InitMod(IGearsMod)`** on each one. Your settings tree is still empty at this point,
+      because nothing has been read from `ModSettings.xml` yet. Create settings from code here if
+      you want them to exist before the file is read. See
+      [Use Global Settings in C#](/docs/csharp/global-settings).
+   5. Parses every mod's `ModSettings.xml`, merging it into whatever your code created.
+   6. Restores each saved global value into the global settings.
+   7. Calls **`OnGlobalSettingsLoaded(IModGlobalSettings)`** on each one. Global values are final
+      from here on, until the player changes them.
 3. **World start.** `OnWorldSettingsLoaded(IModWorldSettings)` fires in one of three ways:
    - **Hosting or single player:** when the world starts, after the save's `WorldModSettings.xml`
-     has been loaded (or defaults applied for a new save).
+     has been loaded, or after defaults have been applied for a new save.
    - **Joining a server:** when the server's world settings arrive with the other config files.
-   - **Joining a server that sent none:** every world setting is reset to its default, then the
-     callback fires.
+   - **Joining a server that sent none:** Gears resets every world setting to its default, then
+     fires the callback.
 
-   It can fire **more than once per session** (leave a world, join another). It is **skipped for a
-   mod that has no world settings**.
+`OnWorldSettingsLoaded` can fire **more than once per session**, for example when the player leaves
+one world and joins another. Gears **skips it for a mod that has no world settings**.
 
-<Callout>
-  If one of your callbacks throws, Gears logs
-  `Error thrown in <Callback>() by <YourType> for <Your Mod>` with the exception and carries on:
-  your other `IGearsModApi` classes, and every other mod, still get the callback.
-</Callout>
+When one of your callbacks throws, Gears logs
+`Error thrown in <Callback>() by <YourType> for <Your Mod>` with the exception and carries on. Your
+other `IGearsModApi` classes, and every other mod, still get the callback.
 
-## Reaching settings without a callback
+## Reach a setting without a callback
 
-[`GearsSettingsManager`](/docs/reference/settings/gears-settings-manager) exposes two static
-methods, `GetMods()` and `GetGearsMod(string)`. The mod name is the `<Name>` from `ModInfo.xml`,
-including another mod's. Both return empty/null before `GameAwake`, and `GetGearsMod` returns null
-for an unknown name.
+[`GearsSettingsManager`](/docs/reference/settings/gears-settings-manager) has two static methods,
+`GetMods()` and `GetGearsMod(string)`. The mod name is the `<Name>` from `ModInfo.xml`, and it may
+be another mod's name.
+
+Both return an empty list or null before `GameAwake`, and `GetGearsMod` returns null for a name it
+does not know, so check the result:
 
 ```csharp
 IGearsMod mine = GearsSettingsManager.GetGearsMod("MyMod");
@@ -128,12 +137,14 @@ ISliderGlobalSetting<float> hudScale = mine?.GlobalSettings
     .GetSetting<ISliderGlobalSetting<float>>("HudScale");
 ```
 
-## `IGearsMod`
+## What IGearsMod gives you
 
 [`IGearsMod`](/docs/reference/settings/i-gears-mod) is what Gears knows about one mod: the game's
-`Mod` object, the `GlobalSettings` and `WorldSettings` trees (both never null), and the `IconPath`
-and `BannerPath` read from `ModInfo.xml`. Alongside those sit the `Has…` probes and
-`SaveSettings()`, which writes the player-level saved settings file on demand.
+`Mod` object, the `GlobalSettings` and `WorldSettings` trees, which are never null, and the
+`IconPath` and `BannerPath` read from `ModInfo.xml`.
+
+Alongside those sit the `Has…` methods, which tell you whether the mod has settings of each kind,
+and `SaveSettings()`, which writes the saved global settings file on demand.
 
 ## A complete minimal implementation
 
@@ -145,6 +156,7 @@ using GearsAPI.Settings.World;
 
 public class MyModGears : IGearsModApi
 {
+    // The rest of your mod reads these two properties.
     public static float HudScale { get; private set; } = 1f;
     public static bool FeralNights { get; private set; }
 
@@ -166,8 +178,8 @@ public class MyModGears : IGearsModApi
         FeralNights = World.FeralNights.SettingValue;
     }
 
-    // Global and world members need separate types: each call resolves every path on the type it is
-    // given, and the two use different path formats.
+    // Global and world members need separate types. Each call resolves every path on the type it is
+    // given, and the two kinds of path have different formats.
     private static class Global
     {
         // [Setting] finds the setting for you and assigns it to the field.
@@ -189,6 +201,12 @@ public class MyModGears : IGearsModApi
 }
 ```
 
-Next: [C# Global Settings](/docs/csharp/global-settings),
-[C# World Settings](/docs/csharp/world-settings),
-[C# Setting Listeners](/docs/csharp/setting-listeners).
+That example assumes a `ModSettings.xml` that declares a `HudScale` slider in the `Display` category
+of the `General` tab, and a `FeralNights` switch in the `Zombies` world category. See
+[Getting Started](/docs/getting-started) for that file.
+
+## Where to go next
+
+- [Use Global Settings in C#](/docs/csharp/global-settings)
+- [Use World Settings in C#](/docs/csharp/world-settings)
+- [Bind Settings with Attributes](/docs/csharp/setting-listeners)

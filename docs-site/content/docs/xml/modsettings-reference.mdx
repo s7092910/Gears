@@ -1,30 +1,32 @@
 ---
-title: ModSettings XML Reference
-description: The complete V2 schema for ModSettings.xml, as the parser actually reads it — every element, every attribute, and exactly what happens when something is wrong.
+title: ModSettings.xml Reference
+description: The complete V2 schema for ModSettings.xml as the parser reads it — every element, every attribute, and what happens when something is wrong.
 ---
 
-The complete V2 schema for `ModSettings.xml`, as the parser actually reads it. Where the parser
-drops or ignores something, this page says so and gives the log line to look for. All log lines
-are prefixed `[Gears] [XmlSettingsParserV2]` unless stated otherwise.
+Use this page to look up any element or attribute of the V2 `ModSettings.xml` schema. Where the
+parser drops or ignores something, the page says so and gives the log line to search for. Every log
+line is prefixed `[Gears] [XmlSettingsParserV2]` unless stated otherwise.
 
-<Callout title="The guiding rule">
-  **One bad setting never takes down the file.** The parser logs the problem, skips that element,
-  and loads the rest. The price is that a dropped setting is silent unless you read the log. See
-  [Troubleshooting](/docs/troubleshooting).
+New to Gears? Start with [Getting Started](/docs/getting-started) instead.
+
+<Callout type="warn" title="A dropped setting is silent in the game">
+  One bad setting does not stop the rest of the file from loading. The parser logs the problem,
+  skips that element, and carries on. Nothing in the game tells you a setting went missing, so read
+  the log when something does not appear. See [Troubleshooting](/docs/troubleshooting).
 </Callout>
 
-## The file
+## File location and root element
 
 | Rule | Detail |
 |---|---|
-| Location | `<mod folder>\ModSettings.xml`, beside `ModInfo.xml`. No other path or name is tried. A mod without one is skipped silently. |
+| Location | `<mod folder>\ModSettings.xml`, beside `ModInfo.xml`. Gears tries no other path or name. It skips a mod without one and logs nothing. |
 | Root | `<ModSettings version="2">`. |
-| `version` | **Required, and must be `2`.** A root with no `version` is a V1 file and is rejected; any other value is rejected. Both log an error from `[ModSettingsFromXml]` naming the mod, and the whole file is skipped. |
+| `version` | **Required, and must be `2`.** A root with no `version` is a V1 file and is rejected, and so is any other value. Both log an error from `[ModSettingsFromXml]` naming the mod, and the whole file is skipped. |
 | Malformed XML | The whole file is skipped: `Mod <Name> ModSettings Failed parsing <folder>:` followed by the exception. |
 | Wrong root name or no child elements | The whole file is skipped with an error. |
-| When | Read once, at game start (`GameAwake`), for every loaded mod in the game's load order. |
+| When it is read | Once, at game start (`GameAwake`), for every loaded mod in the game's load order. |
 
-## Document shape
+## Document structure
 
 ```xml
 <ModSettings version="2">
@@ -43,34 +45,36 @@ are prefixed `[Gears] [XmlSettingsParserV2]` unless stated otherwise.
 </ModSettings>
 ```
 
-- `<Global>` and `<World>` are both optional. Only the first of each is read.
-- `<Global>` reads only its `<Tab>` children; `<World>` reads only its `<Category>` children.
-  Anything else directly under them is ignored without a log line.
+`<Global>` holds the player's settings and `<World>` holds one world's settings. Both are optional,
+and Gears reads only the first of each.
 
-## `<Tab>` (Global only)
+`<Global>` reads only its `<Tab>` children, and `<World>` reads only its `<Category>` children.
+Gears ignores anything else directly under them and logs nothing.
+
+## `<Tab>`, global only
 
 | Attribute | Required | Notes |
 |---|---|---|
-| `name` | yes | Identity within Global. Two tabs with the same name are **merged** into one. |
-| `displayKey` | no | Localization key for the tab label. Empty falls back to `name`. |
-| `tooltipKey` | no | Localization key for the hover text. **Tab is the only element that still uses `tooltipKey`**; everywhere else that became `<Description>`. |
+| `name` | yes | Identity within Global. Gears **merges** two tabs with the same name into one. |
+| `displayKey` | no | Localization key for the tab label. An empty value falls back to `name`. |
+| `tooltipKey` | no | Localization key for the hover text. **Tab is the only element that still uses `tooltipKey`.** Everywhere else it became `<Description>`. |
 
-A Tab is not a setting: it takes no `Caption`, `Description`, `Preview` or `RestartScope`. Only
-its `<Category>` children are read; a setting placed directly under a Tab is dropped silently.
-A Tab with no categories still exists.
+A tab is not a setting, so it takes no `<Caption>`, `<Description>`, `<Preview>` or
+`<RestartScope>`. Gears reads only its `<Category>` children and drops a setting placed directly
+under a tab, without a log line. A tab with no categories still exists.
 
 ## `<Category>`
 
-Same shape under Global and World.
+Categories have the same shape under Global and World.
 
 | Attribute | Required | Notes |
 |---|---|---|
-| `name` | yes | Identity within its Tab (Global) or within World. Duplicates merge. |
+| `name` | yes | Identity within its tab, for a global setting, or within World. Duplicates merge. |
 | `displayKey` | no | Falls back to `name`. |
 
-A Category **is** a setting for display purposes, so it accepts `<Caption>`, `<Description>` and
+A category counts as a setting for display purposes, so it accepts `<Caption>`, `<Description>` and
 a single value-less `<Preview><Image path=""/></Preview>`. It does not accept `tooltipKey` or
-`<RestartScope>`. Every child element is tried as a setting; unknown element names are dropped
+`<RestartScope>`. Gears tries every child element as a setting and drops unknown element names
 without a log line.
 
 ## Setting elements
@@ -80,178 +84,186 @@ without a log line.
 | `<Selector>` | yes | yes | `int`, `float`, `string`, any enum |
 | `<Slider>` | yes | yes | `int`, `float` **only** |
 | `<Switch>` | yes | yes | `bool`, `string`, any enum |
-| `<Color>` | yes | no | always a colour; `type` is accepted and ignored |
+| `<Color>` | yes | no | always a color; `type` is accepted and ignored |
 | `<Binding>` | yes | no | none; a key binding has no value |
 
-A `Color` or `Binding` under `<World>` is dropped without a log line. Any other element name is
-dropped without a log line. A setting whose construction throws for any reason is dropped with
-`Failed to parse global <Element> '<name>': <message>` (or `world`).
+Gears drops a `Color` or `Binding` under `<World>` without a log line, and drops any other element
+name the same way. When constructing a setting throws for any reason, Gears drops it with
+`Failed to parse global <Element> '<name>': <message>`, or `world` in place of `global`.
 
-### Attributes shared by every setting
+### Attributes every setting takes
 
 | Attribute | Required | Notes |
 |---|---|---|
-| `name` | yes | Identity within its Category. Duplicates merge. **World setting names must also be unique across all World categories of the mod**: saved world values are looked up by name alone, so two categories sharing a name will both restore the first one's value. |
+| `name` | yes | Identity within its category, and the key the player's saved value is stored under. Duplicates merge. Renaming a setting after release discards the saved value, so treat a released `name` as fixed; see [Troubleshooting](/docs/troubleshooting). **A world setting's name must also be unique across every world category of the mod.** Gears looks up saved world values by name alone, so two categories that share a setting name both restore the first one's value. |
 | `displayKey` | no | Falls back to `name`. |
-| `type` | yes, except `Color` and `Binding` | See [Value types](#value-types). |
-| `defaultValue` | **yes**, except `Binding` | See [defaultValue](#defaultvalue). |
+| `type` | yes, except on `Color` and `Binding` | See [Value types](#value-types). |
+| `defaultValue` | **yes**, except on `Binding` | See [defaultValue](#defaultvalue). |
 
 ### Value types
 
-`type` is matched case-insensitively after trimming.
+Gears trims `type` and matches it case-insensitively.
 
 | Write | Meaning |
 |---|---|
 | `int`, `Int32`, `integer` | 32-bit integer |
-| `float`, `Single` | single-precision float. Accepts a `%` suffix: `50%` is stored as `0.5`. This applies wherever a float is parsed: `defaultValue`, `increment`, `minValue`, `maxValue`, `List` entries, `Image value`. |
+| `float`, `Single` | single-precision float. Accepts a `%` suffix, so `50%` is stored as `0.5`. This applies wherever a float is parsed: `defaultValue`, `increment`, `minValue`, `maxValue`, `List` entries and `Image value`. |
 | `string` | text |
-| `bool`, `boolean` | `true` / `false` |
+| `bool`, `boolean` | `true` or `false` |
 | `Color`, `Color32` | `R,G,B` or `R,G,B,A`, each 0–255 |
-| `double` | resolves, but **no Selector, Slider or Switch exists for it**; the setting is dropped |
-| anything else | treated as a type name and looked up in every loaded assembly, case-insensitively, by full name (`MyMod.Difficulty`), assembly-qualified name ie. (`MyMod.Difficulty, MyMod`) or (`MyMod.Difficulty+DifficultySettings, MyMod `) for inner types or bare name (`Difficulty`). Must be an enum or a type with a registered parser (see [C# Custom Value Types](/docs/csharp/custom-value-types)). |
+| `double` | resolves, but **no Selector, Slider or Switch exists for it**, so the setting is dropped |
+| anything else | treated as a type name and looked up in every loaded assembly, case-insensitively. Write the full name (`MyMod.Difficulty`), the assembly-qualified name (`MyMod.Difficulty, MyMod`), or the bare name (`Difficulty`). For an enum declared inside a class, separate the class from the enum with a plus sign (`MyMod.PlayerController+Difficulty`); a dot does not resolve. The type must be an enum or have a registered parser. See [Use Custom Value Types](/docs/csharp/custom-value-types#name-an-enum-declared-inside-a-class). |
 
-Failures, all of which drop the setting:
+Each of these failures drops the setting:
 
 | Log line | Cause |
 |---|---|
-| `<Element> '<name>' has no type.` | `type` missing or whitespace |
+| `<Element> '<name>' has no type.` | `type` is missing or whitespace |
 | `<Element> '<name>' has unknown type '<raw>'. Use one of int, float, string, bool, Color, or the name of an enum type such as 'MyMod.Difficulty, MyMod'.` | not an alias and not a resolvable type name |
 | `<Element> '<name>' uses type '<raw>', which is neither an enum nor a type with a registered parser.` | resolves to a real type Gears cannot read |
-| `Slider '<name>' has unsupported type '<type>'; sliders support int and float only.` | Slider with anything else |
-| `Setting '<name>' of type '<Type>' could not be created: <message>` | an enum or custom type that has no setting implementation for that element |
+| `Slider '<name>' has unsupported type '<type>'; sliders support int and float only.` | a Slider with anything but `int` or `float` |
+| `Setting '<name>' of type '<Type>' could not be created: <message>` | an enum or custom type with no setting implementation for that element |
 
-An **enum Selector** starts with every declared member as its allowed values, in declaration
-order, so it needs no `<List>`. An **enum Switch** takes the first two declared members as left
-and right unless `<Buttons>` says otherwise.
+An **enum Selector** starts with every declared member as its allowed values, in declaration order,
+so it needs no `<List>`. An **enum Switch** takes the first two declared members as left and right
+unless `<Buttons>` says otherwise.
 
 ### `defaultValue`
 
-**Required** on Selector, Slider, Switch and Color. The default seeds three things at once: the
-setting's default, its saved value and its selected value. The player's saved value, if any,
-replaces the latter two after the file has loaded.
+`defaultValue` is **required** on Selector, Slider, Switch and Color. It seeds three things at once:
+the setting's default value, its applied value and its selected value. The player's saved value, if
+there is one, replaces the last two after the file has loaded.
 
 | Case | Result |
 |---|---|
 | Missing or whitespace | Setting dropped: `<Element> '<name>' has no defaultValue; defaultValue is required, skipping.` |
-| Present but unparseable | Setting kept at `default(T)` (0, `false`, empty, black); `[GlobalModValueSetting]` or `[WorldModValueSetting]` logs `Setting '<name>': could not parse defaultValue '<raw>' as <Type> - <message>` |
-| Not in the `List` / `Incremental` range / `Buttons` | Not checked. The setting loads with the value you gave. |
+| Present but unparseable | Setting kept at `default(T)`: 0, `false`, empty, or black. `[GlobalModValueSetting]` or `[WorldModValueSetting]` logs `Setting '<name>': could not parse defaultValue '<raw>' as <Type> - <message>` |
+| Outside the `List`, the `Incremental` range or the `Buttons` values | Not checked. The setting loads with the value you gave. |
 
 ## Child elements
 
-Each child is matched by name among the setting's direct children. Unless noted, the order in
-the file does not matter.
+Gears matches each child by name among the setting's direct children. Unless noted, the order in the
+file does not matter.
 
-### `<Incremental increment="" minValue="" maxValue="" />` — Selector, Slider
+### `<Incremental increment="" minValue="" maxValue="" />` on Selector and Slider
 
-Parsed with the setting's value type. **All three must parse or none is applied**, each failure
-logging `Setting '<name>': could not parse <increment|minValue|maxValue> '<raw>' as <Type> - <message>`.
+Gears parses all three attributes with the setting's value type. **All three must parse or Gears
+applies none of them.** Each failure logs
+`Setting '<name>': could not parse <increment|minValue|maxValue> '<raw>' as <Type> - <message>`.
 
-- On a **Slider** the three values are stored as the slider's range. A slider with no
-  `Incremental` has a range of 0 to 0.
-- On an **int or float Selector** the range is expanded to the list `min, min+increment, …` up
-  to and including `max`. `increment` must be greater than 0 and `min` no greater than `max`;
-  otherwise the range is ignored with `Setting:'<name>', SetAllowedValues(increment, min, max) requires increment > 0 and min <= max; …` from `[SelectorSetting]` or `[SelectorWorldSetting]`.
-- On a **string or enum Selector** the range is ignored with `Setting:'<name>', SetAllowedValues(increment, min, max) requires a numeric type; '<Type>' is not supported.`
+- On a **Slider**, the three values become the slider's range. A slider with no `<Incremental>` has
+  a range of 0 to 0.
+- On an **int or float Selector**, Gears expands the range into the list `min, min+increment, …` up
+  to and including `max`. `increment` must be greater than 0 and `min` no greater than `max`.
+  Otherwise Gears ignores the range and `[SelectorSetting]` or `[SelectorWorldSetting]` logs
+  `Setting:'<name>', SetAllowedValues(increment, min, max) requires increment > 0 and min <= max; …`
+- On a **string or enum Selector**, Gears ignores the range and logs
+  `Setting:'<name>', SetAllowedValues(increment, min, max) requires a numeric type; '<Type>' is not supported.`
 
-### `<List allowedValues="a,b,c" />` — Selector only
+### `<List allowedValues="a,b,c" />` on Selector only
 
-Split on commas, each entry trimmed and parsed. **One bad entry drops the whole list**, logging
-`Setting '<name>': could not parse allowedValues entry '<raw>' as <Type> - <message>`; the setting
-survives with no allowed values. There is no way to include a literal comma.
+Gears splits the value on commas, then trims and parses each entry. **One bad entry drops the whole
+list**, logging `Setting '<name>': could not parse allowedValues entry '<raw>' as <Type> - <message>`.
+The setting survives with no allowed values. There is no way to include a literal comma in a value.
 
-If a Selector declares both `<List>` and `<Incremental>`, **the list is applied first and the
-range second**, whatever order they appear in, so the range wins.
+When a Selector declares both `<List>` and `<Incremental>`, Gears applies the list first and the
+range second, whatever order they appear in, so the range wins.
 
-### `<Formatter ui="" serialize="" />` — Selector, Slider
+### `<Formatter ui="" serialize="" />` on Selector and Slider
 
-Both attributes optional; each is applied only if non-empty.
+Both attributes are optional, and Gears applies each one only if it is non-empty.
 
 - `ui` is what the player sees.
-- `serialize` is what is written to the saved settings file and what `modsetting()` returns.
+- `serialize` is what Gears writes to the saved settings file and what `modsetting()` returns.
 
-Each is a .NET numeric format string handed to the value's formatter: `"0.0"`, `"000"`, `"0%"`,
-and so on. They take effect on `int`, `float` and `double`. **`bool`, `string`, `Color` and enums
-ignore the format string**, and **`<Formatter>` is ignored entirely on `Switch`, `Color` and
-`Binding`**.
+Each is a .NET numeric format string, such as `"0.0"`, `"000"` or `"0%"`, handed to the value's
+formatter. They take effect on `int`, `float` and `double`. **`bool`, `string`, `Color` and enums
+ignore the format string**, and Gears ignores `<Formatter>` entirely on `Switch`, `Color` and
+`Binding`.
 
-### `<LocalizationPrefix prefix="" />` — Selector, Switch
+### `<LocalizationPrefix prefix="" />` on Selector and Switch
 
-The prefix is concatenated with the formatted value, **with no separator**, and the result is
-looked up as a localization key: prefix `gearsUnits` and value `metric` show whatever
-`gearsUnitsmetric` says in `Localization.csv`. Applies to each allowed value, to both Switch
-buttons, and to the current and selected value. Ignored on Slider, Color and Binding.
+Gears joins the prefix to the formatted value **with no separator** and looks the result up as a
+localization key. A prefix of `myModUnits_` and a value of `metric` display whatever
+`myModUnits_metric` says in `Localization.csv`.
 
-### `<Wrap wrap="true" />` — Selector only
+The prefix applies to each allowed value, to both Switch buttons, and to the current and selected
+value. Gears ignores it on Slider, Color and Binding.
 
-`true` or `false`, case-insensitive. Anything else is ignored and wrapping stays off. Controls
-whether stepping past the last value returns to the first.
+### `<Wrap wrap="true" />` on Selector only
 
-### `<Buttons left="" right="" />` — Switch only
+Write `true` or `false`, in any case. Gears ignores anything else and leaves wrapping off. Wrapping
+controls whether stepping past the last value returns to the first.
 
-Both attributes must be present and both must parse as the value type, **otherwise neither is
-applied** and the defaults stand:
+### `<Buttons left="" right="" />` on Switch only
+
+Both attributes must be present and both must parse as the value type. **Otherwise Gears applies
+neither** and these defaults stand:
 
 | Type | Left | Right |
 |---|---|---|
 | `bool` | `false` | `true` |
 | enum | first declared member | second declared member |
-| `string` | none | none (set `<Buttons>`) |
+| `string` | none | none, so set `<Buttons>` |
 
-The lit button always follows the selected value: it is Right when the value equals the right
-side and not the left, and Left otherwise.
+The lit button follows the selected value. It is Right when the value equals the right side and not
+the left, and Left in every other case.
 
-### `<Caption key="" />` and `<Description key="" />` — every setting and Category, not Tab
+### `<Caption key="" />` and `<Description key="" />` on every setting and category, but not Tab
 
-Localization keys. Applied only if `key` is non-empty; `<Caption />` or `<Caption key="" />`
-leaves the property unset.
+Both take a localization key, and Gears applies each one only if `key` is non-empty. Writing
+`<Caption />` or `<Caption key="" />` leaves the property unset.
 
-- Caption is the short heading in the description pane. Unset, it falls back to the display name.
-- Description is the body text. Unset, nothing is shown. This is the V2 replacement for the V1
+- The caption is the short heading in the description pane. Unset, it falls back to the display
+  name.
+- The description is the body text. Unset, nothing is shown. This is the V2 replacement for the V1
   `tooltipKey` on settings and categories.
 
-### `<RestartScope scope="" />` — Global settings only
+### `<RestartScope scope="" />` on global settings only
 
-`None`, `Reload` or `Restart`, case-insensitive. Shown to the player as a warning that a change
-needs a world reload or a game restart. An unrecognised value leaves `None`; an empty one is
-ignored.
+Write `None`, `Reload` or `Restart`, in any case. Gears shows the player a warning that a change
+needs a world reload or a game restart. An unrecognized value leaves the scope at `None`, and an
+empty one is ignored.
 
-**Ignored, without a log line, on World settings and on Categories.** A world setting is applied
-along with the save it belongs to, so there is nothing to ask the player to restart.
+Gears **ignores `<RestartScope>` on a world setting and on a category, without a log line**. A world
+setting is applied along with the world it belongs to, so there is nothing to ask the player to
+restart.
 
 ### `<Preview>` with `<Image path="" value="" />`
 
-An image shown beside the setting. Two forms:
+A preview is an image shown beside the setting. There are two forms:
 
-- `<Image path="…" />` with no `value` is the **setting's own image**. Allowed on every setting
-  and on a Category. With several, **the last one wins**.
-- `<Image value="…" path="…" />` is shown **while that value is selected**. Selector, Slider
-  and Switch only. The `value` is parsed as the setting's type; unparseable ones are skipped with
-  `Setting '<name>': could not parse preview value '<raw>' as <Type> - <message>`. With two
-  images for the same value, **the first one wins**.
+- `<Image path="…" />` with no `value` is the **setting's own image**. It is allowed on every
+  setting and on a category. With several, **the last one wins**.
+- `<Image value="…" path="…" />` is shown **while that value is selected**, on Selector, Slider and
+  Switch only. Gears parses `value` as the setting's type and skips an unparseable one with
+  `Setting '<name>': could not parse preview value '<raw>' as <Type> - <message>`. With two images
+  for the same value, **the first one wins**.
 
-`Color` accepts only the value-less form; a valued `<Image>` on a Color is skipped with the
-warning `Setting '<name>': Color settings do not support per-value previews, ignoring <Image value="…">.`
-`Binding` and `Category` are value-less only. An `<Image>` with no `path`, or one outside a
-`<Preview>`, is ignored.
+`Color` accepts only the value-less form. Gears skips a valued `<Image>` on a Color with the warning
+`Setting '<name>': Color settings do not support per-value previews, ignoring <Image value="…">.`
+`Binding` and `Category` also take the value-less form only. Gears ignores an `<Image>` with no
+`path`, and one placed outside a `<Preview>`.
 
-`path` is passed to the game's texture loader untouched. Use the game's own mod-folder form:
+Gears passes `path` to the game's texture loader untouched, so use the game's own mod-folder form:
 
 ```xml
 <Image path="@modfolder(MyMod)://Textures/low.png" />
 ```
 
-where `MyMod` is the `<Name>` from `ModInfo.xml`.
+Here `MyMod` is the `<Name>` from `ModInfo.xml`.
 
-### `<Color>` specifics
+### `<Color>`
 
 ```xml
 <Color name="Crosshair" displayKey="myModCrosshair" defaultValue="255,0,0" />
 ```
 
-Fixed type, so `type` is accepted and ignored. Takes `defaultValue` (required), `Caption`,
-`Description`, `RestartScope` and a value-less `Preview`. Serialized as `R,G,B` 0–255.
+A Color setting has a fixed type, so `type` is accepted and ignored. It takes `defaultValue`, which
+is required, plus `<Caption>`, `<Description>`, `<RestartScope>` and a value-less `<Preview>`. Gears
+serializes it as `R,G,B` in the range 0–255.
 
-### `<Binding>` specifics
+### `<Binding>`
 
 ```xml
 <Binding name="Boost" displayKey="myModBoost">
@@ -259,43 +271,44 @@ Fixed type, so `type` is accepted and ignored. Takes `defaultValue` (required), 
 </Binding>
 ```
 
-Takes only `name`, `displayKey`, `Caption`, `Description`, `RestartScope` and a value-less
-`Preview`. No `type`, no `defaultValue`, no valued previews. Declaring the binding in XML gives it
-a row in the menu; the actual key binding has to be attached from C# through
-[`IControlBindingSetting.PlayerAction`](/docs/reference/global/i-control-binding-setting) (see
-[C# Global Settings](/docs/csharp/global-settings)).
+A Binding takes only `name`, `displayKey`, `<Caption>`, `<Description>`, `<RestartScope>` and a
+value-less `<Preview>`. It has no `type`, no `defaultValue` and no valued previews.
 
-## Duplicates and merging
+Declaring the binding in XML gives it a row in the menu. You must attach the actual key binding from
+C# through [`IControlBindingSetting.PlayerAction`](/docs/reference/global/i-control-binding-setting).
+See [Use Global Settings in C#](/docs/csharp/global-settings).
 
-Two tabs, categories or settings with the same `name` in the same place are merged rather than
-duplicated. For a value setting the later default, saved and selected values overwrite the
-earlier ones; a Selector's allowed values, formatters and prefix are taken only if the earlier
-one had none; `Wrap` is true if either was.
+## How duplicate names merge
+
+Gears merges two tabs, categories or settings that share a `name` in the same place, rather than
+creating two of them. For a value setting, the later default, applied and selected values overwrite
+the earlier ones. A Selector's allowed values, formatters and prefix are taken only when the earlier
+one had none. `Wrap` is true if either one set it.
 
 ## What gets dropped and what survives
 
 | Problem | Outcome |
 |---|---|
 | No `version`, wrong `version`, malformed XML, wrong root | **Whole file skipped** |
-| Setting with no `type`, unknown `type`, or a `type` with no implementation for that element | Setting dropped |
+| Setting with no `type`, an unknown `type`, or a `type` with no implementation for that element | Setting dropped |
 | Selector, Slider, Switch or Color with no `defaultValue` | Setting dropped |
 | `string` or `bool` on a Slider | Setting dropped |
-| `Color` or `Binding` under `<World>` | Setting dropped silently |
-| Setting element directly under `<Tab>` | Setting dropped silently |
+| `Color` or `Binding` under `<World>` | Setting dropped, no log line |
+| Setting element directly under `<Tab>` | Setting dropped, no log line |
 | Unparseable `defaultValue` | Setting kept at `default(T)` |
 | One bad `allowedValues` entry | Whole list dropped, setting kept |
-| One bad `increment` / `minValue` / `maxValue` | Whole range dropped, setting kept |
+| One bad `increment`, `minValue` or `maxValue` | Whole range dropped, setting kept |
 | `increment` of 0 or less, or `min` above `max` | Range dropped, setting kept |
 | `<Buttons>` with one side missing or unparseable | Neither side applied, setting kept |
 | Non-boolean `Wrap` | Ignored |
 | Unknown `RestartScope` | Ignored |
-| `RestartScope` on a World setting or a Category | Ignored |
-| `<Formatter>` on Switch, Color, Binding | Ignored |
-| `<Image>` without `path`, outside `<Preview>`, or with an unparseable `value` | Image skipped |
+| `RestartScope` on a world setting or a category | Ignored |
+| `<Formatter>` on Switch, Color or Binding | Ignored |
+| `<Image>` with no `path`, outside `<Preview>`, or with an unparseable `value` | Image skipped |
 
 ## Blank template
 
-Every element in one place. Copy and delete what you do not need; remember that `type` and
+Every element in one place. Copy it and delete what you do not need. Remember that `type` and
 `defaultValue` must be filled in on every Selector, Slider, Switch and Color.
 
 ```xml title="ModSettings.xml"

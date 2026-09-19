@@ -1,14 +1,19 @@
 ---
-title: C# Global Settings
-description: Tabs, categories, the typed setting interfaces, the three-value model and the events that fire when values change.
+title: Use Global Settings in C#
+description: Navigate tabs and categories, create settings from code, read the three values each setting holds, and subscribe to the events that fire when a value changes.
 ---
 
-Global settings belong to the player and apply to every world. In C# they are reached through
-[`IModGlobalSettings`](/docs/reference/global/i-mod-global-settings), handed to
-`OnGlobalSettingsLoaded` or available as `IGearsMod.GlobalSettings`. Namespaces:
-`GearsAPI.Settings`, `GearsAPI.Settings.Global`, `GearsAPI.Settings.Base`.
+A **global setting** is a mod setting that belongs to the player and applies in every world. Use
+this page to read one from C#, create one from code, and react when the player changes it.
 
-## The tree
+Reach global settings through
+[`IModGlobalSettings`](/docs/reference/global/i-mod-global-settings), which Gears hands to
+`OnGlobalSettingsLoaded` and which is also available as `IGearsMod.GlobalSettings`. The types live
+in `GearsAPI.Settings`, `GearsAPI.Settings.Global` and `GearsAPI.Settings.Base`.
+
+## Find a setting in the tree
+
+Global settings form three levels:
 
 ```text
 IModGlobalSettings
@@ -17,26 +22,25 @@ IModGlobalSettings
         └── IGlobalModSetting        (GetSetting / CreateSetting / GetOrCreateSetting)
 ```
 
-Each level offers the same three lookups — `Get…` returns null when the name is unknown,
-`Create…` throws when it is already taken, and `GetOrCreate…` does whichever is needed. Tabs and
-categories also take `Add…` and `Remove…` for objects you built yourself, and every level can list
-its children. Full member lists:
+Every level offers the same three lookups. `Get…` returns null when the name is unknown, `Create…`
+throws when the name is already taken, and `GetOrCreate…` does whichever is needed.
+
+Tabs and categories also take `Add…` and `Remove…` for objects you built yourself, and every level
+can list its children. For the full member lists, see
 [`IModGlobalSettings`](/docs/reference/global/i-mod-global-settings),
-[`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab),
+[`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab) and
 [`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category).
 
-Two things to know:
-
 <Callout type="warn">
-  **`CreateTab` throws `ArgumentException` if the name already exists.** When your XML may also
-  declare the tab, use `GetOrCreateTab`. The same applies to categories and settings.
+  **`CreateTab` throws `ArgumentException` when the name already exists.** Use `GetOrCreateTab` when
+  your XML may declare the same tab. The same applies to categories and settings.
 </Callout>
 
-- **A category is itself an `IGlobalModSetting`.** That is how it gets a caption, description and
-  preview image. Its `RestartScope` always reads `None`, and `GetAllSettings()` on a category
-  returns the category first, followed by its settings.
+A category is itself an `IGlobalModSetting`, which is how it gets a caption, description and preview
+image. Its `RestartScope` always reads `None`, and `GetAllSettings()` on a category returns the
+category first, followed by its settings.
 
-## Creating settings from code
+## Create a setting from code
 
 `CreateSetting<T>` takes one of the closed setting interfaces:
 
@@ -48,12 +52,15 @@ Two things to know:
 | [`IColorSelectorGlobalSetting`](/docs/reference/global/i-color-selector-global-setting) | fixed, `UnityEngine.Color` |
 | [`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting) | fixed, no value |
 
+Create settings in `InitMod`, before Gears reads `ModSettings.xml`:
+
 ```csharp
 public void InitMod(IGearsMod mod)
 {
     IGlobalModSettingsTab tab = mod.GlobalSettings.GetOrCreateTab("General", "myModTabGeneral");
     IGlobalModSettingsCategory display = tab.GetOrCreateCategory("Display", "myModCatDisplay");
 
+    // "Fov" is the name you look the setting up by; "myModFov" is a key in your Localization.csv.
     ISliderGlobalSetting<int> fov = display.GetOrCreateSetting<ISliderGlobalSetting<int>>("Fov", "myModFov");
     fov.SetAllowedValues(increment: 5, min: 45, max: 120);
     fov.DefaultValue = 65;
@@ -65,122 +72,159 @@ public void InitMod(IGearsMod mod)
 }
 ```
 
-Always set `DefaultValue`, `SettingValue` and `SelectedValue` on a setting you create; a fresh
-setting holds `default(T)` for all three. Settings created in `InitMod` are merged with whatever
-`ModSettings.xml` declares under the same names, and the player's saved value is restored on top.
+<Callout type="warn">
+  Always set `DefaultValue`, `SettingValue` and `SelectedValue` on a setting you create. A fresh
+  setting holds `default(T)` in all three, which is 0, `false`, null or black.
+</Callout>
 
-Exceptions from `CreateSetting<T>`:
+Gears merges settings you create in `InitMod` with whatever `ModSettings.xml` declares under the
+same names, then restores the player's saved value on top.
 
-- `ArgumentException` when `T` is not one of the interfaces above (for example
-  `IGlobalModSetting` itself).
-- `InvalidOperationException` when the value type has no implementation for that family
-  (`ISliderGlobalSetting<string>`, `ISelectorGlobalSetting<double>`) or no registered parser
-  (`ISelectorGlobalSetting<TimeSpan>`). See [C# Custom Value Types](/docs/csharp/custom-value-types).
+`CreateSetting<T>` throws in two cases:
 
-## Every setting: `IModSetting`
+- `ArgumentException` when `T` is not one of the interfaces above, such as `IGlobalModSetting`
+  itself.
+- `InvalidOperationException` when the value type has no implementation for that family, such as
+  `ISliderGlobalSetting<string>` or `ISelectorGlobalSetting<double>`, or has no registered parser,
+  such as `ISelectorGlobalSetting<TimeSpan>`. See
+  [Use Custom Value Types](/docs/csharp/custom-value-types).
+
+## Members every setting has
 
 [`IModSetting`](/docs/reference/settings/i-mod-setting) is what every setting has, categories
-included: `Name` and `DisplayKey` for identity, `CaptionKey` and `DescriptionKey` for the
-description pane, `Enabled` to grey the row out, and the `IsChanged` / `IsDefault` flags. The
-`Get…Text()` helpers do the localization lookups for you, and `OnEnabled` fires when `Enabled`
-flips.
+included:
 
-Three methods drive the settings window, and they are worth knowing because they define the
-three-value model below:
+- `Name` and `DisplayKey` for identity.
+- `CaptionKey` and `DescriptionKey` for the description pane.
+- `Enabled`, which grays the row out when false, and the `OnEnabled` event that fires when it flips.
+  See [Disabling a setting](#disabling-a-setting) for what else it changes.
+- The `IsChanged` and `IsDefault` flags.
+- `Get…Text()` helpers that do the localization lookups for you.
+- `AddPreview(string path)` for the setting's own image, and `AddPreview(T value, string path)` on
+  [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) for an image shown while one
+  value is selected. These are the code equivalent of the `<Preview>` element. The last setting-wide
+  image wins, and the first image registered for a given value wins.
+
+Three more methods drive the settings window, and they define the three-value model below:
 
 | Method | Effect |
 |---|---|
-| `ResetToDefault()` | selected value ← default value. The applied value is untouched. |
-| `DiscardCurrentChange()` | selected value ← applied value. |
-| `ApplyCurrentChange()` | applied value ← selected value, raising `OnValueChanged` and, on a global setting, `OnSettingApplied`. |
+| `ResetToDefault()` | Sets the selected value to the default value. The applied value is untouched. |
+| `DiscardCurrentChange()` | Sets the selected value to the applied value. |
+| `ApplyCurrentChange()` | Sets the applied value to the selected value, raising `OnValueChanged` and, on a global setting, `OnSettingApplied`. |
+
+<Callout type="warn">
+  `ResetToDefault()` moves only the **selected** value. To reset the value your mod acts on, call
+  `ApplyCurrentChange()` after it.
+</Callout>
 
 [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) adds what only a player-level
 setting has: a [`RestartScope`](/docs/reference/settings/setting-restart-scope), the `Category` and
-`Tab` it belongs to, and the `OnSettingApplied` event raised by `ApplyCurrentChange()`.
+`Tab` it belongs to, and the `OnSettingApplied` event that `ApplyCurrentChange()` raises.
 
-## The three values
+### Disabling a setting
+
+Set `Enabled` to false to gray a row out, which is how you make one setting depend on another. On a
+global value setting it also does two things that are easy to miss:
+
+- Assigning `SelectedValue` still changes the value, but raises no `OnSelectedChanged`.
+- `ApplyCurrentChange()` does nothing at all. The applied value does not move, and neither
+  `OnValueChanged` nor `OnSettingApplied` fires.
+
+So a disabled setting keeps the applied value it had, and your listeners go quiet until you enable it
+again. World settings have no such gate: they behave the same whether `Enabled` is true or false.
+
+## The three values a setting holds
 
 Every value setting holds three values of its type `T`:
 
 | Property | Meaning | Changed by |
 |---|---|---|
-| `DefaultValue` | what `Reset` goes back to | `defaultValue` in XML, or you |
-| `SettingValue` | the **applied** value: saved to disk, read by `modsetting()`, what your mod should act on | the player pressing Apply, the saved-settings restore, or you |
-| `SelectedValue` | what the player currently has picked in the UI, possibly not yet applied | the UI, `ResetToDefault`, `DiscardCurrentChange`, or you |
+| `DefaultValue` | what a reset goes back to | `defaultValue` in XML, or your code |
+| `SettingValue` | the **applied** value: saved to disk, returned by `modsetting()`, and the one your mod should act on | the player pressing Apply, the saved-settings restore, or your code |
+| `SelectedValue` | what the player currently has picked in the menu, which they may not have applied yet | the settings window, `ResetToDefault`, `DiscardCurrentChange`, or your code |
 
 All three live on [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting), which also
 carries the per-value preview images and the `OnSelectedChanged` event.
 [`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting) adds `OnValueChanged` on
-top.
+top of that.
 
-Read `SettingValue` when you want the value the player has committed to. Subscribe to
-`OnValueChanged` to react when that changes. `OnSelectedChanged` fires on every click in the menu, before
-the player has saved the settings; use it for live previews only.
+Read `SettingValue` when you want the value the player has committed to, and subscribe to
+`OnValueChanged` to react when it changes. `OnSelectedChanged` fires on every click in the menu,
+before the player has saved, so use it for live previews only.
 
-<Callout>
-  Every setter is a no-op when the new value equals the old one, so the events fire only on real
-  changes.
-</Callout>
+Every setter is a no-op when the new value equals the old one, so these events fire only on a real
+change.
 
-### String access
+### Read and write a setting as a string
 
 Code that handles settings without knowing their value type goes through
 [`IValueModSettingBase`](/docs/reference/base/i-value-mod-setting-base). Its `Set…FromString`
-methods parse with the type's registered parser, logging and keeping the old value when the text
-does not parse. On the way out, `GetUiFormattedSettingValue()` gives the text the player sees
-(formatter, prefix, localized) and `GetSerializedFormattedSettingValue()` gives what is written to
-disk and returned by `modsetting()`.
+methods parse with the type's registered parser; when the text does not parse, Gears logs it and
+keeps the old value.
+
+On the way out, `GetUiFormattedSettingValue()` returns the text the player sees, after the
+formatter, the prefix and localization. `GetSerializedFormattedSettingValue()` returns what Gears
+writes to disk and what `modsetting()` returns.
 
 ## Selector
 
 [`ISelectorGlobalSetting<T>`](/docs/reference/global/i-selector-global-setting) sets the allowed
-values, either from an explicit `T[]` or from an increment/min/max range.
-[`ISelectorSettingBase`](/docs/reference/base/i-selector-setting-base) carries the presentation
-underneath it: `UiFormatter` and `SerializationFormatter`, the `LocalizationPrefix`, `Wrap`, and
+values, either from an explicit `T[]` or from an increment, minimum and maximum.
+[`ISelectorSettingBase`](/docs/reference/base/i-selector-setting-base) underneath it carries the
+presentation: `UiFormatter`, `SerializationFormatter`, `LocalizationPrefix`, `Wrap` and
 `SelectByIndex`.
 
-The display strings are built when first asked for, so a formatter or prefix assigned after the
-values still applies. `SetAllowedValues(increment, min, max)` requires `increment > 0` and
-`min <= max`; otherwise it logs and leaves the values alone. An enum selector starts with every
-declared member.
+Gears builds the display strings when they are first asked for, so a formatter or prefix you assign
+after the values still applies.
+
+`SetAllowedValues(increment, min, max)` requires `increment > 0` and `min <= max`. Otherwise it logs
+the problem and leaves the values alone. An enum selector starts with every declared member.
 
 ## Slider
 
-[`ISliderGlobalSetting<T>`](/docs/reference/global/i-slider-global-setting) exposes the range as
-read-only `Increment`, `Min` and `Max`, set together through `SetAllowedValues`. Formatting comes
-from [`ISliderSettingBase`](/docs/reference/base/i-slider-setting-base).
+[`ISliderGlobalSetting<T>`](/docs/reference/global/i-slider-global-setting) exposes the range as the
+read-only `Increment`, `Min` and `Max`, which you set together through `SetAllowedValues`. The
+formatting comes from [`ISliderSettingBase`](/docs/reference/base/i-slider-setting-base).
 
 Only `int` and `float` sliders exist.
 
 ## Switch
 
 [`ISwitchGlobalSetting<T>`](/docs/reference/global/i-switch-global-setting) holds the two sides as
-`LeftValue` and `RightValue`, settable together through `SetSwitchValues`.
+`LeftValue` and `RightValue`, which you set together through `SetSwitchValues`.
 [`ISwitchSettingBase`](/docs/reference/base/i-switch-setting-base) underneath it has the
-`LocalizationPrefix`, the `GetLeftText()` / `GetRightText()` lookups, and `SelectButton` /
+`LocalizationPrefix`, the `GetLeftText()` and `GetRightText()` lookups, and `SelectButton` and
 `GetSelectedButton` for working in terms of sides rather than values.
 
+A `bool` switch is `false` on the left and `true` on the right. An enum switch takes the first two
+declared members. A `string` switch has no sides until you call `SetSwitchValues`. Switches ignore
+the formatter string.
+
 [`SelectedButton`](/docs/reference/base/i-switch-setting-base-selected-button) is nested inside
-`ISwitchSettingBase`, so either write `ISwitchSettingBase.SelectedButton.Left` or add
-`using static GearsAPI.Settings.Base.ISwitchSettingBase;`.
-A `bool` switch is `false` on the left and `true` on the right; an enum switch takes the first
-two declared members; a `string` switch has no sides until you call `SetSwitchValues`. The
-formatter string is ignored on switches.
+`ISwitchSettingBase`, so write `ISwitchSettingBase.SelectedButton.Left` or add
+`using static GearsAPI.Settings.Base.ISwitchSettingBase;` to the file.
 
 ## Color
 
 [`IColorSelectorGlobalSetting`](/docs/reference/global/i-color-selector-global-setting) adds no
-members of its own — everything comes from `IGlobalValueSetting<Color>`. Serialized as `R,G,B` in
-0–255. Only the setting-wide preview image is shown; per-value previews are ignored.
+members of its own. Everything comes from `IGlobalValueSetting<Color>`, where `Color` is
+`UnityEngine.Color`.
+
+Gears serializes the value as `R,G,B` in the range 0–255, and shows only the setting-wide preview
+image. Per-value previews are ignored.
 
 ## Key binding
 
-[`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting) is not a value
-setting: it holds a `PlayerAction` and a `ClearBinding()` method, and nothing else. Declaring a
-`<Binding>` in XML or creating one in code gives the player a row to rebind; you attach the game
-`PlayerAction` it controls:
+[`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting) is not a value setting.
+It has no `SettingValue`, and it adds only a `PlayerAction` property and a `ClearBinding()` method of
+its own.
+
+Declaring a `<Binding>` in XML or creating one in code gives the player a row to rebind. Attach the
+game `PlayerAction` it controls yourself:
 
 ```csharp
+// myPlayerActionSet is your own InControl.PlayerActionSet, and Boost is a PlayerAction on it.
 IControlBindingSetting boost = category.GetSetting<IControlBindingSetting>("Boost");
 if (boost != null)
 {
@@ -188,19 +232,38 @@ if (boost != null)
 }
 ```
 
-Gears does not persist bindings in its saved settings file; the binding lives with the
-`PlayerAction` set it belongs to.
+Assigning `PlayerAction` records the action's current binding as the baseline the row compares
+against, so assign it once, after your action set exists. Until you do, the row reads
+**- Missing PlayerAction -**.
+
+The methods `IModSetting` declares act on that `PlayerAction` rather than on a stored value:
+
+| Member | Effect on a Binding |
+|---|---|
+| `ResetToDefault()` | Calls `PlayerAction.ResetBindings()`, putting the action back to the binding it was declared with. |
+| `DiscardCurrentChange()` | Restores the binding recorded when you assigned `PlayerAction`, or when the row was last applied. |
+| `ApplyCurrentChange()` | Records the current binding as the new baseline and raises `OnSettingApplied`. |
+| `ClearBinding()` | Removes the binding, which is what the row's clear button does. |
+| `IsChanged` | True while the action's binding differs from the baseline. |
+| `IsDefault` | Always false. |
+
+All of them do nothing while `PlayerAction` is null.
+
+Gears does not store bindings in its saved settings file. The binding lives with the `PlayerAction`
+set it belongs to, and that set is responsible for saving it.
 
 ## Restart scope
 
-Set [`RestartScope`](/docs/reference/settings/setting-restart-scope) — `None`, `Reload` or
-`Restart` — on a global setting to show
-the player that a change needs a world reload or a game restart. Gears only shows the warning;
-applying the value is still up to your code.
+Set [`RestartScope`](/docs/reference/settings/setting-restart-scope) to `None`, `Reload` or
+`Restart` on a global setting to tell the player that a change needs a world reload or a game
+restart. Gears only shows the warning. Applying the value is still your code's job.
 
-## Saving
+## Save the player's values
 
-Gears writes the player-level saved settings file when the player presses Apply in the Mods
-window and at startup. Call `IModGlobalSettings.SaveSettings()` (or `IGearsMod.SaveSettings()`)
-to write it at any other time, for example after changing a `SettingValue` from code. The file is
-`<user data folder>\Gears\ModSettings.xml`, shared by all mods; you never need to edit it.
+Gears writes the saved global settings file when the player presses Apply in the Mods window, and
+again at startup.
+
+Call `IModGlobalSettings.SaveSettings()`, or `IGearsMod.SaveSettings()`, to write it at any other
+time, such as after your code has changed a `SettingValue`. The file is
+`<user data folder>\Gears\ModSettings.xml`, shared by every mod, and you never need to edit it by
+hand.

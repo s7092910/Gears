@@ -1,15 +1,24 @@
 ---
 title: Getting Started
-description: Take a mod from nothing to a working settings page, then read one of the values back from an XML patch and from C#.
+description: Add a settings page to a mod, see it in the game, and read one of the values back from an XML patch and from C#.
 ---
 
-This page takes a mod from nothing to a working settings page, then reads one of the values back
-from an XML patch and from C#. Everything here is copied verbatim from a file that Gears' own test
-suite parses, so it loads as written.
+Follow these steps to take a mod from no settings at all to a working settings page, then read one
+of its values from an XML patch and from C#.
 
-## 1. Your `ModInfo.xml`
+Two terms appear throughout. A **global setting** belongs to the player and applies in every world.
+A **world setting** belongs to one world, is chosen by the host, and cannot be changed while that
+world is running.
 
-Gears reads three things from the game's own manifest:
+## Before you start
+
+- Install Gears. Players need it too, unless you keep it optional.
+- Have a mod folder with a `ModInfo.xml` in it.
+
+## 1. Check your `ModInfo.xml`
+
+Gears reads your mod's identity and images from the game's own manifest, and shows the rest of it on
+your mod's page in the Mods menu:
 
 ```xml title="ModInfo.xml"
 <?xml version="1.0" encoding="utf-8" ?>
@@ -25,16 +34,22 @@ Gears reads three things from the game's own manifest:
 </xml>
 ```
 
-- `<Name>` is your mod's identity for Gears. It is the first argument to `modsetting()`, the key
-  in the saved settings file, and the argument to `GearsSettingsManager.GetGearsMod`. It is
-  **not** the display name and not the folder name.
-- `<Icon>` and `<Banner>` are optional. The paths are relative to your mod folder. The icon shows
-  in the mod list, the banner at the top of your settings page. A missing file is simply not shown.
+`<Name>` is your mod's identity for Gears. It is the first argument to `modsetting()`, the key in
+the saved settings file, and the argument to `GearsSettingsManager.GetGearsMod`. It is **not** the
+display name and not the folder name.
 
-## 2. Your `ModSettings.xml`
+`<Icon>` and `<Banner>` are optional, and their paths are relative to your mod folder. The icon
+shows in the mod list and the banner at the top of your settings page. Gears shows nothing in place
+of a missing file.
 
-Save this as `ModSettings.xml` in the **root of your mod folder**, beside `ModInfo.xml`. No other
-location is searched.
+The **Info** tab of your mod's page shows `<DisplayName>`, `<Author>`, `<Version>` and
+`<Description>` as you wrote them. A `<Website>` turns on a button that opens the link, after the
+game's own confirmation prompt; without one the button is disabled.
+
+## 2. Write your `ModSettings.xml`
+
+Save this file as `ModSettings.xml` in the **root of your mod folder**, beside `ModInfo.xml`. Gears
+searches no other location.
 
 ```xml title="ModSettings.xml"
 <?xml version="1.0" encoding="utf-8"?>
@@ -78,28 +93,27 @@ location is searched.
 </ModSettings>
 ```
 
-What that declares:
+That file declares five settings. Here is what each part does:
 
-- **Global** settings belong to the player and apply to every world they play. They sit in
-  tabs, tabs hold categories, categories hold settings.
-- **World** settings belong to a save. The host picks them when creating or continuing a world,
-  and every client that joins receives them. World has no tabs, only categories.
-- Every `Selector`, `Slider`, `Switch` and `Color` needs a `type` and a `defaultValue`. Miss
-  either and that setting is dropped with a line in the log; the rest of the file still loads.
-- The float slider uses percent notation: `100%` is stored as `1.0`, and `<Formatter ui="0%">`
-  displays it as a percentage again.
-- `RestartScope` tells the player a change needs the world reloaded (or, with `Restart`, the game
-  restarted).
+- `<Global>` holds the player's settings. Tabs hold categories, and categories hold settings.
+- `<World>` holds one world's settings. World has no tabs, only categories.
+- Every `Selector`, `Slider`, `Switch` and `Color` needs a `type` and a `defaultValue`. Leave out
+  either one and Gears drops that setting and writes a line to the log. The rest of the file still
+  loads.
+- A `float` accepts percent notation. `100%` is stored as `1.0`, and `<Formatter ui="0%">` displays
+  it as a percentage again.
+- `<RestartScope>` tells the player that a change needs the world reloaded. With
+  `scope="Restart"` it tells them the game needs restarting.
 
-[Setting Types](/docs/setting-types) shows what each of these controls looks like in the game and
-when to pick which; the full set of elements is in the
-[ModSettings XML Reference](/docs/xml/modsettings-reference).
+[Choose a Setting Type](/docs/setting-types) shows what each control looks like in the game and when
+to pick it. The [ModSettings.xml Reference](/docs/xml/modsettings-reference) lists every element and
+attribute.
 
-## 3. Your `Config/Localization.csv`
+## 3. Add your localization keys
 
-Every `displayKey`, `Description key` and prefixed value above is a localization key. Add them to
-your mod's `Config/Localization.csv` (the game's standard format). The `english` column is enough
-to start:
+Every `displayKey`, every `Description key` and every prefixed value above is a localization key.
+Add them to your mod's `Config/Localization.csv`, which uses the game's standard format. The
+`english` column is enough to start:
 
 ```csv title="Config/Localization.csv"
 Key,File,Type,UsedInMainMenu,NoTranslate,english
@@ -107,11 +121,11 @@ myModTabGeneral,UI,Menu,x,,General
 myModCatDisplay,UI,Menu,x,,Display
 myModCatDisplayDesc,UI,Menu,x,,How My Mod draws things on screen.
 myModUnits,UI,Menu,x,,Units
-myModUnitsDesc,UI,Menu,x,,Which unit system the HUD uses.
+myModUnitsDesc,UI,Menu,x,,Which unit system the heads-up display uses.
 myModUnits_metric,UI,Menu,x,,Metric
 myModUnits_imperial,UI,Menu,x,,Imperial
 myModHudScale,UI,Menu,x,,HUD scale
-myModHudScaleDesc,UI,Menu,x,,Size of the HUD as a percentage of the default.
+myModHudScaleDesc,UI,Menu,x,,Size of the heads-up display as a percentage of the default.
 myModShowHints,UI,Menu,x,,Show hints
 myModShowHintsDesc,UI,Menu,x,,Show the on-screen hints.
 myModCatZombies,UI,Menu,x,,Zombies
@@ -120,29 +134,30 @@ myModFeralNightsDesc,UI,Menu,x,,Every night is a feral night.
 myModSpawnMultiplier,UI,Menu,x,,Spawn multiplier
 ```
 
-`myModUnits_metric` and `myModUnits_imperial` come from the `LocalizationPrefix`: the prefix and
-the value are concatenated, with no separator added, to make the key. A key that is missing shows
-up as the raw key text in the menu, so a typo is easy to spot. See
-[Localization](/docs/xml/localization).
+The keys `myModUnits_metric` and `myModUnits_imperial` come from the `<LocalizationPrefix>`. Gears
+joins the prefix to the value with no separator to make the key. A key with no row shows in the menu
+as the raw key text, so a typo is easy to spot. See [Localize Your
+Settings](/docs/xml/localization).
 
-## 4. See it in the game
+## 4. See the settings in the game
 
-Start the game with Gears and your mod installed. Main menu, **Mods**, pick your mod, **Settings**
-tab. Global settings are edited there and saved when the player presses Save. World settings
-appear on the **Mods World Settings** button of the New Game and Continue Game screens.
+Start the game with Gears and your mod installed. From the main menu, open **Mods**, pick your mod,
+and open the **Settings** tab. Edit the global settings there and press Save.
 
-Where the values end up:
+World settings are on the **Mods World Settings** button of the New Game and Continue Game screens.
+
+Gears stores the two kinds of value in different files:
 
 | Values | File |
 |---|---|
-| Global | `<user data folder>\Gears\ModSettings.xml` (on Windows the user data folder is `%APPDATA%\7DaysToDie`). One file shared by every mod. |
-| World | `<save folder>\WorldModSettings.xml`, one per save. |
+| Global | `<user data folder>\Gears\ModSettings.xml`, one file shared by every mod. On Windows the user data folder is `%APPDATA%\7DaysToDie`. |
+| World | `<save folder>\WorldModSettings.xml`, one file per world. |
 
 A setting with no saved value starts at its `defaultValue`.
 
 ## 5. Read a value from an XML patch
 
-In any of your `Config/*.xml` patch files:
+Call `modsetting()` in any of your `Config/*.xml` patch files:
 
 ```xml
 <configs>
@@ -154,10 +169,12 @@ In any of your `Config/*.xml` patch files:
 </configs>
 ```
 
-Global paths have three parts (`Tab.Category.Setting`), World paths two
-(`Category.Setting`). The function returns the setting's serialized value as a **string**, so
-compare with a quoted string. Details, the inline attribute form, and how to guard the patch when
-Gears is not installed are in [Using Mod Settings in XML Patches](/docs/xml/xml-patches).
+A global path has three parts, `Tab.Category.Setting`. A world path has two,
+`Category.Setting`. The function returns the setting's serialized value as a **string**, so compare
+it against a quoted string.
+
+[Read Settings in XML Patches](/docs/xml/xml-patches) covers the inline attribute form and how to
+guard the patch for players who do not have Gears.
 
 ## 6. Read a value from C#
 
@@ -171,12 +188,13 @@ using GearsAPI.Settings.World;
 
 public class MyModGears : IGearsModApi
 {
+    // Your own mod reads these two properties.
     public static bool ShowHints { get; private set; } = true;
     public static bool FeralNights { get; private set; }
 
     public void InitMod(IGearsMod modInstance)
     {
-        // Settings from ModSettings.xml do not exist yet at this point.
+        // The settings from ModSettings.xml do not exist yet at this point.
     }
 
     // [Setting] binds this field to the setting at that path.
@@ -209,5 +227,7 @@ public class MyModGears : IGearsModApi
 ```
 
 Gears finds this class by scanning your mod's assemblies, so it needs a public parameterless
-constructor and nothing else. How the callbacks are ordered, how to keep Gears optional, and how
-to reach settings without a callback are in [C# Getting Started](/docs/csharp/getting-started).
+constructor and nothing else.
+
+[Get Started with C#](/docs/csharp/getting-started) covers the order the callbacks run in, how to
+keep Gears optional, and how to reach a setting without a callback.

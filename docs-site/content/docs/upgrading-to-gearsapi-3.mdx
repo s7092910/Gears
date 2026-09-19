@@ -1,24 +1,30 @@
 ---
-title: Upgrading to GearsAPI 3
-description: Bringing a mod forward from the V1 ModSettings.xml schema and GearsAPI 2.x — the XML changes, the C# map, and how to check the result.
+title: Upgrade to GearsAPI 3
+description: Convert a V1 ModSettings.xml to the V2 schema, move C# from GearsAPI 2.x to 3.0, and check the result in the game log.
 ---
 
-Gears 8 loads only the V2 `ModSettings.xml` schema and ships GearsAPI 3.0.0. A mod written for
-the old wiki, with a V1 `ModSettings.xml` and/or C# against GearsAPI 2.x, needs both halves
-brought forward. Part 1 is the XML, Part 2 is the C#, Part 3 is how to check the result. Each
-step is mechanical.
+Gears 8 loads only the V2 `ModSettings.xml` schema and ships GearsAPI 3.0.0. A mod written for the
+old wiki, with a V1 `ModSettings.xml` or C# against GearsAPI 2.x, needs both halves brought forward.
+
+Work through the parts that apply to your mod:
+
+1. [Convert `ModSettings.xml` from V1 to V2](#part-1-convert-modsettingsxml-from-v1-to-v2).
+2. [Move C# from GearsAPI 2.x to 3.0](#part-2-move-c-from-gearsapi-2x-to-30).
+3. [Check your work](#part-3-check-your-work).
+
+Every step is mechanical.
 
 ---
 
-## Part 1 — `ModSettings.xml` V1 → V2
+## Part 1: Convert ModSettings.xml from V1 to V2
 
-**The one-paragraph summary.** V2 moved almost everything off attributes and onto named child
-elements, made the value type of a setting explicit instead of guessing it from which property
-you used, and made `defaultValue` mandatory. So: add `version="2"`, add `type`, make sure every
-value setting has a `defaultValue`, turn `tooltipKey` / `leftValue` / `rightValue` /
-`formatString` into child elements, and rename a few of them.
+V2 moved almost everything off attributes and onto named child elements, made a setting's value type
+explicit instead of guessing it from which property you used, and made `defaultValue` mandatory.
 
-### Step 1 — Mark the file as V2
+In short: add `version="2"`, add `type`, give every value setting a `defaultValue`, and turn
+`tooltipKey`, `leftValue`, `rightValue` and `formatString` into child elements.
+
+### Step 1: Mark the file as V2
 
 ```xml
 <ModSettings>                 <!-- V1: rejected -->
@@ -26,15 +32,15 @@ value setting has a `defaultValue`, turn `tooltipKey` / `leftValue` / `rightValu
 ```
 
 <Callout type="warn">
-  The value must be exactly `2`. A root with no `version` (every V1 file) is rejected with an error
-  from `[ModSettingsFromXml]`, and so is any other value. **The whole file is skipped**, so this is
-  the first thing to check when a mod vanishes from the Mods menu.
+  The value must be exactly `2`. A root with no `version`, which is every V1 file, is rejected with
+  an error from `[ModSettingsFromXml]`, and so is any other value. **Gears skips the whole file**,
+  so check this first when a mod vanishes from the Mods menu.
 </Callout>
 
-### Step 2 — Add `type` to every Selector, Slider and Switch
+### Step 2: Add `type` to every Selector, Slider and Switch
 
-A Selector, Slider or Switch with no `type` is dropped at load. The error goes to the log; nothing
-appears in the menu.
+Gears drops a Selector, Slider or Switch with no `type` at load. The error goes to the log, and
+nothing appears in the menu.
 
 Work out the type from the V1 property you used:
 
@@ -43,70 +49,69 @@ Work out the type from the V1 property you used:
 | `<Property type="incrementalValuesInt" ...>` | `int` |
 | `<Property type="incrementalValuesFloat" ...>` | `float` |
 | `<Property type="arrayValues" ...>` | `string` |
-| `leftValue` / `rightValue` of `true` / `false` | `bool` |
-| `leftValue` / `rightValue` of anything else | `string` |
+| `leftValue` and `rightValue` of `true` and `false` | `bool` |
+| `leftValue` and `rightValue` of anything else | `string` |
 
-Accepted aliases: `int` (`Int32`, `integer`), `float` (`Single`), `string`, `bool` (`boolean`),
-`Color` (`Color32`). Matching is case-insensitive and whitespace is trimmed.
+Gears accepts these aliases: `int` (`Int32`, `integer`), `float` (`Single`), `string`, `bool`
+(`boolean`), and `Color` (`Color32`). Matching is case-insensitive, and whitespace is trimmed.
 
-`Binding` takes no `type`. `Color` accepts one but ignores it.
-
-Sliders support `int` and `float` **only**. A `string` or `bool` slider is dropped.
+`Binding` takes no `type`. `Color` accepts one and ignores it. Sliders support `int` and `float`
+**only**, and Gears drops a `string` or `bool` slider.
 
 You can also name an enum your mod declares:
 
 ```xml
-<Selector name="difficulty" type="MyMod.Difficulty, MyMod" defaultValue="Normal" />
+<Selector name="Difficulty" type="MyMod.Difficulty, MyMod" defaultValue="Normal" />
 ```
 
-The namespace-qualified name, the assembly-qualified name, or the bare type name all resolve,
+The namespace-qualified name, the assembly-qualified name and the bare type name all resolve,
 case-insensitively. An enum Selector seeds its allowed values with every declared member, so it
-needs no `List`. An enum Switch takes the first two members as left and right unless you say
+needs no `<List>`. An enum Switch takes the first two members as left and right unless you say
 otherwise.
 
-### Step 3 — Give every value setting a `defaultValue`
+### Step 3: Give every value setting a `defaultValue`
 
-**New in Gears 8.** V1 tolerated a Selector, Slider, Switch or Color with no default; V2 drops
-it:
+This requirement is **new in Gears 8**. V1 tolerated a Selector, Slider, Switch or Color with no
+default, and V2 drops it:
 
 ```text
 [Gears] [XmlSettingsParserV2] Slider 'fov' has no defaultValue; defaultValue is required, skipping.
 ```
 
-Add one to every setting that lacks it. `Binding` is exempt. An empty `defaultValue=""` counts as
-missing.
+Add a `defaultValue` to every setting that lacks one. `Binding` is exempt. An empty
+`defaultValue=""` counts as missing.
 
-### Step 4 — `tooltipKey` becomes a description element
+### Step 4: Turn `tooltipKey` into a `Description` element
 
-On a **Category** and on **every setting element**, the `tooltipKey` attribute becomes a
-`Description` child:
+On a **category** and on **every setting element**, the `tooltipKey` attribute becomes a
+`<Description>` child:
 
 ```xml
 <!-- V1 -->
-<Category name="SelectorsTest" displayKey="SelectorsTest" tooltipKey="gearsSettingToolTipTest">
+<Category name="Display" displayKey="myModCatDisplay" tooltipKey="myModCatDisplayDesc">
 
 <!-- V2 -->
-<Category name="SelectorsTest" displayKey="SelectorsTest">
-	<Description key="gearsSettingToolTipTest" />
+<Category name="Display" displayKey="myModCatDisplay">
+	<Description key="myModCatDisplayDesc" />
 ```
 
 If the old `tooltipKey` was empty, drop it rather than writing an empty `key`.
 
-<Callout>
-  **`Tab` is the exception.** A Tab is not a setting, and it keeps its `tooltipKey` attribute:
+<Callout type="warn">
+  **A `<Tab>` is the exception.** A tab is not a setting, and it keeps its `tooltipKey` attribute:
 
   ```xml
-  <Tab name="Selectors" displayKey="" tooltipKey="Test Tooltip">   <!-- unchanged in V2 -->
+  <Tab name="General" displayKey="myModTabGeneral" tooltipKey="myModTabGeneralTip">   <!-- unchanged in V2 -->
   ```
 </Callout>
 
-V2 also gives settings and categories a short `Caption`, which V1 had no equivalent for:
+V2 also gives settings and categories a short `<Caption>`, which V1 had no equivalent for:
 
 ```xml
 <Caption key="myModSettingCaption" />
 ```
 
-### Step 5 — Turn the V1 properties into elements
+### Step 5: Turn the V1 properties into elements
 
 A V1 `<Property type="x" ... />` becomes an element named after what that `type` said:
 
@@ -117,152 +122,153 @@ A V1 `<Property type="x" ... />` becomes an element named after what that `type`
 | `<Property type="arrayValues" allowedValues="a,b,c" />` | `<List allowedValues="a,b,c" />` |
 | `<Property type="formatter" formatString="0.0" />` | `<Formatter ui="0.0" />` |
 
-Both incremental variants collapse into one `Incremental`; the int/float distinction now lives in
-`type`. `increment` must be greater than 0 and `minValue` no greater than `maxValue`, or the range
-is ignored.
+Both incremental variants collapse into one `<Incremental>`, because the int and float distinction
+now lives in `type`. `increment` must be greater than 0, and `minValue` no greater than `maxValue`,
+or Gears ignores the range.
 
-`Formatter` gained a second half. `ui` is what the player sees; `serialize` is what gets written
-to the saved settings file and returned by `modsetting()`. Either may be left out:
+`<Formatter>` gained a second half. `ui` is what the player sees, and `serialize` is what Gears
+writes to the saved settings file and returns from `modsetting()`. You may leave out either one:
 
 ```xml
 <Formatter ui="0.0" serialize="0.00" />
 ```
 
-V1 only had the first, so `formatString` always becomes `ui`. Two things V1 did not make clear:
-`Formatter` is legal on Selector and Slider only, and is ignored on Switch, Color and Binding; and
-if a Selector has both `List` and `Incremental`, the range is applied last and wins.
+V1 had only the first, so `formatString` always becomes `ui`. Two things V1 did not make clear:
+`<Formatter>` is legal on Selector and Slider only and is ignored on Switch, Color and Binding; and
+when a Selector has both `<List>` and `<Incremental>`, Gears applies the range last, so it wins.
 
-### Step 6 — Move the Switch values onto a `Buttons` element
+### Step 6: Move the Switch values onto a `Buttons` element
 
 ```xml
 <!-- V1 -->
-<Switch name="First" displayKey="Left Switch" defaultValue="Off" leftValue="Off" rightValue="On" />
+<Switch name="ShowHints" displayKey="myModShowHints" defaultValue="Off" leftValue="Off" rightValue="On" />
 
 <!-- V2 -->
-<Switch name="First" displayKey="Left Switch" type="string" defaultValue="Off">
+<Switch name="ShowHints" displayKey="myModShowHints" type="string" defaultValue="Off">
 	<Buttons left="Off" right="On" />
 </Switch>
 ```
 
-Both sides are required: if only one of `left` / `right` is given, **neither** is applied. A
-`bool` switch does not need the element; it is `false` on the left and `true` on the right.
+Both sides are required. When only one of `left` and `right` is given, Gears applies **neither**. A
+`bool` switch does not need the element: it is `false` on the left and `true` on the right.
 
-### Step 7 — Rename the Color default
+### Step 7: Rename the Color default
 
 ```xml
-<Color name="Color Setting" defaultColor="255,0,0" />         <!-- V1 -->
-<Color name="Color Setting" defaultValue="255,0,0" />         <!-- V2 -->
+<Color name="Accent" defaultColor="255,0,0" />   <!-- V1 -->
+<Color name="Accent" defaultValue="255,0,0" />   <!-- V2 -->
 ```
 
-`defaultValue` is spelled the same way on every setting kind. The `R,G,B` notation is unchanged.
-The V1 `color` attribute (the current value) goes away entirely; see the next step.
+`defaultValue` is spelled the same way on every setting type, and the `R,G,B` notation is unchanged.
+The V1 `color` attribute, which held the current value, goes away entirely. See the next step.
 
-### Step 8 — Delete the `value` attribute
+### Step 8: Delete the `value` attribute
 
 V1 wrote the player's current value back into the mod's own `ModSettings.xml`:
 
 ```xml
-<Selector name="Int Selector" value="3" defaultValue="5" />   <!-- V1 -->
-<Selector name="Int Selector" type="int" defaultValue="5" />  <!-- V2 -->
+<Selector name="Quality" value="3" defaultValue="5" />    <!-- V1 -->
+<Selector name="Quality" type="int" defaultValue="5" />   <!-- V2 -->
 ```
 
-V2 has no `value` attribute. `ModSettings.xml` describes only what a setting *is*; the player's
-value lives in the saved settings file under their user data folder and is restored after load.
-A setting with no saved value starts at `defaultValue`.
+V2 has no `value` attribute. `ModSettings.xml` describes only what a setting *is*. The player's value
+lives in the saved settings file under their user data folder, and Gears restores it after load. A
+setting with no saved value starts at `defaultValue`.
 
-### Step 9 — Move `wrap` onto an element
+### Step 9: Move `wrap` onto an element
 
 ```xml
-<Selector name="days" wrap="true" />              <!-- V1 attribute -->
+<Selector name="DayOfWeek" wrap="true" />                        <!-- V1 attribute -->
 
-<Selector name="days" type="string" defaultValue="Monday">   <!-- V2 element -->
+<Selector name="DayOfWeek" type="string" defaultValue="Monday">   <!-- V2 element -->
 	<Wrap wrap="true" />
 </Selector>
 ```
 
-Anything that is not `true` or `false` is ignored and wrapping stays off. `Wrap` is Selector-only.
+Gears ignores anything that is not `true` or `false`, and wrapping stays off. `<Wrap>` is
+Selector-only.
 
-### What is new in V2, if you want it
+### Optional: what V2 adds
 
 None of this is required to convert a V1 file.
 
-**Preview images.** A `Preview` block with an `Image` that has no `value` is the setting's own
-image; images that carry a `value` are shown when that value is selected.
+**Preview images.** A `<Preview>` block with an `<Image>` that has no `value` is the setting's own
+image. An image that carries a `value` is shown while that value is selected.
 
 ```xml
-<Selector name="quality" type="int" defaultValue="1">
+<Selector name="Quality" type="int" defaultValue="1">
 	<List allowedValues="1,2" />
 	<Preview>
-		<Image value="1" path="@modfolder(myMod)://Textures/low.png" />
-		<Image value="2" path="@modfolder(myMod)://Textures/high.png" />
+		<Image value="1" path="@modfolder(MyMod)://Textures/low.png" />
+		<Image value="2" path="@modfolder(MyMod)://Textures/high.png" />
 	</Preview>
 </Selector>
 ```
 
-`Binding`, `Category` and `Color` take only the value-less form. A valued `Image` on a `Color` is
-skipped with a warning; on a `Binding` or `Category` it is ignored.
+`Binding`, `Category` and `Color` take only the value-less form. Gears skips a valued `<Image>` on a
+`Color` with a warning, and ignores one on a `Binding` or `Category`.
 
-**Restart scope.** Tells the player what a change costs: `None`, `Reload` (world reload) or
-`Restart` (game restart), case-insensitive.
+**Restart scope.** Tells the player what a change costs: `None`, `Reload` for a world reload, or
+`Restart` for a game restart, in any case.
 
 ```xml
 <RestartScope scope="Restart" />
 ```
 
-Global settings only. On anything under `<World>`, and on a Category, it is ignored silently, so
-a leftover one does no harm.
+Global settings only. Gears ignores it silently on anything under `<World>` and on a category, so a
+leftover one does no harm.
 
-**Localization prefix.** Prepended to a Selector's or Switch's value when it is looked up for
-display, with no separator, so `metric` renders through the key `gearsUnitsmetric`.
+**Localization prefix.** Gears prepends this to a Selector's or Switch's value when it looks the
+value up for display, with no separator, so `metric` renders through the key `myModUnitsmetric`.
 
 ```xml
-<LocalizationPrefix prefix="gearsUnits" />
+<LocalizationPrefix prefix="myModUnits" />
 ```
 
-**Percentages.** A `float` accepts a `%` suffix and stores it as a fraction, so `50%` is `0.5`.
-This works in `defaultValue`, `increment`, `minValue` and `maxValue`. It is a different thing
-from `<Formatter ui="0%" />`, which only changes how the stored number is displayed.
+**Percentages.** A `float` accepts a `%` suffix and stores it as a fraction, so `50%` becomes `0.5`.
+This works in `defaultValue`, `increment`, `minValue` and `maxValue`. It is a different thing from
+`<Formatter ui="0%" />`, which only changes how the stored number is displayed.
 
 ---
 
-## Part 2 — C# GearsAPI 2.x → 3.0
+## Part 2: Move C# from GearsAPI 2.x to 3.0
 
 GearsAPI 2.x stored every value as a `string`. GearsAPI 3.0 is typed: each setting interface takes
 its value type as a generic parameter, and the single `CurrentValue` became three typed values.
 
-### The map
+### The member map
 
 | GearsAPI 2.x | GearsAPI 3.0 |
 |---|---|
 | `ISelectorGlobalSetting`, `ISliderGlobalSetting`, `ISwitchGlobalSetting` (non-generic) | `ISelectorGlobalSetting<T>`, `ISliderGlobalSetting<T>`, `ISwitchGlobalSetting<T>` |
 | `ISelectorWorldSetting`, `ISliderWorldSetting`, `ISwitchWorldSetting` | `ISelectorWorldSetting<T>`, `ISliderWorldSetting<T>`, `ISwitchWorldSetting<T>` |
-| `IGlobalValueSetting.CurrentValue : string` | `IGlobalValueSetting<T>.SettingValue : T` (applied), `SelectedValue : T` (UI), `DefaultValue : T` |
+| `IGlobalValueSetting.CurrentValue : string` | `IGlobalValueSetting<T>.SettingValue : T` (applied), `SelectedValue : T` (the menu), `DefaultValue : T` |
 | `IGlobalValueSetting.DefaultValue : string` | `DefaultValue : T` |
-| `IWorldModSetting.CurrentValue / DefaultValue : string` | on the typed interfaces via `IValueModSetting<T>`; `IWorldModSetting` keeps only `Category` |
-| string in, string out everywhere | `IValueModSettingBase.SetSettingValueFromString(string)`, `GetSerializedFormattedSettingValue()` for code that must stay stringly typed |
-| `OnSettingChangedEvent(IGlobalModSetting setting, string newValue)` | `OnSettingChangedEvent(IGlobalModSetting setting)` — no value argument |
-| — | `ValueChangedEvent<T>(IValueModSetting<T> setting, T newValue)` via `OnValueChanged` (global only) |
-| — | `ValueSelectedEvent<T>(IValueModSetting<T> setting, T newValue)` via `OnSelected` |
-| `ISelectorGlobalSetting.SetAllowedValues(string)` (comma list) | gone; split it yourself and call `SetAllowedValues(T[])` |
+| `IWorldModSetting.CurrentValue` and `DefaultValue : string` | on the typed interfaces through `IValueModSetting<T>`; `IWorldModSetting` keeps only `Category` |
+| string in, string out everywhere | `IValueModSettingBase.SetSettingValueFromString(string)` and `GetSerializedFormattedSettingValue()` for code that must stay stringly typed |
+| `OnSettingChangedEvent(IGlobalModSetting setting, string newValue)` | `OnSettingChangedEvent(IGlobalModSetting setting)`, with no value argument |
+| — | `ValueChangedEvent<T>(IValueModSetting<T> setting, T newValue)` through `OnValueChanged`, global only |
+| — | `ValueSelectedEvent<T>(IValueModSetting<T> setting, T newValue)` through `OnSelected` |
+| `ISelectorGlobalSetting.SetAllowedValues(string)`, a comma list | gone; split it yourself and call `SetAllowedValues(T[])` |
 | `SetAllowedValues(string[])` | `SetAllowedValues(T[])` |
-| `SetAllowedValues(int inc, int min, int max)` / `(float, float, float)` | `SetAllowedValues(T increment, T min, T max)` |
-| `GetAllowedValues() : string[]` | `GetAllowedValues() : T[]` plus `GetAllowedValuesDisplay() : string[]` |
-| `FormatterString` (Selector, Slider) | `UiFormatter` and `SerializationFormatter` |
-| — | `LocalizationPrefix`, `SelectByIndex(int)` on Selector |
-| `ISliderGlobalSetting.GetAllowedValues()` | gone; use `Increment`, `Min`, `Max` |
-| `ISwitchGlobalSetting.LeftValue / RightValue : string`, `SetSwitchValues(string, string)` | `LeftValue / RightValue : T`, `SetSwitchValues(T, T)`, plus `GetLeftText()`, `GetRightText()`, `SelectButton`, `GetSelectedButton` |
-| `IColorSelectorGlobalSetting` (string-based) | `IColorSelectorGlobalSetting : IGlobalValueSetting<UnityEngine.Color>` |
-| `IModSetting.TooltipKey`, `HasToolTip()`, `GetToolTipText()` | `DescriptionKey`, `HasDescription()`, `GetDescriptionText()`; and new `CaptionKey`, `HasCaption()`, `GetCaptionText()`. `TooltipKey` survives **only** on `IGlobalModSettingsTab`. |
+| `SetAllowedValues(int inc, int min, int max)` and `(float, float, float)` | `SetAllowedValues(T increment, T min, T max)` |
+| `GetAllowedValues() : string[]` | `GetAllowedValues() : T[]`, plus `GetAllowedValuesDisplay() : string[]` |
+| `FormatterString` on Selector and Slider | `UiFormatter` and `SerializationFormatter` |
+| — | `LocalizationPrefix` and `SelectByIndex(int)` on Selector |
+| `ISliderGlobalSetting.GetAllowedValues()` | gone; use `Increment`, `Min` and `Max` |
+| `ISwitchGlobalSetting.LeftValue` and `RightValue : string`, `SetSwitchValues(string, string)` | `LeftValue` and `RightValue : T`, `SetSwitchValues(T, T)`, plus `GetLeftText()`, `GetRightText()`, `SelectButton` and `GetSelectedButton` |
+| `IColorSelectorGlobalSetting`, string-based | `IColorSelectorGlobalSetting : IGlobalValueSetting<UnityEngine.Color>` |
+| `IModSetting.TooltipKey`, `HasToolTip()`, `GetToolTipText()` | `DescriptionKey`, `HasDescription()`, `GetDescriptionText()`, plus the new `CaptionKey`, `HasCaption()` and `GetCaptionText()`. `TooltipKey` survives **only** on `IGlobalModSettingsTab`. |
 | `IGlobalModSettingsCategory : IModSetting` | `IGlobalModSettingsCategory : IGlobalModSetting` |
 | — | `IModSetting.IsChanged`, `IsDefault`, `ResetToDefault()`, `DiscardCurrentChange()`, `ApplyCurrentChange()`, `HasPreviews()`, `GetCurrentPreview()`, `AddPreview(string)` |
 | — | `IGlobalModSetting.RestartScope : SettingRestartScope` |
-| — | `IModGlobalSettings.BindSettingsClass(Type)`, `IModWorldSettings.BindSettingsClass(Type)`, the `[Setting]` field and property binding attribute and the `[SettingOnValueChanged]` / `[SettingOnSelected]` / `[SettingOnChanged]` / `[SettingOnEnabled]` attributes |
-| — | `[SettingsSerializationProvider]`, `[SettingParser]`, `[SettingFormatter]` |
-| Unchanged | `IGearsModApi`, `IGearsMod`, `GearsSettingsManager.GetMods()` / `GetGearsMod(name)`, all `Get*` / `Create*` / `GetOrCreate*` / `Add*` / `Remove*` on tabs and categories, `SaveSettings()`, `IControlBindingSetting.PlayerAction` / `ClearBinding()`, `IModSetting.Enabled` |
+| — | `IModGlobalSettings.BindSettingsClass(Type)` and `IModWorldSettings.BindSettingsClass(Type)`, the `[Setting]` binding attribute, and the `[SettingOnValueChanged]`, `[SettingOnSelected]`, `[SettingOnChanged]` and `[SettingOnEnabled]` attributes |
+| — | `[SettingsSerializationProvider]`, `[SettingParser]` and `[SettingFormatter]` |
+| Unchanged | `IGearsModApi`, `IGearsMod`, `GearsSettingsManager.GetMods()` and `GetGearsMod(name)`, all `Get*`, `Create*`, `GetOrCreate*`, `Add*` and `Remove*` on tabs and categories, `SaveSettings()`, `IControlBindingSetting.PlayerAction` and `ClearBinding()`, and `IModSetting.Enabled` |
 
-### Before and after
+### Compare the old and new code
 
-The most common pattern, reading a value and reacting to a change:
+Here is the most common pattern, reading a value and reacting to a change:
 
 <Tabs items={['GearsAPI 2.x', 'GearsAPI 3.0', 'GearsAPI 3.0, attribute form']}>
   <Tab value="GearsAPI 2.x">
@@ -305,7 +311,7 @@ The most common pattern, reading a value and reacting to a change:
     ```
   </Tab>
   <Tab value="GearsAPI 3.0, attribute form">
-    With no lookup at all:
+    This form needs no lookup at all:
 
     ```csharp
     public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
@@ -322,45 +328,47 @@ The most common pattern, reading a value and reacting to a change:
   </Tab>
 </Tabs>
 
-### Behaviour changes to check for
+### Behavior changes to check for
 
-- **`GetSetting<T>` needs the closed generic.** `GetSetting<ISliderGlobalSetting>("Fov")` no
-  longer compiles; `GetSetting<ISliderGlobalSetting<int>>("Fov")` returns null if the setting is a
+- **`GetSetting<T>` needs the closed generic.** `GetSetting<ISliderGlobalSetting>("Fov")` no longer
+  compiles. `GetSetting<ISliderGlobalSetting<int>>("Fov")` returns null when the setting is a
   different type, so check for null.
-- **Which value do you want?** `CurrentValue` was the applied value; that is `SettingValue`. If
-  you were reading it during a UI callback to preview, you probably want `SelectedValue` now.
-- **`OnSettingChanged` no longer carries the value.** Read `SettingValue` from the setting
-  argument, or switch to `OnValueChanged` which does carry it, typed.
+- **Decide which value you want.** `CurrentValue` was the applied value, which is now
+  `SettingValue`. If you read it during a menu callback to preview a change, you probably want
+  `SelectedValue` now.
+- **`OnSettingChanged` no longer carries the value.** Read `SettingValue` from the setting argument,
+  or switch to `OnValueChanged`, which carries it, typed.
 - **World settings have no `OnValueChanged` or `OnSettingChanged`.** Read `SettingValue` in
-  `OnWorldSettingsLoaded`; it fires every time a world's values arrive.
+  `OnWorldSettingsLoaded`, which fires every time a world's values arrive.
 - **Settings you create in code need all three values set.** `DefaultValue`, `SettingValue` and
-  `SelectedValue` start at `default(T)`.
-- **`TooltipKey` on a setting is `DescriptionKey`.** On a Tab it is still `TooltipKey`.
-- **`CreateTab` / `CreateCategory` / `CreateSetting` throw on a duplicate name**, which matters
-  now that the XML may declare the same names. Use `GetOrCreate…` when both sides may create it.
-- **A callback that throws no longer silences your other `IGearsModApi` classes**, but it is still
-  logged as an error naming the type. Look for `[GearsMod] Error thrown in`.
+  `SelectedValue` all start at `default(T)`.
+- **`TooltipKey` on a setting is now `DescriptionKey`.** On a tab it is still `TooltipKey`.
+- **`CreateTab`, `CreateCategory` and `CreateSetting` throw on a duplicate name**, which matters now
+  that your XML may declare the same names. Use the `GetOrCreate…` form when both sides may create
+  it.
+- **A callback that throws no longer silences your other `IGearsModApi` classes**, but Gears still
+  logs it as an error naming the type. Look for `[GearsMod] Error thrown in`.
 
 ---
 
-## Part 3 — Checking your work
+## Part 3: Check your work
 
 Start the game and search the log for `[Gears]`.
 
-1. `[Gears] [ModSettingsFromXml]` naming your mod means the **whole file** was rejected. Almost
-   always a missing or wrong `version="2"`.
+1. A `[Gears] [ModSettingsFromXml]` line naming your mod means the **whole file** was rejected.
+   Almost always this is a missing or wrong `version="2"`.
 2. `[Gears] [XmlSettingsParserV2]` lines name each **dropped setting** and why. In rough order of
    likelihood:
-   1. No `defaultValue` (Step 3).
-   2. No `type`, or one that is misspelled or unknown (Step 2).
+   1. No `defaultValue`, from Step 3.
+   2. No `type`, or one that is misspelled or unknown, from Step 2.
    3. A `string` or `bool` on a `Slider`.
    4. A `type` that resolves to a real type with no setting implementation, such as `double`.
-   5. A `Color` or `Binding` under `<World>`. Dropped silently.
-3. `[Gears] [GearsMod] '<Mod>' is using an outdated GearsAPI` means the C# half still targets
-   2.x. Rebuild against the shipped `GearsAPI.dll`.
-4. Then open the Mods menu and confirm every setting you expect is there, with the text you
-   expect. A raw key such as `myModFov` means a missing `Localization.csv` row.
+   5. A `Color` or `Binding` under `<World>`, which Gears drops silently.
+3. `[Gears] [GearsMod] '<Mod>' is using an outdated GearsAPI` means the C# half still targets 2.x.
+   Rebuild against the shipped `GearsAPI.dll`.
+4. Open the Mods menu and confirm every setting you expect is there, with the text you expect. A raw
+   key such as `myModFov` means a missing `Localization.csv` row.
 
-An unparseable `defaultValue`, a bad `minValue`/`maxValue`, an unparseable `allowedValues` entry,
-or a non-boolean `Wrap` are all survivable: the setting loads with that one piece ignored. See
+An unparseable `defaultValue`, a bad `minValue` or `maxValue`, an unparseable `allowedValues` entry,
+and a non-boolean `<Wrap>` are all survivable: the setting loads with that one piece ignored. See
 [Troubleshooting](/docs/troubleshooting) for the full list.

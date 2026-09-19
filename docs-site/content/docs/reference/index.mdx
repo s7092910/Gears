@@ -67,7 +67,7 @@ The player's settings: tabs, categories and the global setting types.
 | [`ISelectorGlobalSetting<T>`](/docs/reference/global/i-selector-global-setting) | Interface | A global setting chosen from a list of allowed values. |
 | [`ISliderGlobalSetting<T>`](/docs/reference/global/i-slider-global-setting) | Interface | A global numeric setting dragged within a range. `int` and `float` only. |
 | [`ISwitchGlobalSetting<T>`](/docs/reference/global/i-switch-global-setting) | Interface | A global two-position setting. |
-| [`IColorSelectorGlobalSetting`](/docs/reference/global/i-color-selector-global-setting) | Interface | A global colour picker over `UnityEngine.Color`. |
+| [`IColorSelectorGlobalSetting`](/docs/reference/global/i-color-selector-global-setting) | Interface | A global color picker over `UnityEngine.Color`. |
 | [`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting) | Interface | A global key-binding row. Not a value setting. |
 
 ## GearsAPI.Settings.World
@@ -96,7 +96,7 @@ Binding, listener and serialization attributes.
 | [`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute) | Sealed class | Binds a static method to `OnSelectedChanged`. Global and world value settings. |
 | [`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute) | Sealed class | Binds a static method to `OnSettingApplied`. Global settings only. |
 | [`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute) | Sealed class | Binds a static method to `OnEnabled`. Works on every setting. |
-| [`SettingsSerializationProvider`](/docs/reference/attributes/settings-serialization-provider) | Sealed class | Marks a class as holding [[`SettingParserAttribute`](/docs/reference/attributes/setting-parser-attribute)] and [[`SettingFormatterAttribute`](/docs/reference/attributes/setting-formatter-attribute)] methods. |
+| [`SettingsSerializationProvider`](/docs/reference/attributes/settings-serialization-provider) | Sealed class | Marks a class as holding [`SettingParserAttribute`](/docs/reference/attributes/setting-parser-attribute) and [`SettingFormatterAttribute`](/docs/reference/attributes/setting-formatter-attribute) methods. |
 | [`SettingParserAttribute`](/docs/reference/attributes/setting-parser-attribute) | Sealed class | Marks a static method as the parser for a value type. |
 | [`SettingFormatterAttribute`](/docs/reference/attributes/setting-formatter-attribute) | Sealed class | Marks a static method as the formatter for a value type. |
 | [`SettingFactoryAttribute`](/docs/reference/attributes/setting-factory-attribute) | Sealed class | Registers a setting family implementation for one value type. |

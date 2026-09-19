@@ -10,9 +10,12 @@ namespace GearsAPI.Attributes
     /// Marks a static method as the parser for a value type.
     /// </summary>
     /// <remarks>
-    /// Marks a static method inside a [<see cref="SettingsSerializationProvider"/>] class as the parser
+    /// Marks a static method inside a <see cref="SettingsSerializationProvider"/> class as the parser
     /// for a value type. The method must have the signature <c>static T Method(string)</c>; a mismatch
     /// throws <c>InvalidOperationException</c> when Gears scans it.
+    /// One parser is registered per value type across the whole game, and the last one scanned wins.
+    /// Registering a type Gears already handles replaces its handler, and two mods registering the
+    /// same type silently overwrite each other, so register only types your own mod owns.
     /// </remarks>
     /// <note>
     /// Declared in <c>SettingsParserAttribute.cs</c> — the file name carries an extra <c>s</c> that the

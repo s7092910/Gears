@@ -9,7 +9,7 @@ description: "The callback contract a C# mod implements to be told about its set
 public interface IGearsModApi
 ```
 
-The callback contract a C# mod implements to be told about its settings. Gears scans every assembly of a mod for concrete classes implementing this interface, instantiates each through its public parameterless constructor, and invokes every callback on every instance. See C# Getting Started for the order and timing.
+The callback contract a C# mod implements to be told about its settings. Gears scans every assembly of a mod for concrete classes implementing this interface, instantiates each through its public parameterless constructor, and invokes every callback on every instance. See the Get Started with C# guide for the order and timing.
 
 ## Methods
 
@@ -35,4 +35,4 @@ Called once every mod's `ModSettings.xml` has been parsed and the player's saved
 void OnWorldSettingsLoaded(IModWorldSettings worldSettings);
 ```
 
-Called when a world's settings become known: on world start when hosting, when the server's settings arrive when joining, or after a reset to defaults when the server sent none. May fire more than once per session. Not called for a mod with no world settings.
+Called when a world's settings become known: on world start when hosting, when the server's settings arrive when joining, or after a reset to defaults when the server sent none. May fire more than once per session. Not called for a mod with no world settings, and not called on the host for the `Empty` and `Playtesting` worlds the prefab editor uses.

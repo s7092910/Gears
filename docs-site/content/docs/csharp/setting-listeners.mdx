@@ -1,45 +1,48 @@
 ---
-title: C# Setting Listeners and Bindings
-description: Attribute-based wiring — tag static fields, properties and methods with the setting path and let BindSettingsClass do the lookup and subscription.
+title: Bind Settings with Attributes
+description: Tag static fields, properties and methods with a setting path, then call BindSettingsClass to assign the settings and subscribe to their events.
 ---
 
-Instead of finding each setting by hand, tag static **fields**, **properties** and **methods** with
-an attribute naming the setting, then hand the class to `BindSettingsClass`. Tagged fields and
-properties are assigned the setting; tagged methods are subscribed to its events. Namespace:
-`GearsAPI.Attributes`.
+Instead of looking up each setting by hand, tag static **fields**, **properties** and **methods**
+with an attribute that names the setting, then hand the class to `BindSettingsClass`. Gears assigns
+the setting to each tagged field and property, and subscribes each tagged method to the event the
+attribute names.
+
+The attributes live in `GearsAPI.Attributes`.
 
 ## The attributes
 
 | Attribute | Goes on | Binds to |
 |---|---|---|
 | [`[Setting]`](/docs/reference/attributes/setting-attribute) | a static field or property | assigns the setting itself to the member |
-| [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) | a static method | `SettingValue` changed — the player saved |
-| [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) | a static method | `SelectedValue` changed — the player used the UI to change the 
-value in the setting being displayed to the user|
+| [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) | a static method | `SettingValue` changed, which means the player saved |
+| [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) | a static method | `SelectedValue` changed, which means the player moved the control in the menu |
 | [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) | a static method | `Enabled` was turned on or off |
 | [`[SettingOnApplied]`](/docs/reference/attributes/setting-on-applied-attribute) | a static method | the setting was applied |
 
-Each takes the setting path as its only argument. A null or empty path throws
-`ArgumentException` from the attribute constructor, which surfaces the first time the class is
-inspected.
+Each attribute takes the setting path as its only argument. A null or empty path throws
+`ArgumentException` from the attribute constructor, which surfaces the first time Gears inspects the
+class.
 
-## Paths
+## Setting paths
 
 | Settings | Format | Segments |
 |---|---|---|
 | Global | `"TabName.CategoryName.SettingName"` | exactly 3 |
 | World | `"CategoryName.SettingName"` | exactly 2 |
 
-The names are the `name` attributes from `ModSettings.xml` (or the names you passed to
-`Create…`), not the display keys.
+The names are the `name` attributes from `ModSettings.xml`, or the names you passed to `Create…`.
+They are not the display keys.
 
 <Callout type="warn">
-  **Put global and world members on separate types.** Each `BindSettingsClass` call resolves
-  every tagged member on the type it is handed, using that side's segment count. A world path on a
-  type you pass to the global call is reported as a bad path format, and vice versa.
+  **Put global and world members on separate types.** Each `BindSettingsClass` call resolves every
+  tagged member on the type you hand it, using that side's segment count. A world path on a type you
+  pass to the global call is reported as a bad path format, and the reverse is also true.
 </Callout>
 
-## Binding a settings class
+## Bind a settings class
+
+Call `BindSettingsClass` from the matching callback:
 
 ```csharp
 public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
@@ -53,26 +56,24 @@ public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
 }
 ```
 
-One call does both halves: fields are bound first, then listeners are subscribed. That order means a
-handler can safely read any field the same call binds.
+One call does both halves. Gears binds the fields and properties first, then subscribes the
+listeners, so a handler can safely read any member the same call binds.
 
-Binding is **opt-in**: nothing scans for these attributes until you call `BindSettingsClass`. Call
-it from the matching `…Loaded` callback, once.
+Binding is opt-in. Nothing scans for these attributes until you call `BindSettingsClass`.
 
 <Callout type="warn" title="Do not bind the same type twice">
-  The two halves differ if you call it twice for the same type. Binding a field again just assigns
-  the same setting, so it is harmless. Subscribing a listener again adds a **second** handler, and
-  it will then run twice per change. This matters because `OnWorldSettingsLoaded` fires more than
-  once per session — once per world load or rejoin — while `OnGlobalSettingsLoaded` fires once per
-  session.
+  Binding a field again assigns the same setting, which is harmless. Subscribing a listener again
+  adds a **second** handler, which then runs twice on every change. This matters because
+  `OnWorldSettingsLoaded` fires once per world load or rejoin, while `OnGlobalSettingsLoaded` fires
+  once per session.
 </Callout>
 
-`BindSettingsClass(null)` throws `ArgumentNullException`. Every other problem is logged and that
-one member is skipped; the rest still bind.
+`BindSettingsClass(null)` throws `ArgumentNullException`. Gears logs every other problem and skips
+that one member, and the rest still bind.
 
-## Binding settings to fields and properties
+## Bind a setting to a field or property
 
-Tag a static field or a static property with `[Setting("…")]` and it is assigned the setting the
+Tag a static field or a static property with `[Setting("…")]`, and Gears assigns the setting the
 path names:
 
 ```csharp
@@ -88,54 +89,58 @@ public static class MyGlobalListeners
 }
 ```
 
-Either kind must be:
+Either kind of member must be:
 
-- **Static.** A tagged instance field or property is reported and skipped.
+- **Static.** Gears reports and skips a tagged instance field or property.
 - **Declared as a type the setting actually is.** Any interface or class in the setting's own
   hierarchy works: `IModSetting`, `IGlobalModSetting`, `IValueModSetting<T>`,
-  `ISliderGlobalSetting<T>`, even the concrete class. A mismatch — most often the wrong `T` — is
-  reported and the member is left alone.
+  `ISliderGlobalSetting<T>`, even the concrete class. Gears reports a mismatch, most often the wrong
+  `T`, and leaves the member alone.
 
-A **field** must additionally be assignable: neither `readonly` nor `const`. Both are reported and
-skipped.
+A **field** must also be assignable, so neither `readonly` nor `const`. Gears reports and skips
+both.
 
-A **property** must additionally have a setter. `{ get; set; }` and `{ get; private set; }` both
-bind — the setter is called, so a property with a body runs whatever logic it contains. A get-only
-property (`{ get; }` or an expression-bodied `=> …`) has nothing to assign through and is reported
-and skipped.
+A **property** must also have a setter. Both `{ get; set; }` and `{ get; private set; }` bind, and
+Gears calls the setter, so a property with a body runs whatever logic it contains. A get-only
+property, written `{ get; }` or as an expression body, has nothing to assign through, so Gears
+reports and skips it.
 
-Members are only read from the type you pass; a tagged member inherited from a base type is not
-found. Two members may name the same setting. Any field initialiser runs before binding, so the
-bound setting wins.
+Gears reads members only from the type you pass, so it does not find a tagged member inherited from
+a base type. Two members may name the same setting. Any field initializer runs before binding, so
+the bound setting wins.
 
 Tagging an auto-property's backing field with `[field: Setting("…")]` also works and binds through
-the field path, but tagging the property itself is simpler and gives a clearer error if something
-is wrong.
+the field path. Tagging the property itself is simpler and gives a clearer error when something is
+wrong.
 
-## Method requirements
+## Bind a method to an event
 
-- **Static.** Public or private both work. Instance methods are not seen.
-- Declared on the type you pass. Members inherited from a base type are not scanned.
-- The signature must match the event **exactly**, parameter types included:
+A listener method must be:
+
+- **Static.** Public and private both work, and Gears does not see instance methods.
+- **Declared on the type you pass.** Gears does not scan members inherited from a base type.
+- **An exact signature match for the event**, parameter types included:
 
 | Attribute | Required signature | Works on |
 |---|---|---|
-| `[SettingOnValueChanged("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | Global value settings |
-| `[SettingOnSelectedChanged("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | Global and World value settings |
-| `[SettingOnApplied("...")]` | `static void M(IGlobalModSetting setting)` | Global settings, including Color and Binding |
-| `[SettingOnEnabled("...")]` | `static void M(IModSetting setting, bool isEnabled)` | Every setting, Global and World |
-
-`OnEnabled` is declared on `IModSetting`, so it is the one listener that works on every
-setting type. It fires only when `Enabled` actually flips value, not on every assignment.
+| `[SettingOnValueChanged("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | global value settings |
+| `[SettingOnSelectedChanged("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | global and world value settings |
+| `[SettingOnApplied("...")]` | `static void M(IGlobalModSetting setting)` | global settings, including Color and Binding |
+| `[SettingOnEnabled("...")]` | `static void M(IModSetting setting, bool isEnabled)` | every setting, global and world |
 
 `T` is the setting's value type: `int` for an `int` slider, `bool` for a `bool` switch,
-`UnityEngine.Color` for a colour, your enum for an enum selector. The first parameter is
-`IValueModSetting<T>`, not `IGlobalValueSetting<T>` or `ISliderGlobalSetting<T>`; a more derived
+`UnityEngine.Color` for a color, your enum for an enum selector. The first parameter is
+`IValueModSetting<T>`, not `IGlobalValueSetting<T>` or `ISliderGlobalSetting<T>`. A more derived
 parameter type does not match.
+
+`OnEnabled` is declared on `IModSetting`, so `[SettingOnEnabled]` is the one listener that works on
+every setting type. It fires only when `Enabled` actually changes value, not on every assignment.
 
 A method may carry several attributes, so one method can listen to several settings.
 
 ## Example
+
+`MyHud` below is your own class. Gears knows nothing about it.
 
 ```csharp
 using GearsAPI.Attributes;
@@ -196,7 +201,7 @@ public static class MyWorldListeners
     [Setting("Zombies.SpawnMultiplier")]
     private static ISliderWorldSetting<int> spawnMultiplier;
 
-    // Only OnSelectedChanged exists on world settings; it fires while the host picks values.
+    // Only OnSelectedChanged exists on world settings. It fires while the host picks values.
     [SettingOnSelectedChanged("Zombies.SpawnMultiplier")]
     private static void SpawnPreview(IValueModSetting<int> setting, int newValue)
     {
@@ -210,38 +215,38 @@ public static class MyWorldListeners
 }
 ```
 
-## Log lines when something is off
+## Log lines when a member does not bind
 
-All from `[Gears]`, all skip just that member and carry on with the rest.
+Every message below comes from `[Gears]`. Each one skips that member only, and the rest still bind.
 
 ### Listeners
 
 | Message | Cause |
 |---|---|
-| `[SettingOnValueChangedAttribute("…")] on 'Ns.Type.Method' must use the format "tabName.CategoryName.SettingName". Skipping registration of listener.` | wrong number of path segments (world: `"CategoryName.SettingName"`) |
+| `[SettingOnValueChangedAttribute("…")] on 'Ns.Type.Method' must use the format "tabName.CategoryName.SettingName". Skipping registration of listener.` | wrong number of path segments; a world path is `"CategoryName.SettingName"` |
 | `[SettingOnValueChangedAttribute] on 'Ns.Type.Method' references unknown setting "…". Skipping registration of listener.` | no setting at that path |
 | `[SettingOnApplied("…")] on '…' targets a setting that does not support OnSettingApplied (only global settings expose it). Skipping registration of listener.` | `[SettingOnApplied]` on a world path |
 | `[SettingOnValueChangedAttribute("…")] on '…' targets a setting that does not expose an 'OnValueChanged' event. Skipping registration of listener.` | `[SettingOnValueChanged]` on a world setting, or either value attribute on a Binding |
-| ``[SettingOnValueChangedAttribute] on '…' has an invalid signature, skipping registration of listener. Expected: static Void Method(IValueModSetting`1, Int32).`` | wrong parameter types, wrong count, non-void return, or not static |
+| ``[SettingOnValueChangedAttribute] on '…' has an invalid signature, skipping registration of listener. Expected: static Void Method(IValueModSetting`1, Int32).`` | wrong parameter types, wrong parameter count, a non-void return, or a non-static method |
 
 ### Field bindings
 
 | Message | Cause |
 |---|---|
-| `[SettingAttribute("…")] on 'Ns.Type.field' must use the format "tabName.CategoryName.SettingName". Skipping binding of field.` | wrong number of path segments (world: `"CategoryName.SettingName"`) |
+| `[SettingAttribute("…")] on 'Ns.Type.field' must use the format "tabName.CategoryName.SettingName". Skipping binding of field.` | wrong number of path segments; a world path is `"CategoryName.SettingName"` |
 | `[SettingAttribute] on 'Ns.Type.field' references unknown setting "…". Skipping binding of field.` | no setting at that path |
-| `[Setting("…")] on '…' is declared const and can never be assigned. Skipping binding of field.` | `const` field |
-| `[Setting("…")] on '…' is declared readonly and cannot be assigned. Remove readonly. Skipping binding of field.` | `static readonly` field, or the backing field behind a `[field: Setting]` on a get-only auto-property |
-| `[Setting("…")] on '…' is not static. Only static fields can be bound. Skipping binding of field.` | instance field |
-| `[Setting("…")] on '…' is declared as 'ISliderGlobalSetting<Single>' but the setting is a 'SliderSettingInt'. Skipping binding of field.` | the field's declared type does not fit the setting — usually the wrong `T` |
+| `[Setting("…")] on '…' is declared const and can never be assigned. Skipping binding of field.` | a `const` field |
+| `[Setting("…")] on '…' is declared readonly and cannot be assigned. Remove readonly. Skipping binding of field.` | a `static readonly` field, or the backing field behind a `[field: Setting]` on a get-only auto-property |
+| `[Setting("…")] on '…' is not static. Only static fields can be bound. Skipping binding of field.` | an instance field |
+| `[Setting("…")] on '…' is declared as 'ISliderGlobalSetting<Single>' but the setting is a 'SliderSettingInt'. Skipping binding of field.` | the field's declared type does not fit the setting, usually the wrong `T` |
 
 ### Property bindings
 
 | Message | Cause |
 |---|---|
-| `[SettingAttribute("…")] on 'Ns.Type.Property' must use the format "tabName.CategoryName.SettingName". Skipping binding of property.` | wrong number of path segments (world: `"CategoryName.SettingName"`) |
+| `[SettingAttribute("…")] on 'Ns.Type.Property' must use the format "tabName.CategoryName.SettingName". Skipping binding of property.` | wrong number of path segments; a world path is `"CategoryName.SettingName"` |
 | `[SettingAttribute] on 'Ns.Type.Property' references unknown setting "…". Skipping binding of property.` | no setting at that path |
-| `[Setting("…")] on '…' has no setter and cannot be assigned. Give it one, even a private one. Skipping binding of property.` | `{ get; }` or an expression-bodied property |
-| `[Setting("…")] on '…' is not static. Only static properties can be bound. Skipping binding of property.` | instance property |
-| `[Setting("…")] on '…' takes index parameters and cannot be assigned. Skipping binding of property.` | an indexed property (not reachable from C#, which has no static indexer) |
-| `[Setting("…")] on '…' is declared as 'ISliderGlobalSetting<Single>' but the setting is a 'SliderSettingInt'. Skipping binding of property.` | the property's declared type does not fit the setting — usually the wrong `T` |
+| `[Setting("…")] on '…' has no setter and cannot be assigned. Give it one, even a private one. Skipping binding of property.` | a `{ get; }` or expression-bodied property |
+| `[Setting("…")] on '…' is not static. Only static properties can be bound. Skipping binding of property.` | an instance property |
+| `[Setting("…")] on '…' takes index parameters and cannot be assigned. Skipping binding of property.` | an indexed property, which C# cannot declare as static |
+| `[Setting("…")] on '…' is declared as 'ISliderGlobalSetting<Single>' but the setting is a 'SliderSettingInt'. Skipping binding of property.` | the property's declared type does not fit the setting, usually the wrong `T` |

@@ -1,27 +1,27 @@
 ---
-title: C# Custom Value Types
-description: What works out of the box, how to use your own enums, and how to register a parser and formatter for another type.
+title: Use Custom Value Types
+description: The value types Gears handles out of the box, how to use your own enums, how to register a parser and formatter for another type, and the limit on which types can back a setting.
 ---
 
-A setting's value type decides how its text in `ModSettings.xml` and in the saved settings file
-is turned into a value and back. This page covers what works out of the box, how to use your own
-enums, and how to register a parser and formatter for another type.
+A setting's value type decides how Gears turns the text in `ModSettings.xml` and in the saved
+settings file into a value, and back again. Use this page to work out which types you can use, and
+how to add one of your own.
 
-## Built-in types
+## Types Gears handles out of the box
 
 | Type | Parsed from | Written as | Formatter string |
 |---|---|---|---|
-| `int` | `StringParsers.ParseSInt32` | `ToString(fmt)` | honoured (`"000"` → `042`) |
-| `float` | `StringParsers.ParseFloat`; a `%` suffix divides by 100 (`5%` → `0.05`) | `ToString(fmt)` | honoured (`"0%"` → `5%`) |
-| `double` | `StringParsers.ParseDouble` | `ToString(fmt)` | honoured, but **no Selector, Slider or Switch exists for `double`** |
-| `bool` | `StringParsers.ParseBool` | `True` / `False` | ignored |
-| `string` | as is | as is | ignored |
-| `UnityEngine.Color` | `StringParsers.ParseColor32` (`255,128,0`) | `R,G,B` | ignored |
-| any `enum` | member name, case-insensitive | member name | ignored |
+| `int` | `StringParsers.ParseSInt32` | `ToString(fmt)` | applied, so `"000"` gives `042` |
+| `float` | `StringParsers.ParseFloat`, where a `%` suffix divides by 100, so `5%` gives `0.05` | `ToString(fmt)` | applied, so `"0%"` gives `5%` |
+| `double` | `StringParsers.ParseDouble` | `ToString(fmt)` | applied, but **no Selector, Slider or Switch exists for `double`** |
+| `bool` | `StringParsers.ParseBool` | `True` or `False` | ignored |
+| `string` | as written | as written | ignored |
+| `UnityEngine.Color` | `StringParsers.ParseColor32`, such as `255,128,0` | `R,G,B` | ignored |
+| any `enum` | the member name, case-insensitively | the member name | ignored |
 
-## Enums: nothing to register
+## Use your own enum
 
-Any enum in any loaded assembly works as a value type with no code on your side.
+Any enum in any loaded assembly works as a value type, with no code on your side.
 
 ```csharp
 namespace MyMod
@@ -37,9 +37,11 @@ namespace MyMod
 </Switch>
 ```
 
-`type` may be the full name, the assembly-qualified name or just `Difficulty`, matched
-case-insensitively. An enum Selector starts with every declared member as its allowed values; an
-enum Switch takes the first two declared members unless `<Buttons>` says otherwise.
+Write `type` as the full name, the assembly-qualified name, or just `Difficulty`. Gears matches it
+case-insensitively.
+
+An enum Selector starts with every declared member as its allowed values. An enum Switch takes the
+first two declared members unless `<Buttons>` says otherwise.
 
 From C#:
 
@@ -49,18 +51,65 @@ ISelectorGlobalSetting<Difficulty> mode =
 Difficulty current = mode.SettingValue;
 ```
 
-## Registering a parser and formatter for another type
+### Name an enum declared inside a class
 
-Tag a class with [`[SettingsSerializationProvider]`](/docs/reference/attributes/settings-serialization-provider)
-and give it two static methods:
+An enum nested in a class works the same way, but you must separate the class from the enum with a
+**plus sign**, not a dot. That is the name .NET reflection uses, and it is what Gears looks the type
+up by.
+
+```csharp
+namespace MyMod
+{
+    public class PlayerController
+    {
+        public enum Difficulty { Easy, Normal, Hard }
+    }
+}
+```
+
+```xml
+<!-- Correct: PlayerController+Difficulty -->
+<Selector name="Mode" displayKey="myModMode" type="MyMod.PlayerController+Difficulty" defaultValue="Normal" />
+
+<!-- Also correct, with the assembly name after a comma -->
+<Switch name="Hardcore" displayKey="myModHardcore" type="MyMod.PlayerController+Difficulty, MyMod" defaultValue="Easy">
+	<Buttons left="Easy" right="Hard" />
+</Switch>
+```
+
+Write one plus sign per level of nesting, such as `MyMod.PlayerController+Settings+Difficulty`.
+
+<Callout type="warn">
+  Writing `MyMod.PlayerController.Difficulty` with a dot does not resolve. Gears drops the setting
+  and logs `has unknown type`, and nothing appears in the menu.
+</Callout>
+
+The bare name `Difficulty` also resolves, but it matches the first type with that name in any loaded
+assembly. If your mod declares both a top-level `Difficulty` and a nested one, the bare name may pick
+either, and Gears logs nothing about the choice. Write the `+` form for a nested enum so you get the
+one you meant.
+
+In C#, refer to the enum the way C# always does, with a dot:
+
+```csharp
+ISelectorGlobalSetting<PlayerController.Difficulty> mode =
+    category.GetSetting<ISelectorGlobalSetting<PlayerController.Difficulty>>("Mode");
+```
+
+## Register a parser and formatter for another type
+
+Tag a class with
+[`[SettingsSerializationProvider]`](/docs/reference/attributes/settings-serialization-provider) and
+give it two static methods:
 
 ```csharp
 using GearsAPI.Attributes;
+using UnityEngine;
 
 [SettingsSerializationProvider]
 public static class MyModSerialization
 {
-    // Must be: static T Method(string)
+    // Signature must be: static T Method(string)
     [SettingParser(typeof(Vector2))]
     public static Vector2 ParseVector2(string raw)
     {
@@ -68,7 +117,8 @@ public static class MyModSerialization
         return new Vector2(float.Parse(parts[0]), float.Parse(parts[1]));
     }
 
-    // Must be: static string Method(T, string)   - the second argument is the formatter string, possibly null
+    // Signature must be: static string Method(T, string)
+    // The second argument is the formatter string, which may be null.
     [SettingFormatter(typeof(Vector2))]
     public static string FormatVector2(Vector2 value, string fmt)
     {
@@ -77,44 +127,54 @@ public static class MyModSerialization
 }
 ```
 
-Rules:
+The rules:
 
-- The attribute is spelled `[SettingsSerializationProvider]` (no `Attribute` suffix exists) and
-  the method attributes are `[SettingParser(typeof(T))]` and `[SettingFormatter(typeof(T))]`.
-- Gears scans **every loaded assembly** for provider classes at `GameAwake`, before any setting is
-  created, so the provider works for settings declared in XML as well as in code.
-- Methods must be **static** and **declared on the provider class itself** (not inherited); public
-  or private both work. A static class is fine.
-- A method with the wrong signature throws `InvalidOperationException` at scan time, spelling out
-  the expected signature, for example
+- The class attribute is spelled `[SettingsSerializationProvider]`, with no `Attribute` suffix. The
+  method attributes are `[SettingParser(typeof(T))]` and `[SettingFormatter(typeof(T))]`.
+- Gears scans **every loaded assembly** for provider classes at `GameAwake`, before it creates any
+  setting, so your provider works for settings declared in XML as well as in code.
+- Methods must be **static** and **declared on the provider class itself**, not inherited. Public
+  and private both work, and a static class is fine.
+- A method with the wrong signature throws `InvalidOperationException` at scan time, naming the
+  expected signature, for example
   `[SettingParser(typeof(Vector2))] on 'MyMod.MyModSerialization.ParseVector2' has an invalid signature. Expected: static Vector2 ParseVector2(string).`
-- Registering a built-in type (`int`, `float`, …) replaces Gears' own handler for it.
-- A parser that throws is caught at the point of use: the bad value is logged and the setting
+- Gears catches a parser that throws at the point of use. It logs the bad value, and the setting
   keeps its previous value.
 
-## The limitation you need to know
+<Callout type="warn" title="Registration is game-wide and last-wins">
+  Gears keeps one parser and one formatter per value type for the whole game, not per mod. Whichever
+  provider is scanned last replaces the ones before it, with nothing in the log. Registering `int` or
+  `float` replaces Gears' own handler for every mod, and two mods that both register a shared type
+  such as `UnityEngine.Vector2` silently overwrite each other. Register only types your own mod owns.
+</Callout>
+
+## A parser is not enough to create a setting
 
 <Callout type="warn">
   Parsing and formatting is only half of a setting. The other half is a Selector, Slider or Switch
   class that holds a value of that type, and **those exist only for the built-in types and for
-  enums**.
+  enums**. Registering a parser does not make a new type usable as a setting.
 </Callout>
 
-So with the provider above:
+With the `Vector2` provider above:
 
-- `type="UnityEngine.Vector2"` in XML resolves and has a parser, but the parser log then shows
+- `type="UnityEngine.Vector2"` in XML resolves and has a parser, but the parser then logs
   `Setting 'x' of type 'UnityEngine.Vector2' could not be created: No ISelectorGlobalSetting implementation registered for value type 'UnityEngine.Vector2'`
-  and the setting is dropped.
-- `CreateSetting<ISelectorGlobalSetting<Vector2>>(...)` throws `InvalidOperationException` with
-  the same message.
+  and drops the setting.
+- `CreateSetting<ISelectorGlobalSetting<Vector2>>(...)` throws `InvalidOperationException` with the
+  same message.
 
-If you need a setting over a type that is not a built-in or an enum, model it as one that is: an
+To offer a setting over a type that is neither built in nor an enum, model it as one that is. Use an
 enum of named presets, a `string` selector whose allowed values you parse yourself, or several
 numeric settings.
 
-GearsAPI also declares [`[SettingFactory]`](/docs/reference/attributes/setting-factory-attribute),
+## Attributes reserved for Gears
+
+GearsAPI also declares
+[`[SettingFactory]`](/docs/reference/attributes/setting-factory-attribute),
 [`[SettingFactoryEnum]`](/docs/reference/attributes/setting-factory-enum-attribute) and
-[`[SettingFactoryFixed]`](/docs/reference/attributes/setting-factory-fixed-attribute),
-which are how Gears registers its own setting classes. They are public, but Gears only scans its
-own assembly for them, so a mod cannot add a setting class through them today. Treat them as
-reserved.
+[`[SettingFactoryFixed]`](/docs/reference/attributes/setting-factory-fixed-attribute), which are how
+Gears registers its own setting classes.
+
+They are public, but Gears scans only its own assembly for them, so a mod cannot add a setting class
+through them today. Treat them as reserved.

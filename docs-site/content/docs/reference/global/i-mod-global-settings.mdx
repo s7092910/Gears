@@ -75,7 +75,7 @@ Returns every setting in every category of every tab, categories included, as a 
 void BindSettingsClass(Type settingsType);
 ```
 
-Scans `settingsType` for tagged static members carrying a `"Tab.Category.Setting"` path. Fields and properties tagged [[`SettingAttribute`](/docs/reference/attributes/setting-attribute)] are assigned the named setting first, then methods tagged [[`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute)], [[`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute)], [[`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute)] or [[`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute)] are subscribed. Throws `ArgumentNullException` for `null`; every other problem is logged and that one member skipped. See the C# Setting Listeners guide.
+Scans `settingsType` for tagged static members carrying a `"Tab.Category.Setting"` path. Fields and properties tagged [`SettingAttribute`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute), [`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute), [`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute) or [`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. Throws `ArgumentNullException` for `null`; every other problem is logged and that one member skipped. See the Bind Settings with Attributes guide.
 
 ### SaveSettings()
 

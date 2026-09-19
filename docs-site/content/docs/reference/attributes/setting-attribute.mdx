@@ -10,7 +10,7 @@ description: "Binds a static field or property to the setting its path names. Pa
 public sealed class SettingAttribute : SettingPathAttribute
 ```
 
-`BindSettingsClass` assigns the resolved setting into the member before it subscribes any listener on the same type. The member's declared type must be one the setting actually implements — anything from [`IModSetting`](/docs/reference/settings/i-mod-setting) down to the concrete class. Anything else is logged and skipped. See the C# Setting Listeners guide.
+`BindSettingsClass` assigns the resolved setting into the member before it subscribes any listener on the same type. The member's declared type must be one the setting actually implements — anything from [`IModSetting`](/docs/reference/settings/i-mod-setting) down to the concrete class. Anything else is logged and skipped. See the Bind Settings with Attributes guide.
 
 **Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → `SettingAttribute`\
 **Attributes:** `AttributeUsageAttribute`

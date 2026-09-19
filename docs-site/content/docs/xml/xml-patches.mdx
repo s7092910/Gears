@@ -1,14 +1,16 @@
 ---
-title: Using Mod Settings in XML Patches
-description: The modsetting() function — reading another mod's settings from conditionals and inline in attribute values.
+title: Read Settings in XML Patches
+description: Call modsetting() to read your own or another mod's settings from a conditional block or inline in an attribute value.
 ---
 
-Gears adds one function, `modsetting()`, to the game's XML patching. It works in two places:
-inside the vanilla `<conditional>` blocks, and inline inside any attribute value. Everything else
-on this page (`<conditional>`, `<if>`, `<else>`, `mod_loaded`, `mod_version`, XPath) is the game's
-own patching system.
+Gears adds one function, `modsetting()`, to the game's XML patching. Use it to read a mod setting
+from your `Config/*.xml` patches without writing any C#.
 
-## The function
+It works in two places: inside the game's `<conditional>` blocks, and inline inside any attribute
+value. Everything else on this page — `<conditional>`, `<if>`, `<else>`, `mod_loaded`,
+`mod_version` and XPath — belongs to the game's own patching system, not to Gears.
+
+## Arguments and return value
 
 ```text
 modsetting('ModName', 'SettingsGroup', 'SettingPath')
@@ -16,22 +18,22 @@ modsetting('ModName', 'SettingsGroup', 'SettingPath')
 
 | Argument | Value |
 |---|---|
-| `ModName` | The `<Name>` from the other mod's `ModInfo.xml`. Not the display name, not the folder. |
-| `SettingsGroup` | `Global` or `World`, case-insensitive. |
-| `SettingPath` | Global: `TabName.CategoryName.SettingName` (exactly three parts). World: `CategoryName.SettingName` (exactly two). The names are the `name` attributes from `ModSettings.xml`, not the display keys. |
+| `ModName` | The `<Name>` from the mod's `ModInfo.xml`. Not the display name, and not the folder name. This may be another mod's name. |
+| `SettingsGroup` | `Global` or `World`, in any case. |
+| `SettingPath` | For a global setting, `TabName.CategoryName.SettingName`, exactly three parts. For a world setting, `CategoryName.SettingName`, exactly two. The names are the `name` attributes from `ModSettings.xml`, not the display keys. |
 
-It returns the setting's **serialized value as a string**: the same text that goes into the saved
-settings file. That means:
+The function returns the setting's **serialized value as a string**, which is the same text Gears
+writes to the saved settings file:
 
-- a `bool` is `True` or `False`;
-- a number uses `<Formatter serialize="…">` if the setting has one, otherwise its plain
-  `ToString()`;
-- an enum is its member name; a `Color` is `R,G,B`;
+- a `bool` returns `True` or `False`;
+- a number uses `<Formatter serialize="…">` if the setting has one, and its plain `ToString()`
+  otherwise;
+- an enum returns its member name, and a `Color` returns `R,G,B`;
 - a `Binding` has no value and returns an empty string.
 
-Compare against quoted strings: `== 'True'`, `== 'Hard'`, `== '2'`.
+Compare the result against a quoted string: `== 'True'`, `== 'Hard'`, `== '2'`.
 
-## In a conditional block
+## Read a setting in a conditional block
 
 ```xml
 <configs>
@@ -46,19 +48,19 @@ Compare against quoted strings: `== 'True'`, `== 'Hard'`, `== '2'`.
 </configs>
 ```
 
-World example, two-part path:
+A world setting uses the two-part path:
 
 ```xml
 <if cond="modsetting('MyMod', 'World', 'Zombies.FeralNights') == 'True'">
 ```
 
-`modsetting` sits alongside the vanilla condition functions such as `mod_loaded`, `mod_version`,
-`version` and `game_version`, and can be combined with them in the same expression.
+`modsetting` sits alongside the game's own condition functions, such as `mod_loaded`, `mod_version`,
+`version` and `game_version`, and you can combine it with them in one expression.
 
-## Inline in an attribute value
+## Read a setting inline in an attribute value
 
 After the conditional blocks of a file have been applied, Gears scans **every attribute of every
-element** in the file and replaces each `modsetting(...)` it finds with the value:
+element** in that file and replaces each `modsetting(...)` call it finds with the value:
 
 ```xml
 <configs>
@@ -70,24 +72,24 @@ element** in the file and replaces each `modsetting(...)` it finds with the valu
 </configs>
 ```
 
-Rules for this form, which is a plain text substitution:
+This form is a plain text substitution, so it follows a few rules of its own:
 
-- It works in **attribute values only**. Element text (`<set xpath="…">modsetting(...)</set>`) is
-  not substituted.
-- The match is case-insensitive. Arguments run up to the **first `)`**, every `'` is removed, and
-  the rest is split on `,`. So quotes are optional, and an argument can contain neither a comma
-  nor a parenthesis.
-- Several calls in one attribute are all replaced. A value that itself contains the text
-  `modsetting(` is left alone rather than expanded again.
-- A call with no closing `)` is an error naming the file, attribute and line, and patching of
-  that file stops.
+- It works in **attribute values only**. Gears does not substitute element text, so
+  `<set xpath="…">modsetting(...)</set>` is left alone.
+- The match is case-insensitive. The arguments run up to the **first `)`**. Gears removes every `'`
+  and splits the rest on `,`, so quotes are optional and an argument can contain neither a comma nor
+  a parenthesis.
+- Gears replaces every call in an attribute, not just the first. If the resulting value itself
+  contains the text `modsetting(`, Gears leaves it alone rather than expanding it again.
+- A call with no closing `)` is an error naming the file, attribute and line, and patching of that
+  file stops.
 
-## Guarding for players without Gears
+## Guard the patch for players without Gears
 
 <Callout type="warn">
-  If Gears is not installed, `modsetting` is unknown. Inside `<conditional>` that makes the
-  condition fail to evaluate; inline, the game will try to use the literal text `modsetting(...)`
-  as a value and log errors. Wrap either form in a vanilla check.
+  Without Gears installed, `modsetting` is an unknown function. Inside `<conditional>`, the
+  condition then fails to evaluate. Inline, the game tries to use the literal text
+  `modsetting(...)` as a value and logs errors. Wrap either form in a `mod_loaded` check.
 </Callout>
 
 ```xml
@@ -108,32 +110,44 @@ Rules for this form, which is a plain text substitution:
 </configs>
 ```
 
-## When the values are valid
+## When the values are current
 
-Settings are populated at game start, before any XML is patched, so **Global** values are always
-current at patch time.
+Gears populates settings at game start, before any XML is patched, so a **global setting** always
+holds its current value at patch time.
 
-**World** values belong to the save. On the host they are loaded when the world starts; on a
-client they arrive from the server as part of the config files. Both happen before the world's
-XML is patched, so world patches see the right values. Before a world is loaded, a world setting
-reads as its `defaultValue`.
+A **world setting** belongs to the world. On the host, Gears loads it when the world starts. On a
+client, it arrives from the server with the other config files. Both happen before the world's XML
+is patched, so a world patch reads the right values.
 
-## Errors
+Before any world is loaded, a world setting reads as its `defaultValue`.
 
-Every failure is reported as an XML patch error in the log with the file and line. The messages,
-with `Calling function ` in front in the conditional form and without it inline:
+## Error messages
+
+Gears reports every failure as an XML patch error in the log, with the file and the line.
+
+These messages check the arguments themselves. In the conditional form each one is prefixed
+`Calling function `; inline it is not:
 
 | Message | Cause |
 |---|---|
 | `modsetting with invalid number of arguments (N, expected 3)` | wrong argument count |
-| `modsetting: Parameter ModName expected string argument` | first argument empty or not a string |
-| `modsetting: Parameter SettingsGroup expected to be either 'Global or World'` | second argument is something else |
-| `modsetting: Parameter SettingName expected string argument in the format of 'TabName.CategoryName.SettingName'` | Global path does not have three parts |
-| `modsetting: Parameter SettingName expected string argument in the format of 'CategoryName.SettingName'` | World path does not have two parts |
+| `modsetting: Parameter ModName expected string argument` | the first argument is empty or not a string |
+| `modsetting: Parameter SettingsGroup expected string argument` | the second argument is empty or not a string |
+| `modsetting: Parameter SettingsGroup expected to be either 'Global or World'` | the second argument is something else |
+| `modsetting: Parameter SettingName expected string argument` | the third argument is empty or not a string |
 | `modsetting: mod <ModName> could not be found` | no loaded mod has that `<Name>` |
-| `modsetting: mod <ModName> does not have any global mod settings` / `…world mod settings` | the mod has no settings of that group |
-| `modsetting: mod <ModName> does not have a mod settings tab called <t>` | first part of a Global path is wrong |
-| `modsetting: mod <ModName> does not have a mod settings category called <c>` | category part is wrong |
-| `modsetting: mod <ModName> does not have a mod setting called <s>` | setting name is wrong |
 
-A setting that exists but has no value (a `Binding`) is not an error; it returns `""`.
+These messages come from resolving the path, and they carry the `Calling function ` prefix in
+**both** forms:
+
+| Message | Cause |
+|---|---|
+| `Calling function modsetting: Parameter SettingName expected string argument in the format of 'TabName.CategoryName.SettingName'` | a global path does not have three parts |
+| `Calling function modsetting: Parameter SettingName expected string argument in the format of 'CategoryName.SettingName'` | a world path does not have two parts |
+| `Calling function modsetting: mod <ModName> does not have any global mod settings`, or `…world mod settings` | the mod has no settings in that group |
+| `Calling function modsetting: mod <ModName> does not have a mod settings tab called <t>` | the first part of a global path is wrong |
+| `Calling function modsetting: mod <ModName> does not have a mod settings category called <c>` | the category part is wrong |
+| `Calling function modsetting: mod <ModName> does not have a mod setting called <s>` | the setting name is wrong |
+
+A setting that exists but holds no value, which means a `Binding`, is not an error. It returns an
+empty string.

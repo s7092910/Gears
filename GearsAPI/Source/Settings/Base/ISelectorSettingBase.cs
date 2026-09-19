@@ -12,7 +12,7 @@ namespace GearsAPI.Settings.Base
     public interface ISelectorSettingBase : IValueModSettingBase
     {
         /// <summary>
-        /// Gets or sets the .NET format string used when a value is shown to the player. Honoured by
+        /// Gets or sets the .NET format string used when a value is shown to the player. Applied by
         /// numeric types only. Changing it rebuilds the display strings.
         /// </summary>
         string UiFormatter { get; set; }

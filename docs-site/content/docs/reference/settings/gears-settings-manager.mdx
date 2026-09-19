@@ -21,7 +21,7 @@ Static access to every mod Gears knows about, for code that wants a setting with
 public static List<IGearsMod> GetMods()
 ```
 
-Returns every loaded mod as a `List<IGearsMod>`, in the game's load order. Returns an empty list before Gears has initialised.
+Returns every loaded mod as a `List<IGearsMod>`, in the game's load order. Returns an empty list before Gears has initialized.
 
 ### GetGearsMod(String)
 
@@ -29,4 +29,4 @@ Returns every loaded mod as a `List<IGearsMod>`, in the game's load order. Retur
 public static IGearsMod GetGearsMod(string modName)
 ```
 
-Returns the [`IGearsMod`](/docs/reference/settings/i-gears-mod) whose `ModInfo.xml` `<Name>` equals `modName`, or `null` if there is none or Gears has not initialised.
+Returns the [`IGearsMod`](/docs/reference/settings/i-gears-mod) whose `ModInfo.xml` `<Name>` equals `modName`, or `null` if there is none or Gears has not initialized.
