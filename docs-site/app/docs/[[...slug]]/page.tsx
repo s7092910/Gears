@@ -11,7 +11,7 @@ import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/mdx';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
-import { getPageImageUrl, getPageMarkdownUrl, gitConfig, repoContentPath } from '@/lib/shared';
+import { appName, getPageImageUrl, getPageMarkdownUrl, gitConfig, repoContentPath } from '@/lib/shared';
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -57,7 +57,21 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
     title: page.data.title,
     description: page.data.description,
     openGraph: {
-      images: getPageImageUrl(page).url,
+      type: 'article',
+      // A page-level openGraph replaces the one in the root layout rather than merging with it,
+      // so these two have to be repeated or the card loses its site name and canonical link.
+      siteName: appName,
+      url: page.url,
+      title: page.data.title,
+      description: page.data.description,
+      // Declaring the size is what makes Discord and Slack use the wide card rather than a
+      // thumbnail beside the text.
+      images: {
+        url: getPageImageUrl(page).url,
+        width: 1200,
+        height: 630,
+        alt: page.data.title,
+      },
     },
   };
 }

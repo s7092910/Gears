@@ -2,6 +2,31 @@
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 
+/*
+  The brand red, replacing the near-black and near-white the neutral preset uses for `primary`.
+
+  `primary` has to work two ways: as text on the page background, which is most of its 41 uses in
+  fumadocs, and as a button fill under `primary-foreground`. One red cannot do both in both themes,
+  so each theme gets the shade that clears 4.5:1 on its own background:
+
+    light  #c62828 on #f5f5f5 -> 5.2:1   white on #c62828 -> 5.3:1
+    dark   #ef4444 on #121212 -> 5.0:1   near-black on #ef4444 -> 5.0:1
+
+  The dark pairing puts dark text on a bright fill, which is what the preset already does with its
+  near-white primary, so buttons keep the weight they had.
+*/
+@theme {
+  --color-fd-primary: hsl(0, 66%, 47%);
+  --color-fd-primary-foreground: hsl(0, 60%, 98%);
+  --color-fd-ring: hsl(0, 66%, 47%);
+}
+
+.dark {
+  --color-fd-primary: hsl(0, 84%, 60%);
+  --color-fd-primary-foreground: hsl(0, 30%, 8%);
+  --color-fd-ring: hsl(0, 84%, 60%);
+}
+
 html {
   scrollbar-gutter: stable;
 }
