@@ -17,10 +17,10 @@
     "csharp/world-settings",
     "csharp/setting-listeners",
     "csharp/custom-value-types",
+    "---Upgrading---",
+    "upgrading-to-gearsapi-3",
     "---Reference---",
     "reference",
-    "troubleshooting",
-    "---Upgrading---",
-    "upgrading-to-gearsapi-3"
+    "troubleshooting"
   ]
 }
