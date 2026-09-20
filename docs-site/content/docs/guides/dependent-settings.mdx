@@ -9,7 +9,14 @@ setting and Gears draws its row dimmed and stops the player changing it.
 This guide covers what `Enabled` does, the one behavior that surprises people, and why Gears has no
 way to hide a setting outright. It needs C#; `ModSettings.xml` has no conditional element.
 
-{/* IMAGE /images/Dependent-Settings.gif — The controlling switch and the two or three rows it governs, all in one frame. Toggle the switch off, then on, so the rows below gray out and come back. 2-4 seconds, looping. */}
+<MediaSlot
+  title="/images/Dependent-Settings.gif"
+  alt="A switch being toggled off and on, graying out the settings rows below it"
+  ratio="aspect-4/3"
+>
+  The controlling switch and the two or three rows it governs, all in one frame. Toggle the switch
+  off, then on, so the rows below gray out and come back. 2–4 seconds, looping.
+</MediaSlot>
 
 ## Gray a row out
 
@@ -42,7 +49,14 @@ enabled and ignore its value in your own code.
 
 The gate is the same on a global setting and on a world setting.
 
-{/* IMAGE /images/Disabled-Row.png — A close crop of two or three rows with one of them grayed out, so the disabled state is unmistakable at small size. */}
+<MediaSlot
+  title="/images/Disabled-Row.png"
+  alt="A grayed out setting row beside two normal ones"
+  ratio="aspect-3/1"
+>
+  A close crop of two or three rows with one of them grayed out, so the disabled state is
+  unmistakable at small size.
+</MediaSlot>
 
 ## Drive it from another setting
 

@@ -10,7 +10,15 @@ falls back to Custom.
 Gears has no preset setting type. You build one from a [Selector](/docs/setting-types#selector) and
 two listeners, so this guide needs C#. XML alone cannot make one setting change another.
 
-{/* IMAGE /images/Preset-Selector.gif — The mod's settings page with the Preset row and the three rows it drives all visible at once. Step Preset from Low to Medium to High so each step visibly moves the rows below it. 3-5 seconds, looping, no cursor movement beyond the selector arrows. */}
+<MediaSlot
+  title="/images/Preset-Selector.gif"
+  alt="A Preset row stepping from Low to High, moving the three settings rows below it"
+  ratio="aspect-4/3"
+>
+  The mod's settings page with the Preset row and the three rows it drives all visible at once. Step
+  Preset from Low to Medium to High so each step visibly moves the rows below it. 3–5 seconds,
+  looping, no cursor movement beyond the selector arrows.
+</MediaSlot>
 
 Before you start, read [Bind Settings with Attributes](/docs/csharp/setting-listeners) for the
 attributes and setting paths used below, and
@@ -194,7 +202,14 @@ finally
 }
 ```
 
-{/* IMAGE /images/Preset-Custom.png — A still of the same category after the player has changed one driven row by hand, with the Preset row now reading Custom. Frame it exactly as the GIF above so the two read as before and after. */}
+<MediaSlot
+  title="/images/Preset-Custom.png"
+  alt="The Preset row reading Custom after a driven setting was changed by hand"
+  ratio="aspect-4/3"
+>
+  A still of the same category after the player has changed one driven row by hand, with the Preset
+  row now reading Custom. Frame it exactly as the GIF above so the two read as before and after.
+</MediaSlot>
 
 ## What the player sees
 
@@ -202,7 +217,14 @@ One Apply commits the preset and every row it moved, and Gears saves them togeth
 the window instead puts every one of them back to its applied value. Both come from the
 `RefreshUI()` calls; neither needs code of its own.
 
-{/* IMAGE /images/Preset-Apply.png — The same page with the Apply button lit after a preset change, cropped so the moved rows and the button are visible together. */}
+<MediaSlot
+  title="/images/Preset-Apply.png"
+  alt="The Apply button lit after a preset moved several settings rows"
+  ratio="aspect-4/3"
+>
+  The same page with the Apply button lit after a preset change, cropped so the moved rows and the
+  button are visible together.
+</MediaSlot>
 
 The next time the game starts, Gears restores each saved value on its own, the preset's included.
 None of your listeners run during that restore, and none needs to: the values Gears restores are the

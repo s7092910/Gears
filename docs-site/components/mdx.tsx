@@ -4,6 +4,7 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { TypeMeta } from '@/components/type-meta';
+import { MediaSlot } from '@/components/media-slot';
 import type { MDXComponents } from 'mdx/types';
 
 export function getMDXComponents(components?: MDXComponents) {
@@ -19,6 +20,7 @@ export function getMDXComponents(components?: MDXComponents) {
     Steps,
     Step,
     TypeMeta,
+    MediaSlot,
     ...components,
   } satisfies MDXComponents;
 }
