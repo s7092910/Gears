@@ -53,7 +53,7 @@ Gets or sets the localization key for the description text.
 bool Enabled { get; set; }
 ```
 
-Gets or sets whether the setting can be changed in the menu. Starts `true`. On a global value setting, while this is `false` assigning `SelectedValue` still changes the value but raises no `OnSelectedChanged`, and `ApplyCurrentChange()` does nothing at all. World settings have no such gate.
+Gets or sets whether the setting can be changed in the menu. Starts `true`. On a value setting, global or world, while this is `false` assigning `SelectedValue` still changes the value but raises no `OnSelectedChanged`, and `ApplyCurrentChange()` does nothing at all.
 
 ### IsChanged
 
@@ -169,7 +169,7 @@ Sets the selected value back to the applied value.
 void ApplyCurrentChange();
 ```
 
-Commits the selected value as the applied value, raising `OnValueChanged` and, on a global setting, `OnSettingApplied`. Does nothing on a global setting whose `Enabled` is `false`.
+Commits the selected value as the applied value, raising `OnValueChanged` and, on a global setting, `OnSettingApplied`. Does nothing on a value setting whose `Enabled` is `false`.
 
 ### RefreshUI()
 
@@ -177,4 +177,4 @@ Commits the selected value as the applied value, raising `OnValueChanged` and, o
 void RefreshUI();
 ```
 
-Refreshes the UI for this setting if it is currently being displayed to the user
+Redraws this setting's row if the settings window is showing it, and registers the change with that window so Apply commits it and closing the window or switching mods discards it. Call this after changing `SelectedValue`, `SettingValue` or the allowed values from code; an assignment on its own changes nothing on screen and the window does not know the setting moved. Changing `Enabled` refreshes the row on its own and needs no call.

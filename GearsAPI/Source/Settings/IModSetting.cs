@@ -37,7 +37,7 @@ namespace GearsAPI.Settings
         string DescriptionKey { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the setting can be changed in the menu. Starts <c>true</c>. On a global value setting, while this is <c>false</c> assigning <c>SelectedValue</c> still changes the value but raises no <c>OnSelectedChanged</c>, and <c>ApplyCurrentChange()</c> does nothing at all. World settings have no such gate.
+        /// Gets or sets whether the setting can be changed in the menu. Starts <c>true</c>. On a value setting, global or world, while this is <c>false</c> assigning <c>SelectedValue</c> still changes the value but raises no <c>OnSelectedChanged</c>, and <c>ApplyCurrentChange()</c> does nothing at all.
         /// </summary>
         bool Enabled { get; set; }
 
@@ -107,12 +107,12 @@ namespace GearsAPI.Settings
         void DiscardCurrentChange();
 
         /// <summary>
-        /// Commits the selected value as the applied value, raising <c>OnValueChanged</c> and, on a global setting, <c>OnSettingApplied</c>. Does nothing on a global setting whose <c>Enabled</c> is <c>false</c>.
+        /// Commits the selected value as the applied value, raising <c>OnValueChanged</c> and, on a global setting, <c>OnSettingApplied</c>. Does nothing on a value setting whose <c>Enabled</c> is <c>false</c>.
         /// </summary>
         void ApplyCurrentChange();
 
         /// <summary>
-        /// Refreshes the UI for this setting if it is currently being displayed to the user
+        /// Redraws this setting's row if the settings window is showing it, and registers the change with that window so Apply commits it and closing the window or switching mods discards it. Call this after changing <c>SelectedValue</c>, <c>SettingValue</c> or the allowed values from code; an assignment on its own changes nothing on screen and the window does not know the setting moved. Changing <c>Enabled</c> refreshes the row on its own and needs no call.
         /// </summary>
         void RefreshUI();
 

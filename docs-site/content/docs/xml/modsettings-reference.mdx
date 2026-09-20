@@ -81,15 +81,19 @@ without a log line.
 
 | Element | Global | World | Value types |
 |---|---|---|---|
-| `<Selector>` | yes | yes | `int`, `float`, `string`, any enum |
-| `<Slider>` | yes | yes | `int`, `float` **only** |
-| `<Switch>` | yes | yes | `bool`, `string`, any enum |
-| `<Color>` | yes | no | always a color; `type` is accepted and ignored |
-| `<Binding>` | yes | no | none; a key binding has no value |
+| [`<Selector>`](#selector) | yes | yes | `int`, `float`, `string`, any enum |
+| [`<Slider>`](#slider) | yes | yes | `int`, `float` **only** |
+| [`<Switch>`](#switch) | yes | yes | `bool`, `string`, any enum |
+| [`<Color>`](#color) | yes | no | always a color; `type` is accepted and ignored |
+| [`<Binding>`](#binding) | yes | no | none; a key binding has no value |
 
-Gears drops a `Color` or `Binding` under `<World>` without a log line, and drops any other element
-name the same way. When constructing a setting throws for any reason, Gears drops it with
+These five are the only elements a `<Category>` accepts. Gears drops a `Color` or `Binding` under
+`<World>` without a log line, and drops any other element name the same way. When constructing a
+setting throws for any reason, Gears drops it with
 `Failed to parse global <Element> '<name>': <message>`, or `world` in place of `global`.
+
+The rules below apply to every one of them. Each element's own subsection follows, and the child
+elements they take are described under [Child elements](#child-elements).
 
 ### Attributes every setting takes
 
@@ -139,6 +143,90 @@ there is one, replaces the last two after the file has loaded.
 | Missing or whitespace | Setting dropped: `<Element> '<name>' has no defaultValue; defaultValue is required, skipping.` |
 | Present but unparseable | Setting kept at `default(T)`: 0, `false`, empty, or black. `[GlobalModValueSetting]` or `[WorldModValueSetting]` logs `Setting '<name>': could not parse defaultValue '<raw>' as <Type> - <message>` |
 | Outside the `List`, the `Incremental` range or the `Buttons` values | Not checked. The setting loads with the value you gave. |
+
+### `<Selector>`
+
+One value at a time, with arrows on either side to step through the allowed values. Global and world.
+
+Set the allowed values one of three ways:
+
+- `<List allowedValues="a,b,c" />` names them outright.
+- `<Incremental increment="" minValue="" maxValue="" />` gives a numeric range, which Gears expands
+  into every step. `int` and `float` only.
+- Naming an enum as the `type` uses its declared members, in declaration order, and needs neither
+  child element.
+
+A Selector also takes `<Formatter>`, `<LocalizationPrefix>` and `<Wrap>`, and it is one of the three
+elements that accept a per-value `<Preview>` image. See [Child elements](#child-elements).
+
+```xml
+<Selector name="Units" displayKey="myModUnits" type="string" defaultValue="metric">
+	<List allowedValues="metric,imperial" />
+	<LocalizationPrefix prefix="myModUnits_" />
+</Selector>
+```
+
+### `<Slider>`
+
+A bar the player drags, with arrows that nudge it one step. Global and world.
+
+`type` must be `int` or `float`, and anything else drops the setting. `<Incremental>` sets the range,
+and a Slider without one has a range of 0 to 0. `<Formatter>` controls both the text drawn over the
+bar and the value written to disk. A `float` Slider accepts `%` notation, so `50%` is stored as `0.5`.
+
+Gears reads no `<List>`, `<Wrap>` or `<LocalizationPrefix>` on a Slider.
+
+```xml
+<Slider name="Fov" displayKey="myModFov" type="int" defaultValue="65">
+	<Incremental increment="5" minValue="45" maxValue="120" />
+</Slider>
+```
+
+### `<Switch>`
+
+Two buttons side by side, and the lit one is the current value. Global and world.
+
+`type` may be `bool`, `string` or any enum. `<Buttons left="" right="" />` names the two sides. A
+`bool` Switch is `false` on the left and `true` on the right, an enum Switch takes its first two
+declared members, and a `string` Switch has no sides at all until `<Buttons>` gives it some.
+`<LocalizationPrefix>` turns both labels into localization keys.
+
+Gears ignores `<Formatter>` on a Switch.
+
+```xml
+<Switch name="ShowHints" displayKey="myModShowHints" type="bool" defaultValue="true">
+	<LocalizationPrefix prefix="myModOnOff_" />
+</Switch>
+```
+
+### `<Color>`
+
+Global only.
+
+```xml
+<Color name="Crosshair" displayKey="myModCrosshair" defaultValue="255,0,0" />
+```
+
+A Color setting has a fixed type, so `type` is accepted and ignored. It takes `defaultValue`, which
+is required, plus `<Caption>`, `<Description>`, `<RestartScope>` and a value-less `<Preview>`. Gears
+serializes it as `R,G,B` in the range 0–255.
+
+### `<Binding>`
+
+Global only.
+
+```xml
+<Binding name="Boost" displayKey="myModBoost">
+	<Description key="myModBoostDesc" />
+</Binding>
+```
+
+A Binding takes only `name`, `displayKey`, `<Caption>`, `<Description>`, `<RestartScope>` and a
+value-less `<Preview>`. It has no `type`, no `defaultValue` and no valued previews.
+
+Declaring the binding in XML gives it a row in the menu. You must attach the actual key binding from
+C# through [`IControlBindingSetting.PlayerAction`](/docs/reference/global/i-control-binding-setting).
+See [Use Global Settings in C#](/docs/csharp/global-settings).
 
 ## Child elements
 
@@ -252,31 +340,6 @@ Gears passes `path` to the game's texture loader untouched, so use the game's ow
 ```
 
 Here `MyMod` is the `<Name>` from `ModInfo.xml`.
-
-### `<Color>`
-
-```xml
-<Color name="Crosshair" displayKey="myModCrosshair" defaultValue="255,0,0" />
-```
-
-A Color setting has a fixed type, so `type` is accepted and ignored. It takes `defaultValue`, which
-is required, plus `<Caption>`, `<Description>`, `<RestartScope>` and a value-less `<Preview>`. Gears
-serializes it as `R,G,B` in the range 0–255.
-
-### `<Binding>`
-
-```xml
-<Binding name="Boost" displayKey="myModBoost">
-	<Description key="myModBoostDesc" />
-</Binding>
-```
-
-A Binding takes only `name`, `displayKey`, `<Caption>`, `<Description>`, `<RestartScope>` and a
-value-less `<Preview>`. It has no `type`, no `defaultValue` and no valued previews.
-
-Declaring the binding in XML gives it a row in the menu. You must attach the actual key binding from
-C# through [`IControlBindingSetting.PlayerAction`](/docs/reference/global/i-control-binding-setting).
-See [Use Global Settings in C#](/docs/csharp/global-settings).
 
 ## How duplicate names merge
 

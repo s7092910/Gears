@@ -104,6 +104,8 @@ included:
   [`IValueModSetting<T>`](/docs/reference/settings/i-value-mod-setting) for an image shown while one
   value is selected. These are the code equivalent of the `<Preview>` element. The last setting-wide
   image wins, and the first image registered for a given value wins.
+- `RefreshUI()`, which you call after changing a value from code. See
+  [Change a setting from code](#change-a-setting-from-code).
 
 Three more methods drive the settings window, and they define the three-value model below:
 
@@ -122,17 +124,33 @@ Three more methods drive the settings window, and they define the three-value mo
 setting has: a [`RestartScope`](/docs/reference/settings/setting-restart-scope), the `Category` and
 `Tab` it belongs to, and the `OnSettingApplied` event that `ApplyCurrentChange()` raises.
 
+### Change a setting from code
+
+Assigning `SelectedValue` or `SettingValue` changes the value and raises the matching event, but the
+settings window neither redraws the row nor learns that the setting moved. Call `RefreshUI()` on the
+setting afterwards and it does both: the row redraws, Apply commits the change along with whatever the
+player edited, and closing the window or switching to another mod discards it.
+
+```csharp
+hudScale.SelectedValue = 1.25f;
+hudScale.RefreshUI();          // without this the row still reads the old value
+```
+
+Call it after changing the allowed values too, since the row caches the list it draws. Changing
+`Enabled` is the exception: that refreshes the row on its own.
+
 ### Disabling a setting
 
 Set `Enabled` to false to gray a row out, which is how you make one setting depend on another. On a
-global value setting it also does two things that are easy to miss:
+value setting it also does two things that are easy to miss:
 
 - Assigning `SelectedValue` still changes the value, but raises no `OnSelectedChanged`.
 - `ApplyCurrentChange()` does nothing at all. The applied value does not move, and neither
   `OnValueChanged` nor `OnSettingApplied` fires.
 
 So a disabled setting keeps the applied value it had, and your listeners go quiet until you enable it
-again. World settings have no such gate: they behave the same whether `Enabled` is true or false.
+again. World settings have the same gate. See
+[Make One Setting Depend on Another](/docs/guides/dependent-settings) for what that means in practice.
 
 ## The three values a setting holds
 

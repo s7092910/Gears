@@ -1,0 +1,123 @@
+---
+title: Make One Setting Depend on Another
+description: Use Enabled to gray out the settings another setting has taken over, and avoid the trap that stops a grayed setting ever being saved.
+---
+
+When one setting decides whether others matter, gray the others out. Set `Enabled` to false on a
+setting and Gears draws its row dimmed and stops the player changing it.
+
+This guide covers what `Enabled` does, the one behavior that surprises people, and why Gears has no
+way to hide a setting outright. It needs C#; `ModSettings.xml` has no conditional element.
+
+{/* IMAGE /images/Dependent-Settings.gif — The controlling switch and the two or three rows it governs, all in one frame. Toggle the switch off, then on, so the rows below gray out and come back. 2-4 seconds, looping. */}
+
+## Gray a row out
+
+`Enabled` lives on [`IModSetting`](/docs/reference/settings/i-mod-setting), so every setting has it,
+categories included. It starts true.
+
+```csharp
+hudDetail.Enabled = false;
+```
+
+Unlike a value change, this needs no `RefreshUI()` call. Assigning `Enabled` raises `OnEnabled`, and
+the row redraws itself from that. See
+[Change a setting from code](/docs/csharp/global-settings#change-a-setting-from-code) for the rule
+that applies to everything else.
+
+`OnEnabled` fires only when the value actually changes, so assigning false twice raises it once.
+
+## A grayed setting never applies
+
+<Callout type="warn" title="Disable after applying, not before">
+  While `Enabled` is false, `ApplyCurrentChange()` does nothing at all. The applied value does not
+  move, and neither `OnValueChanged` nor `OnSettingApplied` fires. Assigning `SelectedValue` still
+  changes the value but raises no `OnSelectedChanged`. So a row you gray out keeps the applied value
+  it already had, however the selected value moves afterwards.
+</Callout>
+
+This catches people who gray a row out and expect its current value to be saved along with the rest.
+It is not. If the value on a row matters, either apply it before disabling the row, or leave the row
+enabled and ignore its value in your own code.
+
+The gate is the same on a global setting and on a world setting.
+
+{/* IMAGE /images/Disabled-Row.png — A close crop of two or three rows with one of them grayed out, so the disabled state is unmistakable at small size. */}
+
+## Drive it from another setting
+
+Listen to the controlling setting and set `Enabled` on the ones it governs. Use
+`[SettingOnSelectedChanged]` so the gray follows the menu while the player is still deciding, rather
+than waiting for Apply.
+
+```csharp
+public static class HudSettings
+{
+    private const string UseCustomHudPath = "General.Hud.UseCustomHud";
+    private const string HudScalePath = "General.Hud.HudScale";
+    private const string HudOpacityPath = "General.Hud.HudOpacity";
+
+    [Setting(UseCustomHudPath)]
+    private static ISwitchGlobalSetting<bool> useCustomHud;
+
+    [Setting(HudScalePath)]
+    private static ISliderGlobalSetting<float> hudScale;
+
+    [Setting(HudOpacityPath)]
+    private static ISliderGlobalSetting<float> hudOpacity;
+
+    [SettingOnSelectedChanged(UseCustomHudPath)]
+    private static void UseCustomHudSelected(IValueModSetting<bool> setting, bool newValue)
+    {
+        SetSlidersEnabled(newValue);
+    }
+
+    public static void ApplyInitialState()
+    {
+        SetSlidersEnabled(useCustomHud.SettingValue);
+    }
+
+    private static void SetSlidersEnabled(bool enabled)
+    {
+        // The two sliders only mean anything while the custom HUD is on.
+        hudScale.Enabled = enabled;
+        hudOpacity.Enabled = enabled;
+    }
+}
+```
+
+Gears assigns the tagged fields before it subscribes the listeners, so a handler can safely use any
+field the same `BindSettingsClass` call binds. It does not, however, call your handler once at
+startup: set the initial state yourself right after binding.
+
+```csharp
+public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
+{
+    modSettings.BindSettingsClass(typeof(HudSettings));
+    HudSettings.ApplyInitialState();
+}
+```
+
+## You cannot hide a setting
+
+Gears has no visibility flag. A setting is either in its category and drawn, or not in the category
+at all.
+
+Removing it with `IGlobalModSettingsCategory.RemoveSetting` does take the row away, but it is a poor
+substitute for hiding:
+
+- The settings window does not lay itself out again for an open page, so the row does not disappear
+  until the window is reopened.
+- The setting is gone from the tree, so `GetSetting` returns null and any listener bound to it is
+  bound to an object nothing else references.
+- Gears saves the values of the settings that exist. A removed setting is not among them.
+
+Use `Enabled`. A grayed row tells the player the option exists and why it is unavailable, which a
+missing row cannot.
+
+## Where to go next
+
+- [Add a Preset Selector](/docs/guides/preset-selector) — one row that moves several others. It is
+  the other half of this pattern, and the reason its driven rows are left enabled.
+- [Bind Settings with Attributes](/docs/csharp/setting-listeners) — the attributes and paths used
+  above, including `[SettingOnEnabled]` for reacting to the gray rather than causing it.

@@ -57,7 +57,8 @@ their global counterparts, the same value types, and the same three values: `Def
 | `RestartScope` | no | a world value is applied with the world, so there is nothing to restart |
 | `OnSettingApplied` | no | there is no per-player Apply step to hook |
 | `OnValueChanged` | **no** | the applied value arrives with the world, so read `SettingValue` in `OnWorldSettingsLoaded` |
-| `OnSelected` | yes | it fires while the host is picking values on the world settings screen |
+| `OnSelectedChanged` | yes | it fires while the host is picking values on the world settings screen |
+| `Enabled` and its gate | yes | it behaves exactly as it does on a global setting |
 
 <Callout type="warn">
   Because world settings have no `OnValueChanged`, `BindSettingsClass` logs and skips a
@@ -65,6 +66,16 @@ their global counterparts, the same value types, and the same three values: `Def
   `[SettingOnSelectedChanged]` binds. See
   [Bind Settings with Attributes](/docs/csharp/setting-listeners).
 </Callout>
+
+## Changing a world setting from code
+
+The rules on the global side apply here unchanged. Assigning `SelectedValue` moves the value but does
+not redraw the host's world settings screen, so call `RefreshUI()` afterwards; that redraws the row and
+lets the screen's Save button commit the change along with whatever the host edited. See
+[Change a setting from code](/docs/csharp/global-settings#change-a-setting-from-code).
+
+`Enabled` gates a world setting exactly as it gates a global one. While it is false, assigning
+`SelectedValue` raises no `OnSelectedChanged` and `ApplyCurrentChange()` does nothing.
 
 ## When the values are trustworthy
 

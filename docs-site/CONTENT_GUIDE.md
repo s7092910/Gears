@@ -95,11 +95,31 @@ Make code examples internally consistent:
 
 Keep reference material complete but concise. A guide should explain how to choose and use an API. The generated reference should document its exact signatures, fields, and behavior.
 
+## Add images and animations
+
+Store every image in `docs-site/public/images/` and name it in kebab case, such as
+`Color-Setting.png`. Reference it with a root-absolute markdown image:
+
+```md
+![A color setting in the mod's settings page](/images/Color-Setting.png)
+```
+
+- Never write the `/Gears` base path yourself, and never use a relative path such as
+  `](images/…)`. The build adds the base path and the image's dimensions for you, and
+  `npm run check` fails on both mistakes and on a file that is missing from `public/`.
+- Animated GIFs work. The site is a static export with image optimization turned off, so the file is
+  served as it is and the animation survives.
+- Keep a file in the same size range as the screenshots already in `public/images/`. Every image
+  ships in the repository and in the published site.
+- Do not use a `<video>` tag. The base path is not applied to it, so it fails on the published site.
+- Write alt text that says what the reader should see, and keep any wording that matters in the
+  prose. A GIF plays with no pause control, and no one can search or translate the text inside it.
+
 ## Update generated documentation at its source
 
 Do not edit these directories by hand:
 
-- `website/content/docs/reference/`
+- `docs-site/content/docs/reference/`
 
 To change API documentation, edit public XML comments under `GearsAPI/Source`, or update `docs-site/scripts/lib/csharp.mjs` when the shared reference format must change.
 
