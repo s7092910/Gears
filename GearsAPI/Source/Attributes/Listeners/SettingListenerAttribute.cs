@@ -23,13 +23,25 @@ namespace GearsAPI.Attributes
     /// Binds a static method to the named setting's <c>OnValueChanged</c> event
     /// (<see cref="IGlobalValueSetting{T}"/>), which fires when the applied value changes. Global value
     /// settings only. Required method signature: <c>static void M(IValueModSetting&lt;T&gt; setting, T newValue)</c>.
+    /// Pass <c>invokeOnBind: true</c> to also call the method once with the setting's current
+    /// <c>SettingValue</c> as soon as <c>BindSettingsClass</c> has bound every listener on the type.
     /// </remarks>
     public sealed class SettingOnValueChangedAttribute : SettingListenerAttribute
     {
         /// <summary>
-        /// Initializes the attribute with the setting path.
+        /// Gets whether the listener is invoked once with the setting's current <c>SettingValue</c>
+        /// after <c>BindSettingsClass</c> has bound every listener on the type. Defaults to <c>false</c>.
         /// </summary>
-        public SettingOnValueChangedAttribute(string settingPath) : base(settingPath) { }
+        public bool InvokeOnBind { get; }
+
+        /// <summary>
+        /// Initializes the attribute with the setting path, and optionally asks for the listener to be
+        /// invoked once at the end of binding.
+        /// </summary>
+        public SettingOnValueChangedAttribute(string settingPath, bool invokeOnBind = false) : base(settingPath)
+        {
+            InvokeOnBind = invokeOnBind;
+        }
     }
 
     /// <summary>
@@ -55,13 +67,25 @@ namespace GearsAPI.Attributes
     /// Binds a static method to the named setting's <c>OnSelectedChanged</c> event
     /// (<see cref="IValueModSetting{T}"/>), which fires when the value selected in the UI changes. Global
     /// and world value settings. Required method signature: <c>static void M(IValueModSetting&lt;T&gt; setting, T newValue)</c>.
+    /// Pass <c>invokeOnBind: true</c> to also call the method once with the setting's current
+    /// <c>SelectedValue</c> as soon as <c>BindSettingsClass</c> has bound every listener on the type.
     /// </remarks>
     public sealed class SettingOnSelectedChangedAttribute : SettingListenerAttribute
     {
         /// <summary>
-        /// Initializes the attribute with the setting path.
+        /// Gets whether the listener is invoked once with the setting's current <c>SelectedValue</c>
+        /// after <c>BindSettingsClass</c> has bound every listener on the type. Defaults to <c>false</c>.
         /// </summary>
-        public SettingOnSelectedChangedAttribute(string settingPath) : base(settingPath) { }
+        public bool InvokeOnBind { get; }
+
+        /// <summary>
+        /// Initializes the attribute with the setting path, and optionally asks for the listener to be
+        /// invoked once at the end of binding.
+        /// </summary>
+        public SettingOnSelectedChangedAttribute(string settingPath, bool invokeOnBind = false) : base(settingPath)
+        {
+            InvokeOnBind = invokeOnBind;
+        }
     }
 
     /// <summary>

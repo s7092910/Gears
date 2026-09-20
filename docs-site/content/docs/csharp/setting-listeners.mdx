@@ -20,9 +20,10 @@ The attributes live in `GearsAPI.Attributes`.
 | [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) | a static method | `Enabled` was turned on or off |
 | [`[SettingOnApplied]`](/docs/reference/attributes/setting-on-applied-attribute) | a static method | the setting was applied |
 
-Each attribute takes the setting path as its only argument. A null or empty path throws
+Every attribute takes the setting path as its first argument. A null or empty path throws
 `ArgumentException` from the attribute constructor, which surfaces the first time Gears inspects the
-class.
+class. `[SettingOnValueChanged]` and `[SettingOnSelectedChanged]` take one more, optional argument,
+[`invokeOnBind`](#run-a-listener-once-at-bind-time).
 
 ## Setting paths
 
@@ -57,15 +58,31 @@ public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
 ```
 
 One call does both halves. Gears binds the fields and properties first, then subscribes the
-listeners, so a handler can safely read any member the same call binds.
+listeners, so a handler can safely read any member the same call binds. An
+[`invokeOnBind`](#run-a-listener-once-at-bind-time) listener runs last of all, once every listener
+on the type is subscribed.
 
 Binding is opt-in. Nothing scans for these attributes until you call `BindSettingsClass`.
 
-<Callout type="warn" title="Do not bind the same type twice">
-  Binding a field again assigns the same setting, which is harmless. Subscribing a listener again
-  adds a **second** handler, which then runs twice on every change. This matters because
-  `OnWorldSettingsLoaded` fires once per world load or rejoin, while `OnGlobalSettingsLoaded` fires
-  once per session.
+### Binding the same type twice
+
+**A type is bound once, on both sides.** Gears remembers which types a settings tree has already
+bound; hand it the same one again and the call does nothing at all — no field reassigned, no listener
+subscribed a second time, no [`invokeOnBind`](#run-a-listener-once-at-bind-time) call. It is a no-op,
+not an error, and nothing is logged.
+
+That makes `BindSettingsClass` safe to call from anywhere you like, as often as you like. It matters
+most on the world side: `OnWorldSettingsLoaded` fires once per world load *and* again on every
+rejoin, against the same setting objects, so a mod binding from it would otherwise pile up a fresh
+copy of every listener per load. On the global side `OnGlobalSettingsLoaded` fires once per session,
+so the guard mainly covers a mod that binds the same class from two places.
+
+Without it a second bind would add a **second** handler to every event, which then runs twice on
+every change — the kind of bug that shows up as doubled work long after the call that caused it.
+
+<Callout type="info">
+  "Already bound" is tracked per settings tree, not globally, so the global and world trees keep
+  their own record. Binding one type does not stop a different one binding.
 </Callout>
 
 `BindSettingsClass(null)` throws `ArgumentNullException`. Gears logs every other problem and skips
@@ -138,6 +155,62 @@ every setting type. It fires only when `Enabled` actually changes value, not on 
 
 A method may carry several attributes, so one method can listen to several settings.
 
+## Run a listener once at bind time
+
+A listener only ever fires on a *change*, so a mod that wires one up still has to read the setting's
+current value somewhere to start off in the right state. `invokeOnBind` does that for you: pass
+`true` and Gears calls the method once during `BindSettingsClass`, handing it the value the event
+would have carried.
+
+```csharp
+[SettingOnValueChanged("General.Display.HudScale", true)]
+private static void HudScaleChanged(IValueModSetting<float> setting, float newValue)
+{
+    // Runs once during BindSettingsClass with the saved scale, and again on every save after that.
+    MyHud.Scale = newValue;
+}
+```
+
+| Attribute | `invokeOnBind: true` passes |
+|---|---|
+| `[SettingOnValueChanged]` | the setting's current `SettingValue`, the applied value |
+| `[SettingOnSelectedChanged]` | the setting's current `SelectedValue`, what the UI shows |
+
+It defaults to `false`, so an attribute written without it behaves exactly as before. Only these two
+attributes take it — `[SettingOnApplied]` and `[SettingOnEnabled]` do not, since neither carries a
+value to replay.
+
+Gears still subscribes the method to the event as normal. The initial call is **on top of** the
+subscription, not instead of it, so the handler runs again on every later change.
+
+Named arguments read better when the path is long:
+
+```csharp
+[SettingOnSelectedChanged("General.Display.HudScale", invokeOnBind: true)]
+```
+
+### When the call happens
+
+Gears runs every `invokeOnBind` listener at the very end of `BindSettingsClass`, after all fields,
+all properties and all listeners on that type are bound. So by the time your handler runs it can
+read any `[Setting]` member on the class, and anything it changes reaches the class's other
+listeners.
+
+<Callout type="info">
+  The initial call ignores `Enabled`. A real `OnValueChanged` or `OnSelectedChanged` is suppressed
+  while a setting is disabled, but `invokeOnBind` calls the method either way, so a mod always
+  starts in sync with what is saved. Check `setting.Enabled` in the handler if that matters to you.
+</Callout>
+
+An `invokeOnBind` handler that throws is reported to the log, and binding carries on: the remaining
+initial calls still run, and the rest of the class is already bound by then.
+
+The initial call happens **once for the whole session**, on the first `BindSettingsClass` for the
+type. Later calls are [skipped entirely](#binding-the-same-type-twice), the initial call along with
+everything else. On a world type in particular this is not a per-world-load hook: your listener still
+fires normally whenever a world load brings in a different value, but the initial call happens only
+that first time.
+
 ## Example
 
 `MyHud` below is your own class. Gears knows nothing about it.
@@ -157,7 +230,8 @@ public static class MyGlobalListeners
     [Setting("General.Display.Units")]
     private static ISelectorGlobalSetting<string> units;
 
-    [SettingOnValueChanged("General.Display.HudScale")]
+    // invokeOnBind: the HUD picks up the saved scale at bind time, not only on the next save.
+    [SettingOnValueChanged("General.Display.HudScale", true)]
     private static void HudScaleSaved(IValueModSetting<float> setting, float newValue)
     {
         MyHud.Scale = newValue;
@@ -228,6 +302,8 @@ Every message below comes from `[Gears]`. Each one skips that member only, and t
 | `[SettingOnApplied("…")] on '…' targets a setting that does not support OnSettingApplied (only global settings expose it). Skipping registration of listener.` | `[SettingOnApplied]` on a world path |
 | `[SettingOnValueChangedAttribute("…")] on '…' targets a setting that does not expose an 'OnValueChanged' event. Skipping registration of listener.` | `[SettingOnValueChanged]` on a world setting, or either value attribute on a Binding |
 | ``[SettingOnValueChangedAttribute] on '…' has an invalid signature, skipping registration of listener. Expected: static Void Method(IValueModSetting`1, Int32).`` | wrong parameter types, wrong parameter count, a non-void return, or a non-static method |
+| `[SettingOnValueChangedAttribute("…")] on '…' asked for InvokeOnBind, but the setting exposes no 'SettingValue'. Skipping the initial call.` | `invokeOnBind: true` on a setting that holds no value; the listener itself is still subscribed |
+| `[SettingOnValueChangedAttribute("…")] on '…' threw during its InvokeOnBind call: …` | your handler threw on its initial call; binding carries on and the other initial calls still run |
 
 ### Field bindings
 

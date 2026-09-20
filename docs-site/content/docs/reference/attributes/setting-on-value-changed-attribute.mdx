@@ -9,16 +9,26 @@ description: "Binds a static method to OnValueChanged. Global value settings onl
 public sealed class SettingOnValueChangedAttribute : SettingListenerAttribute
 ```
 
-Binds a static method to the named setting's `OnValueChanged` event ([`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting)), which fires when the applied value changes. Global value settings only. Required method signature: `static void M(IValueModSetting<T> setting, T newValue)`.
+Binds a static method to the named setting's `OnValueChanged` event ([`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting)), which fires when the applied value changes. Global value settings only. Required method signature: `static void M(IValueModSetting<T> setting, T newValue)`. Pass `invokeOnBind: true` to also call the method once with the setting's current `SettingValue` as soon as `BindSettingsClass` has bound every listener on the type.
 
 **Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute) → `SettingOnValueChangedAttribute`
 
 ## Constructors
 
-### SettingOnValueChangedAttribute(String)
+### SettingOnValueChangedAttribute(String, Boolean)
 
 ```csharp
-public SettingOnValueChangedAttribute(string settingPath)
+public SettingOnValueChangedAttribute(string settingPath, bool invokeOnBind = false)
 ```
 
-Initializes the attribute with the setting path.
+Initializes the attribute with the setting path, and optionally asks for the listener to be invoked once at the end of binding.
+
+## Properties
+
+### InvokeOnBind
+
+```csharp
+public bool InvokeOnBind { get; }
+```
+
+Gets whether the listener is invoked once with the setting's current `SettingValue` after `BindSettingsClass` has bound every listener on the type. Defaults to `false`.

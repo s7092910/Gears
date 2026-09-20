@@ -80,37 +80,31 @@ public static class HudSettings
     [Setting(HudOpacityPath)]
     private static ISliderGlobalSetting<float> hudOpacity;
 
-    [SettingOnSelectedChanged(UseCustomHudPath)]
+    // invokeOnBind: true, so the sliders start out gray if the custom HUD is saved off.
+    [SettingOnSelectedChanged(UseCustomHudPath, true)]
     private static void UseCustomHudSelected(IValueModSetting<bool> setting, bool newValue)
     {
-        SetSlidersEnabled(newValue);
-    }
-
-    public static void ApplyInitialState()
-    {
-        SetSlidersEnabled(useCustomHud.SettingValue);
-    }
-
-    private static void SetSlidersEnabled(bool enabled)
-    {
         // The two sliders only mean anything while the custom HUD is on.
-        hudScale.Enabled = enabled;
-        hudOpacity.Enabled = enabled;
+        hudScale.Enabled = newValue;
+        hudOpacity.Enabled = newValue;
     }
 }
 ```
 
-Gears assigns the tagged fields before it subscribes the listeners, so a handler can safely use any
-field the same `BindSettingsClass` call binds. It does not, however, call your handler once at
-startup: set the initial state yourself right after binding.
+Gears assigns the tagged fields before it subscribes the listeners, and it makes every
+[`invokeOnBind`](/docs/csharp/setting-listeners#run-a-listener-once-at-bind-time) call after that, so
+this handler can safely reach `hudScale` and `hudOpacity` on its initial run. Binding is all it
+takes:
 
 ```csharp
 public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
 {
     modSettings.BindSettingsClass(typeof(HudSettings));
-    HudSettings.ApplyInitialState();
 }
 ```
+
+Without `invokeOnBind` the handler would not run until the player first touched the switch, leaving
+the sliders enabled through a session where the custom HUD was off the whole time.
 
 ## You cannot hide a setting
 

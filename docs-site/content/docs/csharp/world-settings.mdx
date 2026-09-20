@@ -93,6 +93,25 @@ current world:
 changed" rather than as a startup callback. Gears does not fire it for a mod that has no world
 settings.
 
+Calling `BindSettingsClass` from it is still safe, and is the normal thing to do. Gears binds a given
+type only the first time a settings tree sees it and does nothing on every call after that, so repeat
+loads cannot pile up duplicate listeners. See [Binding the same type
+twice](/docs/csharp/setting-listeners#binding-the-same-type-twice).
+
+```csharp
+public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
+{
+    // Safe to call on every load: only the first one binds.
+    worldSettings.BindSettingsClass(typeof(MyWorldListeners));
+}
+```
+
+Gears applies the incoming world values *before* it fires `OnWorldSettingsLoaded`, which is why the
+two halves fit together: on the first load an
+[`invokeOnBind`](/docs/csharp/setting-listeners#run-a-listener-once-at-bind-time) listener hands you
+the values that just arrived, and on every load after that your already-subscribed
+`OnSelectedChanged` fires for whichever values the new world changed.
+
 <Callout type="warn" title="World settings are skipped in the prefab editor">
   Gears does no world settings work at all for the worlds named `Empty` and `Playtesting`, which are
   the ones the prefab editor opens. It writes no `WorldModSettings.xml` and never calls

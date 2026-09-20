@@ -50,9 +50,18 @@ typed API.
 - **Attribute-based listeners.** `[SettingOnValueChanged]`, `[SettingOnSelected]`, `[SettingOnChanged]` and
   `[SettingOnEnabled]`, combined with `BindSettingsClass`, let a mod wire up static handler
   methods by setting path instead of walking the settings tree and subscribing to events by hand.
+  `[SettingOnValueChanged]` and `[SettingOnSelected]` also take an optional `invokeOnBind`, which
+  calls the handler once with the setting's current value as soon as the whole class is bound, so a
+  mod no longer needs a separate startup pass to read its settings in.
 - **Attribute-based member binding.** `[Setting("Tab.Category.Name")]` on a static field or property has the same
   `BindSettingsClass` call assign the named setting into it, replacing the
   `GetTab(…)?.GetCategory(…)?.GetSetting<T>(…)` chain a mod used to write per setting.
+- **Binding happens once per type.** `BindSettingsClass` binds a type the first time it is handed
+  one and does nothing on every later call for that same type, on both the global and the world
+  side. Re-binding used to add a duplicate of every listener, which then ran twice on each change.
+  This matters most for world settings, where `OnWorldSettingsLoaded` fires again on each world load
+  and rejoin against the same setting objects, so a mod binding from that callback accumulated a
+  fresh copy of its listeners per load.
 - **Custom value types.** `[SettingsSerializationProvider]` with `[SettingParser]` /
   `[SettingFormatter]` lets a mod register its own parse/format logic for a value type. Enums work
   automatically with no registration at all.
