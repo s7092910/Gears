@@ -130,7 +130,7 @@ function Hero() {
 
         <div className="mt-14 w-full">
           <MediaSlot
-            title="/images/Home-Hero.gif"
+            title="/images/Home-Hero.png"
             alt="A mod's settings page in the Mods menu, with a player stepping a Selector and dragging a Slider"
           >
             The Mods window open on a mod&apos;s settings page: the tab row, a category heading, and
