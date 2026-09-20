@@ -23,8 +23,9 @@ explicit instead of guessing it from which property you used, and made `defaultV
 
 In short: add `version="2"`, add `type`, give every value setting a `defaultValue`, and turn
 `tooltipKey`, `leftValue`, `rightValue` and `formatString` into child elements.
-
-### Step 1: Mark the file as V2
+<Steps>
+<Step>
+### Mark the file as V2
 
 ```xml
 <ModSettings>                 <!-- V1: rejected -->
@@ -36,8 +37,9 @@ In short: add `version="2"`, add `type`, give every value setting a `defaultValu
   an error from `[ModSettingsFromXml]`, and so is any other value. **Gears skips the whole file**,
   so check this first when a mod vanishes from the Mods menu.
 </Callout>
-
-### Step 2: Add `type` to every Selector, Slider and Switch
+</Step>
+<Step>
+### Add `type` to every Selector, Slider and Switch
 
 Gears drops a Selector, Slider or Switch with no `type` at load. The error goes to the log, and
 nothing appears in the menu.
@@ -68,8 +70,9 @@ The namespace-qualified name, the assembly-qualified name and the bare type name
 case-insensitively. An enum Selector seeds its allowed values with every declared member, so it
 needs no `<List>`. An enum Switch takes the first two members as left and right unless you say
 otherwise.
-
-### Step 3: Give every value setting a `defaultValue`
+</Step>
+<Step>
+### Give every value setting a `defaultValue`
 
 This requirement is **new in Gears 8**. V1 tolerated a Selector, Slider, Switch or Color with no
 default, and V2 drops it:
@@ -80,8 +83,9 @@ default, and V2 drops it:
 
 Add a `defaultValue` to every setting that lacks one. `Binding` is exempt. An empty
 `defaultValue=""` counts as missing.
-
-### Step 4: Turn `tooltipKey` into a `Description` element
+</Step>
+<Step>
+### Turn `tooltipKey` into a `Description` element
 
 On a **category** and on **every setting element**, the `tooltipKey` attribute becomes a
 `<Description>` child:
@@ -110,8 +114,9 @@ V2 also gives settings and categories a short `<Caption>`, which V1 had no equiv
 ```xml
 <Caption key="myModSettingCaption" />
 ```
-
-### Step 5: Turn the V1 properties into elements
+</Step>
+<Step>
+### Turn the V1 properties into elements
 
 A V1 `<Property type="x" ... />` becomes an element named after what that `type` said:
 
@@ -136,8 +141,9 @@ writes to the saved settings file and returns from `modsetting()`. You may leave
 V1 had only the first, so `formatString` always becomes `ui`. Two things V1 did not make clear:
 `<Formatter>` is legal on Selector and Slider only and is ignored on Switch, Color and Binding; and
 when a Selector has both `<List>` and `<Incremental>`, Gears applies the range last, so it wins.
-
-### Step 6: Move the Switch values onto a `Buttons` element
+</Step>
+<Step>
+### Move the Switch values onto a `Buttons` element
 
 ```xml
 <!-- V1 -->
@@ -151,8 +157,9 @@ when a Selector has both `<List>` and `<Incremental>`, Gears applies the range l
 
 Both sides are required. When only one of `left` and `right` is given, Gears applies **neither**. A
 `bool` switch does not need the element: it is `false` on the left and `true` on the right.
-
-### Step 7: Rename the Color default
+</Step>
+<Step>
+### Rename the Color default
 
 ```xml
 <Color name="Accent" defaultColor="255,0,0" />   <!-- V1 -->
@@ -161,8 +168,9 @@ Both sides are required. When only one of `left` and `right` is given, Gears app
 
 `defaultValue` is spelled the same way on every setting type, and the `R,G,B` notation is unchanged.
 The V1 `color` attribute, which held the current value, goes away entirely. See the next step.
-
-### Step 8: Delete the `value` attribute
+</Step>
+<Step>
+### Delete the `value` attribute
 
 V1 wrote the player's current value back into the mod's own `ModSettings.xml`:
 
@@ -174,8 +182,9 @@ V1 wrote the player's current value back into the mod's own `ModSettings.xml`:
 V2 has no `value` attribute. `ModSettings.xml` describes only what a setting *is*. The player's value
 lives in the saved settings file under their user data folder, and Gears restores it after load. A
 setting with no saved value starts at `defaultValue`.
-
-### Step 9: Move `wrap` onto an element
+</Step>
+<Step>
+### Move `wrap` onto an element
 
 ```xml
 <Selector name="DayOfWeek" wrap="true" />                        <!-- V1 attribute -->
@@ -187,6 +196,8 @@ setting with no saved value starts at `defaultValue`.
 
 Gears ignores anything that is not `true` or `false`, and wrapping stays off. `<Wrap>` is
 Selector-only.
+</Step>
+</Steps>
 
 ### Optional: what V2 adds
 

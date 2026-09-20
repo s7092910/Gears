@@ -16,8 +16,8 @@ project. Whether you also ship a copy of it depends on whether Gears is optional
 
 | Your mod | Copy Local | Result |
 |---|---|---|
-| **requires** Gears | false | Gears loads the assembly, and your mod folder carries no second copy. |
-| treats Gears as **optional** | **true** | `GearsAPI.dll` sits in your own mod folder, so the types still resolve for a player who does not have Gears installed. |
+| Gears is **required**| false | Gears loads the assembly, and your mod folder carries no second copy. |
+| Gears is **optional** | **true** | `GearsAPI.dll` sits in your own mod folder, so the types still resolve for a player who does not have Gears installed. |
 
 <Callout type="warn" title="Optional means shipping the DLL">
   To keep your mod working for players without Gears, `GearsAPI.dll` must be present in **your**
@@ -39,33 +39,10 @@ Rebuild against the current `GearsAPI.dll` when you see that line.
 Nothing in Gears requires your mod to depend on it. Gears finds your `IGearsModApi` class by
 scanning, so when Gears is absent, nothing scans and nothing is called.
 
-Two things make that work. The first is shipping `GearsAPI.dll` in your own mod folder, as above.
-The second is the .NET runtime: a method is compiled only when it first runs, and compiling a method
-that mentions a GearsAPI type needs `GearsAPI.dll` to be loadable.
-
-So keep every line that touches a GearsAPI type inside classes and methods that run only when Gears
-is present, and gate the entry to them:
-
-```csharp
-public class MyModInit : IModApi
-{
-    public void InitMod(Mod mod)
-    {
-        // Your normal startup goes here. Do not mention a GearsAPI type in this class.
-        if (ModManager.GetMod("Gears") != null)
-        {
-            // GearsBridge is your own class, and every GearsAPI type your mod uses lives in it or
-            // in a class it reaches. This method is compiled and run only when Gears is installed.
-            GearsBridge.Announce();
-        }
-    }
-}
-```
-
-Your `IGearsModApi` implementation is a separate class that Gears itself instantiates, so it never
-runs without Gears.
-
-If your mod **requires** Gears instead, say so in your mod's description and skip the gate.
+There are two things that makes Gears option for users. First is the `GearsAPI.dll`. Including it in
+your mod's folder allow the mod to not throw errors due to missing types when 7DaysToDie loads your mod,
+if you are using the C# part of Gears. The second is being able to use XML to structure your mod's Settings
+as well as access those settings with [Reading Settings in XML Patches](/docs/xml/xml-patches).
 
 ## Implement IGearsModApi
 

@@ -14,8 +14,9 @@ world is running.
 
 - Install Gears. Players need it too, unless you keep it optional.
 - Have a mod folder with a `ModInfo.xml` in it.
-
-## 1. Check your `ModInfo.xml`
+<Steps>
+<Step>
+## Check your `ModInfo.xml`
 
 Gears reads your mod's identity and images from the game's own manifest, and shows the rest of it on
 your mod's page in the Mods menu:
@@ -45,8 +46,9 @@ of a missing file.
 The **Info** tab of your mod's page shows `<DisplayName>`, `<Author>`, `<Version>` and
 `<Description>` as you wrote them. A `<Website>` turns on a button that opens the link, after the
 game's own confirmation prompt; without one the button is disabled.
-
-## 2. Write your `ModSettings.xml`
+</Step>
+<Step>
+## Write your `ModSettings.xml`
 
 Save this file as `ModSettings.xml` in the **root of your mod folder**, beside `ModInfo.xml`. Gears
 searches no other location.
@@ -108,8 +110,9 @@ That file declares five settings. Here is what each part does:
 [Choose a Setting Type](/docs/setting-types) shows what each control looks like in the game and when
 to pick it. The [ModSettings.xml Reference](/docs/xml/modsettings-reference) lists every element and
 attribute.
-
-## 3. Add your localization keys
+</Step>
+<Step>
+## Add your localization keys
 
 Every `displayKey`, every `Description key` and every prefixed value above is a localization key.
 Add them to your mod's `Config/Localization.csv`, which uses the game's standard format. The
@@ -138,8 +141,9 @@ The keys `myModUnits_metric` and `myModUnits_imperial` come from the `<Localizat
 joins the prefix to the value with no separator to make the key. A key with no row shows in the menu
 as the raw key text, so a typo is easy to spot. See [Localize Your
 Settings](/docs/xml/localization).
-
-## 4. See the settings in the game
+</Step>
+<Step>
+## See the settings in the game
 
 Start the game with Gears and your mod installed. From the main menu, open **Mods**, pick your mod,
 and open the **Settings** tab. Edit the global settings there and press Save.
@@ -148,14 +152,15 @@ World settings are on the **Mods World Settings** button of the New Game and Con
 
 Gears stores the two kinds of value in different files:
 
-| Values | File |
+| Settings | File |
 |---|---|
 | Global | `<user data folder>\Gears\ModSettings.xml`, one file shared by every mod. On Windows the user data folder is `%APPDATA%\7DaysToDie`. |
 | World | `<save folder>\WorldModSettings.xml`, one file per world. |
 
 A setting with no saved value starts at its `defaultValue`.
-
-## 5. Read a value from an XML patch
+</Step>
+<Step>
+## Read a value from an XML patch
 
 Call `modsetting()` in any of your `Config/*.xml` patch files:
 
@@ -175,8 +180,9 @@ it against a quoted string.
 
 [Read Settings in XML Patches](/docs/xml/xml-patches) covers the inline attribute form and how to
 guard the patch for players who do not have Gears.
-
-## 6. Read a value from C#
+</Step>
+<Step>
+## Read a value from C#
 
 Reference `GearsAPI.dll` and implement `IGearsModApi`:
 
@@ -231,3 +237,5 @@ constructor and nothing else.
 
 [Get Started with C#](/docs/csharp/getting-started) covers the order the callbacks run in, how to
 keep Gears optional, and how to reach a setting without a callback.
+</Step>
+</Steps>
