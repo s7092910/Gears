@@ -1,0 +1,130 @@
+---
+title: Change World Settings on a Dedicated Server
+description: A dedicated server has no menu to pick world settings in, so edit WorldModSettings.xml in the save folder while the server is stopped. This page covers the file, the order to do it in, and how to confirm the values took.
+---
+
+A dedicated server never opens the **Mods World Settings** screen, so its world settings are changed
+in a file. Gears reads `WorldModSettings.xml` from the world's save folder every time the server
+starts, and sends those values to every player who joins.
+
+You need file access to the server and the ability to stop and start it.
+
+<Callout type="warn" title="Stop the server before you edit">
+  Gears **rewrites** `WorldModSettings.xml` at every server start, from the values it has loaded. An
+  edit made while the server is running is overwritten the next time it starts.
+</Callout>
+
+## Before you start
+
+- Install Gears and the mods on the **server**, exactly as you would on a client. A server without
+  Gears sends nothing, and every player joining it falls back to the mods' default values.
+- Every player needs the same mods, and Gears, on their own machine.
+- Know which save the server loads. It is the `GameWorld` and `GameName` pair from
+  `serverconfig.xml`.
+
+## Change the settings
+
+<Steps>
+<Step>
+### Start the server once
+
+Gears writes `WorldModSettings.xml` out at every start, so the first start of a new save creates the
+file with every installed mod's world settings already in it, at their default values. That is the
+easiest way to get the exact mod names and setting names you are allowed to use.
+
+Skip this step if the file already exists.
+</Step>
+<Step>
+### Stop the server
+
+Stop it fully. Gears loads the file at start and rewrites it in the same breath, so an edit made
+while the server runs is lost.
+</Step>
+<Step>
+### Open `WorldModSettings.xml` in the save folder
+
+The file sits in the save folder for that world, beside the world's save data — usually
+`Saves\<GameWorld>\<GameName>` under the server's user data folder. `UserDataFolder` and
+`SaveGameFolder` in `serverconfig.xml` move that folder, so check them if it is not where you
+expect. On a Linux server the default user data folder is `~/.local/share/7DaysToDie`.
+
+It looks like this:
+
+```xml title="WorldModSettings.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<WorldModSettings>
+	<Mod name="MyMod">
+		<Setting name="FeralNights" value="False" />
+		<Setting name="SpawnMultiplier" value="1" />
+		<Setting name="LootRespawnDays" value="7" />
+	</Mod>
+</WorldModSettings>
+```
+
+One `<Mod>` element per mod, named by the mod's `<Name>` from its `ModInfo.xml`, and one `<Setting>`
+element per world setting that mod declares.
+</Step>
+<Step>
+### Edit the values
+
+Change the `value` attributes and nothing else. The names are how Gears finds each setting again, so
+leave them as they are.
+
+Write each value the way Gears wrote it:
+
+| Setting shows | Write |
+|---|---|
+| an on/off switch | `True` or `False` |
+| a number | the number, in the same form the file already uses |
+| a named choice | the name exactly as the file spells it |
+
+A value Gears cannot read is reported in the log, and that setting keeps the value it already had.
+The rest of the file still loads.
+</Step>
+<Step>
+### Start the server
+
+Gears loads the file, applies the values, tells every mod, then writes the file back out.
+
+Players get the new values as they join. Nobody has to change anything on their own machine, and
+anyone already connected keeps the old values until they reconnect.
+</Step>
+</Steps>
+
+## Confirm the values took
+
+Open `WorldModSettings.xml` again after the server has started. Gears rewrites it from the values it
+actually applied, so anything that reverted was not accepted — check the spelling of that value.
+
+The server log records the rest. Search it for `[Gears]`:
+
+| Log line | Meaning |
+|---|---|
+| `[WorldSettingsFromXml] Mod <name> not found installed, unable to load the world's current settings for the mod` | the `<Mod name="…">` does not match an installed mod, usually a typo or a mod that is not on the server |
+| `[WorldSettingsFromXml] Mod <name> : Setting <name> not found` | that mod has no world setting by that name; the mod may have renamed it |
+| `[WorldSettingsFromXml] Mod <name> : Setting <name> has no value attribute, keeping its current value` | a `<Setting>` element is missing `value` |
+| `[WorldSettingsFromXml] Failed parsing WorldModSettings.xml` | the XML is malformed, so **no** values from the file were loaded |
+| `[WorldModValueSetting]` lines naming a setting | the value could not be read as that setting's type, so the setting kept what it had |
+
+## Copy the settings from a single player world instead
+
+If you would rather use the menus, set the values on a client and copy the result over:
+
+1. On a machine with the same mods, start a single player world and press **Mods World Settings** on
+   the New Game screen. Pick the values and press **SAVE**.
+2. Play into the world once so the save folder exists, then quit.
+3. Copy `WorldModSettings.xml` out of that save folder into the server's save folder, with the
+   server stopped.
+
+Gears matches the file to settings by mod name and setting name, so the two saves do not have to
+share a world or a name.
+
+## Notes
+
+- There is no way to change a world setting while the server is running. Stop it, edit, start it.
+- Deleting `WorldModSettings.xml` resets that world to every mod's defaults at the next start, and
+  Gears writes a fresh file.
+- Removing a mod from the server leaves its `<Mod>` element behind in the file. Gears logs that it is
+  not installed and carries on; you can delete the element.
+- Settings a player changes under **Mods** are theirs alone. Nothing on the server changes them, and
+  they are not part of this file.

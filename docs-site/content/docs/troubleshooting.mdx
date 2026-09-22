@@ -40,7 +40,7 @@ Running `gears debug` on its own toggles the setting. The argument may be `on`, 
 | `[SelectorSetting]` or `[SelectorWorldSetting]` | An `<Incremental>` on a string or enum selector, or an increment of 0 or less. Gears ignored the range. |
 | `[SavedModSettingsFromXml]` | A problem restoring the player's saved global values: a mod, tab, category or setting named in the file no longer exists, usually because it was renamed, or an element is missing its `name` or `value`. The setting kept its default. |
 | `[WorldSettingsFromXml]` | The same, for a world's `WorldModSettings.xml`. |
-| `[GearsMod]` | A problem with your `IGearsModApi`: a type with no public parameterless constructor, a constructor that threw, a callback that threw (`Error thrown in <Callback>() by <Type> for <Mod>`), or the outdated-GearsAPI warning. |
+| `[GearsMod]` | A problem with your `IGearsModApi`: a type with no public parameterless constructor, a constructor that threw, a callback that threw (`Error thrown in <Callback>() by <Type> for <Mod>`), the outdated-GearsAPI warning, or a settings class you bound and never synced. |
 | `[Gears]` with no second tag, on a listener or binding message | `BindSettingsClass` skipped a member: a bad path format, an unknown setting, an unsupported event, or a wrong method signature. For a `[Setting]` field or property, it may be readonly, const, non-static, missing a setter, or declared as the wrong type. See [Bind Settings with Attributes](/docs/csharp/setting-listeners). |
 | An XML patch error mentioning `modsetting` | A `modsetting()` call with the wrong argument count, group, or path shape, or a mod, tab, category or setting name that does not exist. See [Read Settings in XML Patches](/docs/xml/xml-patches). |
 
@@ -110,6 +110,29 @@ assembly your mod lists. Look for `[GearsMod]` warnings. Gears also does not run
 **I see a `TypeLoadException` or an "outdated GearsAPI" line.**
 Your mod was compiled against a different `GearsAPI.dll` than the one Gears is running. Rebuild
 against the current one.
+
+**My listener never runs at startup, only when the player changes the setting.**
+Binding subscribes a listener; it never calls one. Add `includeInSync: true` to the attribute and
+call `SyncSettingsToClass` after `BindSettingsClass`. See
+[Sync settings to a class](/docs/csharp/setting-listeners#sync-settings-to-a-class).
+
+**My `[SettingOnValueChanged]` on a world path never runs at all.**
+A world setting raises no `OnValueChanged`, so that listener is invoke-only: it needs
+`includeInSync: true` and a `SyncSettingsToClass` call, or nothing will ever call it. Gears does not
+warn about this. See
+[`[SettingOnValueChanged]` on a world path](/docs/csharp/setting-listeners#settingonvaluechanged-on-a-world-path).
+
+**`SyncSettingsToClass` logs "has not been bound".**
+You called it for a type no `BindSettingsClass` ever saw — check for a typo in the `typeof(...)`, or
+a missing bind.
+
+**Gears says a class "was bound with BindSettingsClass … but SyncSettingsToClass … was not
+called".**
+The class has a listener written with `includeInSync: true`, so it asked for the values Gears just
+loaded, and nothing called `SyncSettingsToClass` for it in that callback. Add the call to
+`OnGlobalSettingsLoaded`, or to `OnWorldSettingsLoaded` for a world class — that one fires again on
+every world load and rejoin, and each load needs its own sync. See
+[Gears warns when the sync is missing](/docs/csharp/setting-listeners#gears-warns-when-the-sync-is-missing).
 
 **`modsetting()` returns an empty string.**
 The setting is a `Binding`, which holds no value. Every other failure is an error, not an empty

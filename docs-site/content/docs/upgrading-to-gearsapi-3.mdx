@@ -257,9 +257,9 @@ its value type as a generic parameter, and the single `CurrentValue` became thre
 | `IGlobalValueSetting.DefaultValue : string` | `DefaultValue : T` |
 | `IWorldModSetting.CurrentValue` and `DefaultValue : string` | on the typed interfaces through `IValueModSetting<T>`; `IWorldModSetting` keeps only `Category` |
 | string in, string out everywhere | `IValueModSettingBase.SetSettingValueFromString(string)` and `GetSerializedFormattedSettingValue()` for code that must stay stringly typed |
-| `OnSettingChangedEvent(IGlobalModSetting setting, string newValue)` | `OnSettingChangedEvent(IGlobalModSetting setting)`, with no value argument |
+| `OnSettingChanged`, an `OnSettingChangedEvent(IGlobalModSetting setting, string newValue)` | `OnSettingApplied`, an `OnSettingAppliedEvent(IGlobalModSetting setting)`, with no value argument |
 | — | `ValueChangedEvent<T>(IValueModSetting<T> setting, T newValue)` through `OnValueChanged`, global only |
-| — | `ValueSelectedEvent<T>(IValueModSetting<T> setting, T newValue)` through `OnSelected` |
+| — | `OnSelectedChangedEvent<T>(IValueModSetting<T> setting, T newValue)` through `OnSelectedChanged` |
 | `ISelectorGlobalSetting.SetAllowedValues(string)`, a comma list | gone; split it yourself and call `SetAllowedValues(T[])` |
 | `SetAllowedValues(string[])` | `SetAllowedValues(T[])` |
 | `SetAllowedValues(int inc, int min, int max)` and `(float, float, float)` | `SetAllowedValues(T increment, T min, T max)` |
@@ -273,7 +273,7 @@ its value type as a generic parameter, and the single `CurrentValue` became thre
 | `IGlobalModSettingsCategory : IModSetting` | `IGlobalModSettingsCategory : IGlobalModSetting` |
 | — | `IModSetting.IsChanged`, `IsDefault`, `ResetToDefault()`, `DiscardCurrentChange()`, `ApplyCurrentChange()`, `HasPreviews()`, `GetCurrentPreview()`, `AddPreview(string)` |
 | — | `IGlobalModSetting.RestartScope : SettingRestartScope` |
-| — | `IModGlobalSettings.BindSettingsClass(Type)` and `IModWorldSettings.BindSettingsClass(Type)`, the `[Setting]` binding attribute, and the `[SettingOnValueChanged]`, `[SettingOnSelected]`, `[SettingOnChanged]` and `[SettingOnEnabled]` attributes |
+| — | `BindSettingsClass(Type)` and `SyncSettingsToClass(Type)` on both `IModGlobalSettings` and `IModWorldSettings`, the `[Setting]` binding attribute, and the `[SettingOnValueChanged]`, `[SettingOnSelectedChanged]`, `[SettingOnApplied]` and `[SettingOnEnabled]` attributes |
 | — | `[SettingsSerializationProvider]`, `[SettingParser]` and `[SettingFormatter]` |
 | Unchanged | `IGearsModApi`, `IGearsMod`, `GearsSettingsManager.GetMods()` and `GetGearsMod(name)`, all `Get*`, `Create*`, `GetOrCreate*`, `Add*` and `Remove*` on tabs and categories, `SaveSettings()`, `IControlBindingSetting.PlayerAction` and `ClearBinding()`, and `IModSetting.Enabled` |
 
@@ -322,15 +322,22 @@ Here is the most common pattern, reading a value and reacting to a change:
     ```
   </Tab>
   <Tab value="GearsAPI 3.0, attribute form">
-    This form needs no lookup at all:
+    This form needs no lookup at all. `SyncSettingsToClass` is what replaces the initial
+    `MyMod.Fov = fov.SettingValue` assignment in the other two tabs — binding subscribes the
+    handler but never calls it:
 
     ```csharp
-    public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
+    public void InitMod(IGearsMod mod)
     {
-        modSettings.BindSettingsClass(typeof(MyModGears));
+        mod.GlobalSettings.BindSettingsClass(typeof(MyModGears));
     }
 
-    [SettingOnValueChanged("General.Display.Fov")]
+    public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
+    {
+        modSettings.SyncSettingsToClass(typeof(MyModGears));
+    }
+
+    [SettingOnValueChanged("General.Display.Fov", includeInSync: true)]
     private static void FovChanged(IValueModSetting<int> setting, int newValue)
     {
         MyMod.Fov = newValue;
@@ -347,10 +354,21 @@ Here is the most common pattern, reading a value and reacting to a change:
 - **Decide which value you want.** `CurrentValue` was the applied value, which is now
   `SettingValue`. If you read it during a menu callback to preview a change, you probably want
   `SelectedValue` now.
-- **`OnSettingChanged` no longer carries the value.** Read `SettingValue` from the setting argument,
-  or switch to `OnValueChanged`, which carries it, typed.
-- **World settings have no `OnValueChanged` or `OnSettingChanged`.** Read `SettingValue` in
-  `OnWorldSettingsLoaded`, which fires every time a world's values arrive.
+- **`OnSettingChanged` is now `OnSettingApplied`, and carries no value.** Read `SettingValue` from
+  the setting argument, or switch to `OnValueChanged`, which carries it, typed.
+- **World settings have no `OnValueChanged` or `OnSettingApplied`.** Read `SettingValue` in
+  `OnWorldSettingsLoaded`, which fires every time a world's values arrive. A
+  `[SettingOnValueChanged]` on a world path does work, but only as an invoke-only listener that
+  `SyncSettingsToClass` calls — it is never raised.
+- **`InitMod` now runs after `ModSettings.xml` is read**, not before. Settings you create in code
+  there land on top of whatever the XML declared, so where the two disagree your code now wins
+  where the XML used to; and `GetOrCreateSetting<T>` throws `ArgumentException` if the XML declared
+  that setting as a different type. Every setting exists by then, so `BindSettingsClass` can be
+  called from `InitMod` for global and world settings alike.
+- **Loading values raises no change events.** Restoring the player's saved global values, loading a
+  world's values, and resetting them to defaults are all silent. Use `SyncSettingsToClass` to hand
+  the loaded values to your listeners. See
+  [Loading a value in raises nothing](/docs/csharp/setting-listeners#loading-a-value-in-raises-nothing).
 - **Settings you create in code need all three values set.** `DefaultValue`, `SettingValue` and
   `SelectedValue` all start at `default(T)`.
 - **`TooltipKey` on a setting is now `DescriptionKey`.** On a tab it is still `TooltipKey`.

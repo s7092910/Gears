@@ -16,8 +16,23 @@ namespace GearsAPI.Settings
     public interface IGearsModApi
     {
         /// <summary>
-        /// Called at <c>GameAwake</c> after all <c>IGearsModApi</c> instances exist and before any <c>ModSettings.xml</c> is read. The settings tree is empty; create settings from code here.
+        /// Called at <c>GameAwake</c> once every mod's <c>ModSettings.xml</c> has been parsed, and
+        /// before the player's saved global values are restored. Create settings from code here, and
+        /// bind settings classes here.
         /// </summary>
+        /// <remarks>
+        /// The settings tree already holds everything <c>ModSettings.xml</c> declared, so
+        /// <c>GetOrCreateTab</c> / <c>GetOrCreateSetting</c> hand back the XML's objects and anything
+        /// this callback assigns onto them wins. A setting declared in both places must use the same
+        /// type in both, or <c>GetOrCreateSetting</c> throws.
+        /// <para>
+        /// Because every setting exists by now, this is also where to call
+        /// <c>BindSettingsClass</c>, for global and world settings alike. Values are not final yet -
+        /// the saved global values are restored after this returns, silently - so ask for them with
+        /// <c>SyncSettingsToClass</c> in <see cref="OnGlobalSettingsLoaded"/> rather than
+        /// reading them here.
+        /// </para>
+        /// </remarks>
         void InitMod(IGearsMod modInstance);
 
         /// <summary>

@@ -267,11 +267,11 @@ namespace MyMod
     {
         public void InitMod(IGearsMod modInstance)
         {
+            modInstance.GlobalSettings.BindSettingsClass(typeof(DisplaySettings));
         }
 
         public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
         {
-            modSettings.BindSettingsClass(typeof(DisplaySettings));
         }
 
         public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)

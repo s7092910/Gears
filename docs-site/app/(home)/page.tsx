@@ -41,13 +41,17 @@ const patchXml = `<configs>
 	</conditional>
 </configs>`;
 
-const modCs = `public class MyModGears : IGearsModApi
+const modCs = `// MyHud is your own class. Gears knows nothing about it.
+public class MyModGears : IGearsModApi
 {
-    public void InitMod(IGearsMod modInstance) { }
+    public void InitMod(IGearsMod modInstance) 
+    { 
+        modInstance.GlobalSettings.BindSettingsClass(typeof(Global));
+    }
 
     public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
     {
-        modSettings.BindSettingsClass(typeof(Global));
+        modSettings.SyncSettingsToClass(typeof(Global));
     }
 
     public void OnWorldSettingsLoaded(IModWorldSettings worldSettings) { }
@@ -58,8 +62,9 @@ const modCs = `public class MyModGears : IGearsModApi
         [Setting("General.Display.ShowHints")]
         public static ISwitchGlobalSetting<bool> ShowHints;
 
-        // And calls this whenever the player applies a change.
-        [SettingOnValueChanged("General.Display.ShowHints")]
+        // Called whenever the player applies a change, and once at startup
+        // with the saved value, because of includeInSync.
+        [SettingOnValueChanged("General.Display.ShowHints", includeInSync: true)]
         private static void ShowHintsChanged(IValueModSetting<bool> setting, bool newValue)
         {
             MyHud.HintsVisible = newValue;

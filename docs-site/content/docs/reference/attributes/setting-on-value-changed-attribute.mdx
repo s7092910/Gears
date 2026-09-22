@@ -1,6 +1,6 @@
 ---
 title: "SettingOnValueChangedAttribute"
-description: "Binds a static method to OnValueChanged. Global value settings only."
+description: "Binds a static method to OnValueChanged. Raised on global value settings; on a world path the method is bound invoke-only."
 ---
 
 <TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Listeners/SettingListenerAttribute.cs" />
@@ -9,7 +9,7 @@ description: "Binds a static method to OnValueChanged. Global value settings onl
 public sealed class SettingOnValueChangedAttribute : SettingListenerAttribute
 ```
 
-Binds a static method to the named setting's `OnValueChanged` event ([`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting)), which fires when the applied value changes. Global value settings only. Required method signature: `static void M(IValueModSetting<T> setting, T newValue)`. Pass `invokeOnBind: true` to also call the method once with the setting's current `SettingValue` as soon as `BindSettingsClass` has bound every listener on the type.
+Binds a static method to the named setting's `OnValueChanged` event ([`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting)), which fires when the applied value changes. Required method signature: `static void M(IValueModSetting<T> setting, T newValue)`. Pass `includeInSync: true` to have `SyncSettingsToClass` call the method with the setting's current `SettingValue`. <para> A world setting raises no `OnValueChanged` - its applied value arrives with the world rather than changing under the player - so on a world path the method is bound <b>invoke-only</b>: never raised, and run only by `SyncSettingsToClass`. That makes `includeInSync: true` mandatory there, or the method can never run at all. </para>
 
 **Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute) → `SettingOnValueChangedAttribute`
 
@@ -18,17 +18,17 @@ Binds a static method to the named setting's `OnValueChanged` event ([`IGlobalVa
 ### SettingOnValueChangedAttribute(String, Boolean)
 
 ```csharp
-public SettingOnValueChangedAttribute(string settingPath, bool invokeOnBind = false)
+public SettingOnValueChangedAttribute(string settingPath, bool includeInSync = false)
 ```
 
-Initializes the attribute with the setting path, and optionally asks for the listener to be invoked once at the end of binding.
+Initializes the attribute with the setting path, and optionally opts the listener in to `SyncSettingsToClass`.
 
 ## Properties
 
-### InvokeOnBind
+### IncludeInSync
 
 ```csharp
-public bool InvokeOnBind { get; }
+public bool IncludeInSync { get; }
 ```
 
-Gets whether the listener is invoked once with the setting's current `SettingValue` after `BindSettingsClass` has bound every listener on the type. Defaults to `false`.
+Gets whether `SyncSettingsToClass` calls this listener with the setting's current `SettingValue`. Defaults to `false`, which leaves the listener running only when its event fires.

@@ -20,6 +20,11 @@ namespace GearsAPI.Settings
         /// <summary>
         /// Occurs when <c>SelectedValue</c> changes to a different value. Type <see cref="OnSelectedChangedEvent{T}"/>.
         /// </summary>
+        /// <remarks>
+        /// Not raised while Gears loads values in from XML - restoring saved global values, or a
+        /// world's values arriving. Loading a value in is not a change to report; use
+        /// <c>SyncSettingsToClass</c> to be handed the loaded values deliberately.
+        /// </remarks>
         event OnSelectedChangedEvent<T> OnSelectedChanged;
 
         /// <summary>

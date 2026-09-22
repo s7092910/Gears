@@ -52,7 +52,7 @@ category first, followed by its settings.
 | [`IColorSelectorGlobalSetting`](/docs/reference/global/i-color-selector-global-setting) | fixed, `UnityEngine.Color` |
 | [`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting) | fixed, no value |
 
-Create settings in `InitMod`, before Gears reads `ModSettings.xml`:
+Create settings in `InitMod`, which runs once `ModSettings.xml` has been read:
 
 ```csharp
 public void InitMod(IGearsMod mod)
@@ -77,8 +77,15 @@ public void InitMod(IGearsMod mod)
   setting holds `default(T)` in all three, which is 0, `false`, null or black.
 </Callout>
 
-Gears merges settings you create in `InitMod` with whatever `ModSettings.xml` declares under the
-same names, then restores the player's saved value on top.
+`GetOrCreate…` is the right shape here precisely because the XML has already been read. If
+`ModSettings.xml` declared the tab, category or setting, you get that object back and whatever you
+assign onto it **overrides what the XML said**; if it did not, you get a fresh one. The player's
+saved value is restored on top of either, after `InitMod` returns.
+
+<Callout type="info">
+  Declaring the same setting in both `ModSettings.xml` and code is worth avoiding — one silently
+  overrides the other and it is easy to lose track of which. Pick a place per setting.
+</Callout>
 
 `CreateSetting<T>` throws in two cases:
 
@@ -88,6 +95,19 @@ same names, then restores the player's saved value on top.
   `ISliderGlobalSetting<string>` or `ISelectorGlobalSetting<double>`, or has no registered parser,
   such as `ISelectorGlobalSetting<TimeSpan>`. See
   [Use Custom Value Types](/docs/csharp/custom-value-types).
+
+`GetOrCreateSetting<T>` throws `ArgumentException` on top of those, when a setting of that name
+already exists but is not a `T`:
+
+```
+Setting 'Fov' in category 'Display' is a ISliderGlobalSetting<Single>, not the requested
+ISliderGlobalSetting<Int32>. A setting declared in both ModSettings.xml and code must use the same
+type in both.
+```
+
+That happens when `ModSettings.xml` and your code disagree about a setting's type — an `int` slider
+in one and a `float` slider in the other, say. Since the XML is read before `InitMod`, the setting
+already exists by the time your code asks for it, so the two declarations have to agree.
 
 ## Members every setting has
 

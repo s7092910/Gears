@@ -19,7 +19,7 @@ The callback contract a C# mod implements to be told about its settings. Gears s
 void InitMod(IGearsMod modInstance);
 ```
 
-Called at `GameAwake` after all `IGearsModApi` instances exist and before any `ModSettings.xml` is read. The settings tree is empty; create settings from code here.
+Called at `GameAwake` once every mod's `ModSettings.xml` has been parsed, and before the player's saved global values are restored. Create settings from code here, and bind settings classes here.
 
 ### OnGlobalSettingsLoaded(IModGlobalSettings)
 

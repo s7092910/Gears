@@ -1,4 +1,4 @@
----
+﻿---
 title: Get Started with C#
 description: Reference GearsAPI.dll, implement IGearsModApi, learn when each callback fires, and reach your settings without a callback.
 ---
@@ -16,7 +16,7 @@ project. Whether you also ship a copy of it depends on whether Gears is optional
 
 | Your mod | Copy Local | Result |
 |---|---|---|
-| Gears is **required**| false | Gears loads the assembly, and your mod folder carries no second copy. |
+| Gears is **required** | false | Gears loads the assembly, and your mod folder carries no second copy. |
 | Gears is **optional** | **true** | `GearsAPI.dll` sits in your own mod folder, so the types still resolve for a player who does not have Gears installed. |
 
 <Callout type="warn" title="Optional means shipping the DLL">
@@ -39,10 +39,15 @@ Rebuild against the current `GearsAPI.dll` when you see that line.
 Nothing in Gears requires your mod to depend on it. Gears finds your `IGearsModApi` class by
 scanning, so when Gears is absent, nothing scans and nothing is called.
 
-There are two things that makes Gears option for users. First is the `GearsAPI.dll`. Including it in
-your mod's folder allow the mod to not throw errors due to missing types when 7DaysToDie loads your mod,
-if you are using the C# part of Gears. The second is being able to use XML to structure your mod's Settings
-as well as access those settings with [Reading Settings in XML Patches](/docs/xml/xml-patches).
+Two things keep Gears optional for your players:
+
+- **Ship `GearsAPI.dll` in your mod's folder.** A mod that uses the C# half of Gears needs the
+  assembly present to load at all. With your own copy, the types still resolve for a player who does
+  not have Gears installed, and the game loads your mod without missing-type errors.
+- **Declare your settings in XML and read them in XML.** `ModSettings.xml` and the `modsetting()`
+  function need no C# and no assembly reference. A player without Gears sees no settings page, and
+  the patches that read a setting do not apply. See
+  [Read Settings in XML Patches](/docs/xml/xml-patches).
 
 ## Implement IGearsModApi
 
@@ -69,27 +74,55 @@ enumerated is logged and skipped as well.
 
 Gears calls your callbacks in this order:
 
-1. **The game loads mods** and calls each mod's own `IModApi.InitMod`. Gears is not involved yet.
+<Steps>
+<Step>
+**The game loads mods:** Vanilla calls each mod's own `IModApi.InitMod`. Gears is not involved yet.
    `GearsSettingsManager.GetMods()` returns an empty list here, and `GetGearsMod(...)` returns null.
-2. **`GameAwake`.** Gears now does the following, in order:
-   1. Scans all loaded assemblies for `[SettingsSerializationProvider]` classes. See
+</Step>
+<Step>
+**GameAwake:** Gears does the following, in order:
+    <Steps>
+    <Step>
+    Scans all loaded assemblies for `[SettingsSerializationProvider]` classes. See
       [Use Custom Value Types](/docs/csharp/custom-value-types).
-   2. Builds one `IGearsMod` per loaded mod and reads `<Icon>` and `<Banner>` from `ModInfo.xml`.
-   3. Finds and instantiates every `IGearsModApi`, for every mod.
-   4. Calls **`InitMod(IGearsMod)`** on each one. Your settings tree is still empty at this point,
-      because nothing has been read from `ModSettings.xml` yet. Create settings from code here if
-      you want them to exist before the file is read. See
-      [Use Global Settings in C#](/docs/csharp/global-settings).
-   5. Parses every mod's `ModSettings.xml`, merging it into whatever your code created.
-   6. Restores each saved global value into the global settings.
-   7. Calls **`OnGlobalSettingsLoaded(IModGlobalSettings)`** on each one. Global values are final
-      from here on, until the player changes them.
-3. **World start.** `OnWorldSettingsLoaded(IModWorldSettings)` fires in one of three ways:
+    </Step>
+    <Step>
+    Builds one `IGearsMod` per loaded mod and reads `<Icon>` and `<Banner>` from `ModInfo.xml`.
+    </Step>
+    <Step>
+    Finds and instantiates every `IGearsModApi`, for every mod.
+    </Step>
+    <Step>
+    Parses every mod's `ModSettings.xml` into the settings tree.
+    </Step>
+    <Step>
+    Calls **`InitMod(IGearsMod)`** on each one. Everything `ModSettings.xml` declared already
+      exists, so this is where to create any further settings from code, and where to call
+      `BindSettingsClass` — for global and world settings alike. See
+      [Use Global Settings in C#](/docs/csharp/global-settings) and
+      [Bind Settings with Attributes](/docs/csharp/setting-listeners#bind-a-settings-class).
+    </Step>
+    <Step>
+    Restores each saved global value into the global settings. This raises no
+      [`OnValueChanged`](/docs/csharp/setting-listeners#loading-a-value-in-raises-nothing), so
+      listeners bound in the previous step stay quiet through it.
+    </Step>
+    <Step>
+    Calls **`OnGlobalSettingsLoaded(IModGlobalSettings)`** on each one. Global values are final
+      from here on, until the player changes them — call `SyncSettingsToClass` here to hand
+      them to your listeners.
+    </Step>
+    </Steps>
+</Step>
+<Step>
+**World Start** `OnWorldSettingsLoaded(IModWorldSettings)` fires in one of three ways:
    - **Hosting or single player:** when the world starts, after the save's `WorldModSettings.xml`
      has been loaded, or after defaults have been applied for a new save.
    - **Joining a server:** when the server's world settings arrive with the other config files.
    - **Joining a server that sent none:** Gears resets every world setting to its default, then
      fires the callback.
+</Step>
+</Steps>
 
 `OnWorldSettingsLoaded` can fire **more than once per session**, for example when the player leaves
 one world and joins another. Gears **skips it for a mod that has no world settings**.
@@ -137,21 +170,21 @@ public class MyModGears : IGearsModApi
     public static float HudScale { get; private set; } = 1f;
     public static bool FeralNights { get; private set; }
 
+    // Bind here: ModSettings.xml has been read, so every setting exists, and this runs once.
     public void InitMod(IGearsMod modInstance)
     {
+        modInstance.GlobalSettings.BindSettingsClass(typeof(Global));
+        modInstance.WorldSettings.BindSettingsClass(typeof(World));
     }
 
+    // Read values here, where they are final.
     public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
     {
-        modSettings.BindSettingsClass(typeof(Global));
-
         HudScale = Global.HudScale.SettingValue;
     }
 
     public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
     {
-        worldSettings.BindSettingsClass(typeof(World));
-
         FeralNights = World.FeralNights.SettingValue;
     }
 
@@ -181,6 +214,11 @@ public class MyModGears : IGearsModApi
 That example assumes a `ModSettings.xml` that declares a `HudScale` slider in the `Display` category
 of the `General` tab, and a `FeralNights` switch in the `Zombies` world category. See
 [Getting Started](/docs/getting-started) for that file.
+
+It reads each `SettingValue` in the loaded callbacks, which is the shortest way to start. To let the
+listeners do that work instead, write them with `includeInSync: true` and call `SyncSettingsToClass`
+in each loaded callback. See
+[Sync settings to a class](/docs/csharp/setting-listeners#sync-settings-to-a-class).
 
 ## Where to go next
 

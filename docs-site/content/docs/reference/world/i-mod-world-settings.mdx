@@ -83,7 +83,15 @@ Returns every setting in every category, categories included, as a `List<IWorldM
 void BindSettingsClass(Type settingsType);
 ```
 
-Scans `settingsType` for tagged static members carrying a `"Category.Setting"` path. Fields and properties tagged [`SettingAttribute`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute) or [`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed. [`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute) and [`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute) are logged and skipped: world settings have neither event. Throws `ArgumentNullException` for `null`. Re-binding a field on a later world load is harmless; re-subscribing a listener adds a second handler.
+Binds a settings class. A type is bound once; later calls for it do nothing.
+
+### SyncSettingsToClass(Type)
+
+```csharp
+void SyncSettingsToClass(Type settingsType);
+```
+
+Calls the opted-in value listeners on an already-bound class with the values their settings hold now.
 
 ### SaveSettings()
 

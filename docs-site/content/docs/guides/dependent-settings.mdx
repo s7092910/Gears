@@ -1,4 +1,4 @@
----
+﻿---
 title: Make One Setting Depend on Another
 description: Use Enabled to gray out the settings another setting has taken over, and avoid the trap that stops a grayed setting ever being saved.
 ---
@@ -80,7 +80,8 @@ public static class HudSettings
     [Setting(HudOpacityPath)]
     private static ISliderGlobalSetting<float> hudOpacity;
 
-    // invokeOnBind: true, so the sliders start out gray if the custom HUD is saved off.
+    // includeInSync: true opts this in to SyncSettingsToClass, so the sliders start out
+    // gray if the custom HUD is saved off.
     [SettingOnSelectedChanged(UseCustomHudPath, true)]
     private static void UseCustomHudSelected(IValueModSetting<bool> setting, bool newValue)
     {
@@ -91,20 +92,27 @@ public static class HudSettings
 }
 ```
 
-Gears assigns the tagged fields before it subscribes the listeners, and it makes every
-[`invokeOnBind`](/docs/csharp/setting-listeners#run-a-listener-once-at-bind-time) call after that, so
-this handler can safely reach `hudScale` and `hudOpacity` on its initial run. Binding is all it
-takes:
+Binding subscribes the handler but never calls it, so pair it with
+[`SyncSettingsToClass`](/docs/csharp/setting-listeners#sync-settings-to-a-class)
+to set the starting state. Gears assigns the tagged fields before it subscribes the listeners, so by
+then the handler can safely reach `hudScale` and `hudOpacity`:
 
 ```csharp
+public void InitMod(IGearsMod mod)
+{
+    mod.GlobalSettings.BindSettingsClass(typeof(HudSettings));
+}
+
 public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
 {
-    modSettings.BindSettingsClass(typeof(HudSettings));
+    modSettings.SyncSettingsToClass(typeof(HudSettings));
 }
 ```
 
-Without `invokeOnBind` the handler would not run until the player first touched the switch, leaving
-the sliders enabled through a session where the custom HUD was off the whole time.
+Without the sync call the handler would not run until the player first touched the switch, leaving
+the sliders enabled through a session where the custom HUD was off the whole time. The
+`includeInSync: true` on the attribute is what opts the handler into it — a listener without the flag
+is skipped.
 
 ## You cannot hide a setting
 

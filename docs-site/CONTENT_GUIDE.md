@@ -4,6 +4,8 @@ Use this guide for every user-facing documentation change. It applies to the doc
 
 Gears' readers are mod developers for the video game 7 Days to Die who need to install, evaluate, integrate, operate, or debug the Gears' mod with their own mods. Help them complete those tasks. Do not assume they know Gears' architecture or internal vocabulary.
 
+One section has a different reader. `content/docs/players/` is for players and server admins who installed a mod that uses Gears. They are not writing code, so keep those pages to what they can see and do in the game, in its menus and its files, and send anything that is the mod author's to fix back to the author. Everything else in this guide applies to those pages too.
+
 Follow the [Mailchimp voice and tone guide](https://styleguide.mailchimp.com/voice-and-tone/): be plainspoken, helpful, and clear. Prefer useful information over personality or promotion.
 
 ## Write for the reader's task

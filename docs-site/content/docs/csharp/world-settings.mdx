@@ -1,4 +1,4 @@
----
+﻿---
 title: Use World Settings in C#
 description: Read the per-world settings the host picks and every client receives, and learn how they differ from global settings.
 ---
@@ -56,14 +56,19 @@ their global counterparts, the same value types, and the same three values: `Def
 | `Color`, `Binding` | no | both belong to the player, not to a world |
 | `RestartScope` | no | a world value is applied with the world, so there is nothing to restart |
 | `OnSettingApplied` | no | there is no per-player Apply step to hook |
-| `OnValueChanged` | **no** | the applied value arrives with the world, so read `SettingValue` in `OnWorldSettingsLoaded` |
-| `OnSelectedChanged` | yes | it fires while the host is picking values on the world settings screen |
+| `OnValueChanged` | **no** | the applied value arrives with the world rather than changing under the player, so there is no event — but see below |
+| `OnSelectedChanged` | yes | it fires while the host is picking values on the world settings screen, but **not** while Gears loads a world's values in |
 | `Enabled` and its gate | yes | it behaves exactly as it does on a global setting |
 
+There is no `OnValueChanged` *event* on a world setting, but `[SettingOnValueChanged]` still works on
+a world path. Gears binds it **invoke-only**: the method is never raised by a change, and is instead
+called with the setting's current `SettingValue` every time you call `SyncSettingsToClass`.
+That is the natural shape for a world value, which only ever arrives with a world. Because that call
+is its only way to run, it has to be written with `includeInSync: true`.
+
 <Callout type="warn">
-  Because world settings have no `OnValueChanged`, `BindSettingsClass` logs and skips a
-  `[SettingOnValueChanged]` or `[SettingOnApplied]` attribute on a world path. Only
-  `[SettingOnSelectedChanged]` binds. See
+  `[SettingOnApplied]` has no such fallback — there is no per-player Apply step on a world setting —
+  so `BindSettingsClass` logs and skips it on a world path. See
   [Bind Settings with Attributes](/docs/csharp/setting-listeners).
 </Callout>
 
@@ -93,24 +98,41 @@ current world:
 changed" rather than as a startup callback. Gears does not fire it for a mod that has no world
 settings.
 
-Calling `BindSettingsClass` from it is still safe, and is the normal thing to do. Gears binds a given
-type only the first time a settings tree sees it and does nothing on every call after that, so repeat
-loads cannot pile up duplicate listeners. See [Binding the same type
-twice](/docs/csharp/setting-listeners#binding-the-same-type-twice).
+Loading those values raises no `OnSelectedChanged`, on any of the three routes above — that callback
+is how a mod finds out, and `SyncSettingsToClass` is how it gets the values. See [Loading a
+value in raises nothing](/docs/csharp/setting-listeners#loading-a-value-in-raises-nothing).
+
+Bind once in `InitMod`, sync on every load. `SyncSettingsToClass` pushes the new world's values into
+the listeners that are already bound. `MyMod` below stands for your own class:
 
 ```csharp
+public class MyWorldListeners
+{
+    [SettingOnValueChanged("Zombies.SpawnMultiplier", includeInSync: true)]
+    private static void SpawnChanged(IValueModSetting<int> setting, int newValue)
+    {
+        // Called with this world's value, every load.
+        MyMod.SpawnMultiplier = newValue;
+    }
+}
+
+public void InitMod(IGearsMod mod)
+{
+    // Wired up once. ModSettings.xml has already been read, so the settings exist.
+    mod.WorldSettings.BindSettingsClass(typeof(MyWorldListeners));
+}
+
 public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
 {
-    // Safe to call on every load: only the first one binds.
-    worldSettings.BindSettingsClass(typeof(MyWorldListeners));
+    // Hands the opted-in listeners what this world just brought in.
+    worldSettings.SyncSettingsToClass(typeof(MyWorldListeners));
 }
 ```
 
-Gears applies the incoming world values *before* it fires `OnWorldSettingsLoaded`, which is why the
-two halves fit together: on the first load an
-[`invokeOnBind`](/docs/csharp/setting-listeners#run-a-listener-once-at-bind-time) listener hands you
-the values that just arrived, and on every load after that your already-subscribed
-`OnSelectedChanged` fires for whichever values the new world changed.
+This works because Gears applies the incoming world values *before* it fires
+`OnWorldSettingsLoaded`, so by the time your listener is called the settings already hold the current
+world's values. See [Sync settings to a
+class](/docs/csharp/setting-listeners#sync-settings-to-a-class).
 
 <Callout type="warn" title="World settings are skipped in the prefab editor">
   Gears does no world settings work at all for the worlds named `Empty` and `Playtesting`, which are

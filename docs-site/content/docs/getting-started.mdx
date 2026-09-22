@@ -8,7 +8,8 @@ of its values from an XML patch and from C#.
 
 Two terms appear throughout. A **global setting** belongs to the player and applies in every world.
 A **world setting** belongs to one world, is chosen by the host, and cannot be changed while that
-world is running.
+world is running. [Choose Global or World Settings](/docs/global-and-world-settings) goes into what
+each kind does and which one a setting belongs in.
 
 ## Before you start
 
@@ -146,7 +147,7 @@ Settings](/docs/xml/localization).
 ## See the settings in the game
 
 Start the game with Gears and your mod installed. From the main menu, open **Mods**, pick your mod,
-and open the **Settings** tab. Edit the global settings there and press Save.
+and open the **Settings** tab. Edit the global settings there and press **APPLY**.
 
 World settings are on the **Mods World Settings** button of the New Game and Continue Game screens.
 
@@ -200,7 +201,9 @@ public class MyModGears : IGearsModApi
 
     public void InitMod(IGearsMod modInstance)
     {
-        // The settings from ModSettings.xml do not exist yet at this point.
+        // ModSettings.xml has already been read, so every setting it declares exists by now.
+        // Bind here: it wires up every [Setting] field and listener method on this class, once.
+        modInstance.GlobalSettings.BindSettingsClass(typeof(MyModGears));
     }
 
     // [Setting] binds this field to the setting at that path.
@@ -209,9 +212,7 @@ public class MyModGears : IGearsModApi
 
     public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
     {
-        // Bind every [Setting] field and wire up every listener method on this class.
-        modSettings.BindSettingsClass(typeof(MyModGears));
-
+        // The saved values are restored by now, so this is where to read them.
         ShowHints = showHints.SettingValue;
     }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace GearsAPI.Attributes
 {
@@ -17,30 +17,38 @@ namespace GearsAPI.Attributes
     }
 
     /// <summary>
-    /// Binds a static method to <c>OnValueChanged</c>. Global value settings only.
+    /// Binds a static method to <c>OnValueChanged</c>. Raised on global value settings; on a world
+    /// path the method is bound invoke-only.
     /// </summary>
     /// <remarks>
     /// Binds a static method to the named setting's <c>OnValueChanged</c> event
-    /// (<see cref="IGlobalValueSetting{T}"/>), which fires when the applied value changes. Global value
-    /// settings only. Required method signature: <c>static void M(IValueModSetting&lt;T&gt; setting, T newValue)</c>.
-    /// Pass <c>invokeOnBind: true</c> to also call the method once with the setting's current
-    /// <c>SettingValue</c> as soon as <c>BindSettingsClass</c> has bound every listener on the type.
+    /// (<see cref="IGlobalValueSetting{T}"/>), which fires when the applied value changes. Required
+    /// method signature: <c>static void M(IValueModSetting&lt;T&gt; setting, T newValue)</c>.
+    /// Pass <c>includeInSync: true</c> to have <c>SyncSettingsToClass</c> call the method with the
+    /// setting's current <c>SettingValue</c>.
+    /// <para>
+    /// A world setting raises no <c>OnValueChanged</c> - its applied value arrives with the world
+    /// rather than changing under the player - so on a world path the method is bound
+    /// <b>invoke-only</b>: never raised, and run only by <c>SyncSettingsToClass</c>. That makes
+    /// <c>includeInSync: true</c> mandatory there, or the method can never run at all.
+    /// </para>
     /// </remarks>
     public sealed class SettingOnValueChangedAttribute : SettingListenerAttribute
     {
         /// <summary>
-        /// Gets whether the listener is invoked once with the setting's current <c>SettingValue</c>
-        /// after <c>BindSettingsClass</c> has bound every listener on the type. Defaults to <c>false</c>.
+        /// Gets whether <c>SyncSettingsToClass</c> calls this listener with the setting's current
+        /// <c>SettingValue</c>. Defaults to <c>false</c>, which leaves the listener running only when
+        /// its event fires.
         /// </summary>
-        public bool InvokeOnBind { get; }
+        public bool IncludeInSync { get; }
 
         /// <summary>
-        /// Initializes the attribute with the setting path, and optionally asks for the listener to be
-        /// invoked once at the end of binding.
+        /// Initializes the attribute with the setting path, and optionally opts the listener in to
+        /// <c>SyncSettingsToClass</c>.
         /// </summary>
-        public SettingOnValueChangedAttribute(string settingPath, bool invokeOnBind = false) : base(settingPath)
+        public SettingOnValueChangedAttribute(string settingPath, bool includeInSync = false) : base(settingPath)
         {
-            InvokeOnBind = invokeOnBind;
+            IncludeInSync = includeInSync;
         }
     }
 
@@ -67,24 +75,25 @@ namespace GearsAPI.Attributes
     /// Binds a static method to the named setting's <c>OnSelectedChanged</c> event
     /// (<see cref="IValueModSetting{T}"/>), which fires when the value selected in the UI changes. Global
     /// and world value settings. Required method signature: <c>static void M(IValueModSetting&lt;T&gt; setting, T newValue)</c>.
-    /// Pass <c>invokeOnBind: true</c> to also call the method once with the setting's current
-    /// <c>SelectedValue</c> as soon as <c>BindSettingsClass</c> has bound every listener on the type.
+    /// Pass <c>includeInSync: true</c> to have <c>SyncSettingsToClass</c> call the method with the
+    /// setting's current <c>SelectedValue</c>.
     /// </remarks>
     public sealed class SettingOnSelectedChangedAttribute : SettingListenerAttribute
     {
         /// <summary>
-        /// Gets whether the listener is invoked once with the setting's current <c>SelectedValue</c>
-        /// after <c>BindSettingsClass</c> has bound every listener on the type. Defaults to <c>false</c>.
+        /// Gets whether <c>SyncSettingsToClass</c> calls this listener with the setting's current
+        /// <c>SelectedValue</c>. Defaults to <c>false</c>, which leaves the listener running only when
+        /// its event fires.
         /// </summary>
-        public bool InvokeOnBind { get; }
+        public bool IncludeInSync { get; }
 
         /// <summary>
-        /// Initializes the attribute with the setting path, and optionally asks for the listener to be
-        /// invoked once at the end of binding.
+        /// Initializes the attribute with the setting path, and optionally opts the listener in to
+        /// <c>SyncSettingsToClass</c>.
         /// </summary>
-        public SettingOnSelectedChangedAttribute(string settingPath, bool invokeOnBind = false) : base(settingPath)
+        public SettingOnSelectedChangedAttribute(string settingPath, bool includeInSync = false) : base(settingPath)
         {
-            InvokeOnBind = invokeOnBind;
+            IncludeInSync = includeInSync;
         }
     }
 

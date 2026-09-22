@@ -1,4 +1,4 @@
----
+﻿---
 title: Bind Settings with Attributes
 description: Tag static fields, properties and methods with a setting path, then call BindSettingsClass to assign the settings and subscribe to their events.
 ---
@@ -10,12 +10,15 @@ attribute names.
 
 The attributes live in `GearsAPI.Attributes`.
 
+`MyHud` and `MyMod` in the examples below stand for your own classes. Gears knows nothing about
+them.
+
 ## The attributes
 
 | Attribute | Goes on | Binds to |
 |---|---|---|
 | [`[Setting]`](/docs/reference/attributes/setting-attribute) | a static field or property | assigns the setting itself to the member |
-| [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) | a static method | `SettingValue` changed, which means the player saved |
+| [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) | a static method | `SettingValue` changed, which means the player saved. On a world path, [invoke-only](#settingonvaluechanged-on-a-world-path) |
 | [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) | a static method | `SelectedValue` changed, which means the player moved the control in the menu |
 | [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) | a static method | `Enabled` was turned on or off |
 | [`[SettingOnApplied]`](/docs/reference/attributes/setting-on-applied-attribute) | a static method | the setting was applied |
@@ -23,7 +26,7 @@ The attributes live in `GearsAPI.Attributes`.
 Every attribute takes the setting path as its first argument. A null or empty path throws
 `ArgumentException` from the attribute constructor, which surfaces the first time Gears inspects the
 class. `[SettingOnValueChanged]` and `[SettingOnSelectedChanged]` take one more, optional argument,
-[`invokeOnBind`](#run-a-listener-once-at-bind-time).
+[`includeInSync`](#opting-a-listener-in).
 
 ## Setting paths
 
@@ -43,47 +46,62 @@ They are not the display keys.
 
 ## Bind a settings class
 
-Call `BindSettingsClass` from the matching callback:
+**Bind in `InitMod`.** `ModSettings.xml` is read before it runs, so every setting already exists,
+and one `InitMod` binds both your global and your world class. Then call
+[`SyncSettingsToClass`](#sync-settings-to-a-class) from the loaded callbacks to pick the values up:
 
 ```csharp
+public void InitMod(IGearsMod mod)
+{
+    mod.GlobalSettings.BindSettingsClass(typeof(MyGlobalListeners));
+    mod.WorldSettings.BindSettingsClass(typeof(MyWorldListeners));
+}
+
 public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
 {
-    modSettings.BindSettingsClass(typeof(MyGlobalListeners));
+    modSettings.SyncSettingsToClass(typeof(MyGlobalListeners));
 }
 
 public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
 {
-    worldSettings.BindSettingsClass(typeof(MyWorldListeners));
+    worldSettings.SyncSettingsToClass(typeof(MyWorldListeners));
 }
 ```
 
-One call does both halves. Gears binds the fields and properties first, then subscribes the
-listeners, so a handler can safely read any member the same call binds. An
-[`invokeOnBind`](#run-a-listener-once-at-bind-time) listener runs last of all, once every listener
-on the type is subscribed.
+Bind once, then sync whenever values arrive. Binding is one-time wiring, and `InitMod` runs exactly
+once. The loaded callbacks are about values, and `OnWorldSettingsLoaded` runs again on every world
+load and rejoin. Splitting the work this way keeps each callback to one job.
+
+`BindSettingsClass` does the whole wiring job. It assigns the tagged fields and properties first,
+then subscribes the tagged methods, so a handler can read any member the same call binds. It calls
+no listener of its own. [`SyncSettingsToClass`](#sync-settings-to-a-class) does that.
+
+You can bind from `OnGlobalSettingsLoaded` or `OnWorldSettingsLoaded` instead. It works, and repeat
+calls are [a no-op](#binding-the-same-type-twice). It costs you two things: the binding sits in a
+callback that runs repeatedly, and you cannot bind a world class until a world loads.
+
+Create any code-defined settings before you bind them. `BindSettingsClass` resolves every path as it
+runs, and reports and skips a setting that does not exist yet.
 
 Binding is opt-in. Nothing scans for these attributes until you call `BindSettingsClass`.
 
 ### Binding the same type twice
 
-**A type is bound once, on both sides.** Gears remembers which types a settings tree has already
-bound; hand it the same one again and the call does nothing at all — no field reassigned, no listener
-subscribed a second time, no [`invokeOnBind`](#run-a-listener-once-at-bind-time) call. It is a no-op,
-not an error, and nothing is logged.
+**Binding is never repeated.** Gears remembers which types a settings tree has already bound; hand it
+the same one again and nothing is bound a second time — no field reassigned, no property setter run
+again, no listener subscribed twice. It is a no-op, not an error, and nothing is logged.
 
-That makes `BindSettingsClass` safe to call from anywhere you like, as often as you like. It matters
-most on the world side: `OnWorldSettingsLoaded` fires once per world load *and* again on every
-rejoin, against the same setting objects, so a mod binding from it would otherwise pile up a fresh
-copy of every listener per load. On the global side `OnGlobalSettingsLoaded` fires once per session,
-so the guard mainly covers a mod that binds the same class from two places.
+That makes `BindSettingsClass` safe to call from anywhere you like, as often as you like. Without it
+a second bind would add a **second** handler to every event, which then runs twice on every change —
+the kind of bug that shows up as doubled work long after the call that caused it.
 
-Without it a second bind would add a **second** handler to every event, which then runs twice on
-every change — the kind of bug that shows up as doubled work long after the call that caused it.
+Re-binding is not how you get new values into your listeners — binding never calls one. Use
+[`SyncSettingsToClass`](#sync-settings-to-a-class) for that, which matters most
+on the world side, where `OnWorldSettingsLoaded` fires again on every load and rejoin with a new
+world's values already applied.
 
-<Callout type="info">
-  "Already bound" is tracked per settings tree, not globally, so the global and world trees keep
-  their own record. Binding one type does not stop a different one binding.
-</Callout>
+"Already bound" is tracked per settings tree, so the global and world trees keep their own record.
+Binding one type does not stop a different one binding.
 
 `BindSettingsClass(null)` throws `ArgumentNullException`. Gears logs every other problem and skips
 that one member, and the rest still bind.
@@ -140,7 +158,7 @@ A listener method must be:
 
 | Attribute | Required signature | Works on |
 |---|---|---|
-| `[SettingOnValueChanged("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | global value settings |
+| `[SettingOnValueChanged("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | global value settings; also world value settings, [invoke-only](#settingonvaluechanged-on-a-world-path) |
 | `[SettingOnSelectedChanged("...")]` | `static void M(IValueModSetting<T> setting, T newValue)` | global and world value settings |
 | `[SettingOnApplied("...")]` | `static void M(IGlobalModSetting setting)` | global settings, including Color and Binding |
 | `[SettingOnEnabled("...")]` | `static void M(IModSetting setting, bool isEnabled)` | every setting, global and world |
@@ -155,65 +173,150 @@ every setting type. It fires only when `Enabled` actually changes value, not on 
 
 A method may carry several attributes, so one method can listen to several settings.
 
-## Run a listener once at bind time
+## Sync settings to a class
 
 A listener only ever fires on a *change*, so a mod that wires one up still has to read the setting's
-current value somewhere to start off in the right state. `invokeOnBind` does that for you: pass
-`true` and Gears calls the method once during `BindSettingsClass`, handing it the value the event
-would have carried.
+current value somewhere to start off in the right state. `SyncSettingsToClass` does that: it calls
+the listeners on an already-bound class with the value each setting holds right now, exactly as if
+the event had fired. Nothing is bound or subscribed, so it is safe to call as often as you like.
+
+It is on both `IModGlobalSettings` and `IModWorldSettings`, and belongs in the loaded callbacks —
+the point at which values become real — with the [binding done in
+`InitMod`](#bind-a-settings-class):
+
+```csharp
+public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
+{
+    // Starts the mod off in step with the player's saved values.
+    modSettings.SyncSettingsToClass(typeof(MyGlobalListeners));
+}
+```
+
+<Callout type="warn" title="Binding never calls a listener">
+  `BindSettingsClass` binds and only binds, on **both** sides. If it also called listeners, a mod
+  that binds and syncs would run every opted-in listener twice the first time and once every time
+  after. `SyncSettingsToClass` being the only caller is what makes every call identical.
+</Callout>
+
+### Opting a listener in
+
+Only listeners that asked for it are called. Pass `includeInSync: true` on the attribute:
 
 ```csharp
 [SettingOnValueChanged("General.Display.HudScale", true)]
 private static void HudScaleChanged(IValueModSetting<float> setting, float newValue)
 {
-    // Runs once during BindSettingsClass with the saved scale, and again on every save after that.
+    // Called by SyncSettingsToClass with the saved scale, and on every save after that.
     MyHud.Scale = newValue;
 }
 ```
 
-| Attribute | `invokeOnBind: true` passes |
+| Attribute | `includeInSync: true` passes |
 |---|---|
 | `[SettingOnValueChanged]` | the setting's current `SettingValue`, the applied value |
 | `[SettingOnSelectedChanged]` | the setting's current `SelectedValue`, what the UI shows |
 
-It defaults to `false`, so an attribute written without it behaves exactly as before. Only these two
-attributes take it — `[SettingOnApplied]` and `[SettingOnEnabled]` do not, since neither carries a
-value to replay.
+It defaults to `false`, so a listener written without it is **skipped** — it runs only when its event
+fires. Only these two attributes take it: `[SettingOnApplied]` and `[SettingOnEnabled]` do not, since
+neither carries a value to hand over.
 
-Gears still subscribes the method to the event as normal. The initial call is **on top of** the
-subscription, not instead of it, so the handler runs again on every later change.
+Opting in changes nothing about the subscription. The call is **on top of** it, not instead of it, so
+the handler still runs on every later change.
 
 Named arguments read better when the path is long:
 
 ```csharp
-[SettingOnSelectedChanged("General.Display.HudScale", invokeOnBind: true)]
+[SettingOnSelectedChanged("General.Display.HudScale", includeInSync: true)]
 ```
 
-### When the call happens
+### Keeping up with world values
 
-Gears runs every `invokeOnBind` listener at the very end of `BindSettingsClass`, after all fields,
-all properties and all listeners on that type are bound. So by the time your handler runs it can
-read any `[Setting]` member on the class, and anything it changes reaches the class's other
-listeners.
+This is also how a mod keeps up with world values. `OnWorldSettingsLoaded` fires on every world load
+and rejoin, and Gears applies the incoming values *before* it fires, so by the time your listener
+runs the settings already hold the current world's values:
+
+```csharp
+public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
+{
+    worldSettings.SyncSettingsToClass(typeof(MyWorldListeners));
+}
+```
+
+This is the clearest reason to bind in `InitMod`: the world class is wired up once, and this
+callback does nothing but hand over each new world's values.
+
+### Loading a value in raises nothing
+
+This call is not just a convenience — it is the **only** way a listener hears about a value Gears
+loaded. While Gears reads values from XML, the value events are held back:
+
+| What moved the value | `OnValueChanged` / `OnSelectedChanged` |
+|---|---|
+| Gears restoring the player's saved global values at startup | silent |
+| Gears loading a world's values, or resetting them to defaults | silent |
+| The player moving a control in the menu | raised |
+| Your own code assigning `SettingValue` or `SelectedValue` | raised |
+
+Without that, a mod that binds early would get a burst of change events for values that had only
+just arrived, and then a second round from `SyncSettingsToClass`. Loading is silent, and you
+ask for the values when you are ready.
+
+### What the call guarantees
+
+Every field, property and listener on the type is already bound by the time any handler runs, so a
+handler can read any `[Setting]` member on the class, and anything it changes reaches the class's
+other listeners.
 
 <Callout type="info">
-  The initial call ignores `Enabled`. A real `OnValueChanged` or `OnSelectedChanged` is suppressed
-  while a setting is disabled, but `invokeOnBind` calls the method either way, so a mod always
+  The call ignores `Enabled`. A real `OnValueChanged` or `OnSelectedChanged` is suppressed while a
+  setting is disabled, but `SyncSettingsToClass` calls the method either way, so a mod always
   starts in sync with what is saved. Check `setting.Enabled` in the handler if that matters to you.
 </Callout>
 
-An `invokeOnBind` handler that throws is reported to the log, and binding carries on: the remaining
-initial calls still run, and the rest of the class is already bound by then.
+A handler that throws is reported to the log and the remaining calls still run.
 
-The initial call happens **once for the whole session**, on the first `BindSettingsClass` for the
-type. Later calls are [skipped entirely](#binding-the-same-type-twice), the initial call along with
-everything else. On a world type in particular this is not a per-world-load hook: your listener still
-fires normally whenever a world load brings in a different value, but the initial call happens only
-that first time.
+`SyncSettingsToClass(null)` throws `ArgumentNullException`. A type that was never bound is
+logged and nothing happens, so a typo'd or forgotten `BindSettingsClass` shows up in the log rather
+than silently doing nothing.
+
+### Gears warns when the sync is missing
+
+A class you bind and never sync is the easy mistake to make, so Gears reports it. When
+`OnGlobalSettingsLoaded` or `OnWorldSettingsLoaded` returns, Gears looks at the classes bound on that
+settings tree and warns about each one that has a listener written with `includeInSync: true` and was
+not handed to `SyncSettingsToClass` during that callback:
+
+```text
+[Gears] [GearsMod] 'MyMod.MyWorldListeners' of 'My Mod' was bound with BindSettingsClass and has [SettingOnValueChanged] or [SettingOnSelectedChanged] listeners written with includeInSync: true, but SyncSettingsToClass(typeof(MyWorldListeners)) was not called in OnWorldSettingsLoaded(). Those listeners were not given the values just loaded. Call SyncSettingsToClass on it in OnWorldSettingsLoaded().
+```
+
+The check runs every time either callback fires, not once. `OnWorldSettingsLoaded` fires again on
+every world load and rejoin, and each of those needs its own sync, so a load that skips it is
+reported even when an earlier load did sync.
+
+A class whose listeners all left the opt-in off is never reported. Nothing on it asked for the loaded
+values, so the sync it did not get would have called nothing.
+
+### `[SettingOnValueChanged]` on a world path
+
+A world setting has no `OnValueChanged` event — its applied value arrives with the world rather than
+changing under the player. `[SettingOnValueChanged]` still works there, bound **invoke-only**: never
+raised, and called only by `SyncSettingsToClass`.
+
+That call is the only way such a listener runs, so write it with `includeInSync: true`. The opt-in
+rule has no exception here, and Gears logs no warning. Without the flag, Gears binds the method and
+never calls it.
+
+```csharp
+// On a world path this is "hand me the value this world applied", not "tell me when it changes".
+[SettingOnValueChanged("Zombies.SpawnMultiplier", includeInSync: true)]
+private static void SpawnChanged(IValueModSetting<int> setting, int newValue)
+{
+    MyMod.SpawnMultiplier = newValue;
+}
+```
 
 ## Example
-
-`MyHud` below is your own class. Gears knows nothing about it.
 
 ```csharp
 using GearsAPI.Attributes;
@@ -230,7 +333,8 @@ public static class MyGlobalListeners
     [Setting("General.Display.Units")]
     private static ISelectorGlobalSetting<string> units;
 
-    // invokeOnBind: the HUD picks up the saved scale at bind time, not only on the next save.
+    // includeInSync: SyncSettingsToClass hands this the saved scale, so the HUD does not
+    // wait for the next save to pick it up.
     [SettingOnValueChanged("General.Display.HudScale", true)]
     private static void HudScaleSaved(IValueModSetting<float> setting, float newValue)
     {
@@ -275,10 +379,17 @@ public static class MyWorldListeners
     [Setting("Zombies.SpawnMultiplier")]
     private static ISliderWorldSetting<int> spawnMultiplier;
 
-    // Only OnSelectedChanged exists on world settings. It fires while the host picks values.
+    // OnSelectedChanged is the one real event on a world setting. It fires while the host picks values.
     [SettingOnSelectedChanged("Zombies.SpawnMultiplier")]
     private static void SpawnPreview(IValueModSetting<int> setting, int newValue)
     {
+    }
+
+    // Invoke-only on a world path: never raised, so it has to opt in to be called at all.
+    [SettingOnValueChanged("Zombies.SpawnMultiplier", includeInSync: true)]
+    private static void SpawnApplied(IValueModSetting<int> setting, int newValue)
+    {
+        MyMod.SpawnMultiplier = newValue;
     }
 
     // OnEnabled is on IModSetting, so it works here too.
@@ -292,6 +403,7 @@ public static class MyWorldListeners
 ## Log lines when a member does not bind
 
 Every message below comes from `[Gears]`. Each one skips that member only, and the rest still bind.
+The exception is the last line in the listener table, which reports a whole class and skips nothing.
 
 ### Listeners
 
@@ -300,10 +412,11 @@ Every message below comes from `[Gears]`. Each one skips that member only, and t
 | `[SettingOnValueChangedAttribute("…")] on 'Ns.Type.Method' must use the format "tabName.CategoryName.SettingName". Skipping registration of listener.` | wrong number of path segments; a world path is `"CategoryName.SettingName"` |
 | `[SettingOnValueChangedAttribute] on 'Ns.Type.Method' references unknown setting "…". Skipping registration of listener.` | no setting at that path |
 | `[SettingOnApplied("…")] on '…' targets a setting that does not support OnSettingApplied (only global settings expose it). Skipping registration of listener.` | `[SettingOnApplied]` on a world path |
-| `[SettingOnValueChangedAttribute("…")] on '…' targets a setting that does not expose an 'OnValueChanged' event. Skipping registration of listener.` | `[SettingOnValueChanged]` on a world setting, or either value attribute on a Binding |
+| `[SettingOnValueChangedAttribute("…")] on '…' targets a setting that holds no value and raises no 'OnValueChanged'. Skipping registration of listener.` | either value attribute on a Binding, which holds no value at all. A world setting is not this case: it holds a value, so the listener binds [invoke-only](#settingonvaluechanged-on-a-world-path) |
+| `'Ns.Type' has not been bound, so its listeners cannot be invoked. Call BindSettingsClass on it first.` | `SyncSettingsToClass` for a type no `BindSettingsClass` ever saw |
 | ``[SettingOnValueChangedAttribute] on '…' has an invalid signature, skipping registration of listener. Expected: static Void Method(IValueModSetting`1, Int32).`` | wrong parameter types, wrong parameter count, a non-void return, or a non-static method |
-| `[SettingOnValueChangedAttribute("…")] on '…' asked for InvokeOnBind, but the setting exposes no 'SettingValue'. Skipping the initial call.` | `invokeOnBind: true` on a setting that holds no value; the listener itself is still subscribed |
-| `[SettingOnValueChangedAttribute("…")] on '…' threw during its InvokeOnBind call: …` | your handler threw on its initial call; binding carries on and the other initial calls still run |
+| `[SettingOnValueChangedAttribute("…")] on '…' threw when it was invoked with the setting's current value: …` | your handler threw on an `SyncSettingsToClass` call; the remaining calls still run |
+| `'Ns.Type' of '<Your Mod>' was bound with BindSettingsClass and has [SettingOnValueChanged] or [SettingOnSelectedChanged] listeners written with includeInSync: true, but SyncSettingsToClass(typeof(Type)) was not called in OnGlobalSettingsLoaded(). …` | the class was bound but never synced in that callback. Carries the `[GearsMod]` tag, and names `OnWorldSettingsLoaded()` for a world class. See [Gears warns when the sync is missing](#gears-warns-when-the-sync-is-missing) |
 
 ### Field bindings
 

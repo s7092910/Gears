@@ -3,8 +3,11 @@ title: Gears Documentation
 description: Give your 7 Days to Die mod a settings page in the Mods menu, save what the player chooses, sync per-world values from the server to every client, and read those values from XML patches or C#.
 ---
 
-Gears is a mod settings framework for 7 Days to Die. Install Gears alongside your own mod and you
-can:
+Gears is a mod settings framework for 7 Days to Die. These pages are for mod developers. If you
+installed a mod that uses Gears and want to change its settings, read
+[Gears for Players](/docs/players) instead.
+
+Install Gears alongside your own mod and you can:
 
 - Give your mod a settings page in the game's Mods menu.
 - Save what the player chooses and restore it the next time the game starts.
@@ -58,6 +61,11 @@ and the difference decides where the value is stored and who can change it.
     title="Getting Started"
     href="/docs/getting-started"
     description="Write your first ModSettings.xml, see it in the game, and read a value back from XML and from C#."
+  />
+  <Card
+    title="Choose Global or World Settings"
+    href="/docs/global-and-world-settings"
+    description="What each kind is, who changes it, where the value lives, and which one a setting belongs in."
   />
   <Card
     title="Choose a Setting Type"
