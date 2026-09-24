@@ -95,6 +95,7 @@
     <Compile Include="Source\Attributes\Listeners\SettingListenerAttribute.cs" />
     <Compile Include="Source\Attributes\SettingPathAttribute.cs" />
     <Compile Include="Source\Attributes\Settings\SettingAttribute.cs" />
+    <Compile Include="Source\Attributes\Settings\SettingPlayerActionAttribute.cs" />
     <Compile Include="Source\GearsApi.cs" />
     <Compile Include="Source\GearsSettingsManager.cs" />
     <Compile Include="Source\IGearsMod.cs" />

@@ -270,6 +270,10 @@ if (boost != null)
 }
 ```
 
+You can also tag a static `PlayerAction` field or property with `[SettingPlayerAction]` and let
+`BindSettingsClass` assign it. See
+[Attach a PlayerAction to a Binding](/docs/csharp/setting-listeners#attach-a-playeraction-to-a-binding).
+
 Assigning `PlayerAction` records the action's current binding as the baseline the row compares
 against, so assign it once, after your action set exists. Until you do, the row reads
 **- Missing PlayerAction -**.

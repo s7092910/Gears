@@ -1,0 +1,26 @@
+---
+title: "SettingPlayerActionAttribute"
+description: "Assigns the PlayerAction held by a static field or property to the Binding setting its path names. Pass the declaring type to BindSettingsClass and Gears reads the member and sets IControlBindingSetting.PlayerAction from it."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Settings/SettingPlayerActionAttribute.cs" />
+
+```csharp
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+public sealed class SettingPlayerActionAttribute : SettingPathAttribute
+```
+
+Works the other way round from [`SettingAttribute`](/docs/reference/attributes/setting-attribute): Gears reads the member rather than writing to it. The member must be static and declared as `InControl.PlayerAction` or a class derived from it. A field may be `readonly`; a property needs a getter, which may be private. The path must name a Binding setting, so it is always a global path, `"tabName.CategoryName.SettingName"`. <para> Gears reads the member once, while `BindSettingsClass` runs, and never again. `SyncSettingsToClass` does not read it. Create your `PlayerActionSet` before you bind: a member that is `null` at that point is logged and skipped, and the row reads "- Missing PlayerAction -". Every other problem is also logged and skips that member only. See the Bind Settings with Attributes guide. </para>
+
+**Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → `SettingPlayerActionAttribute`\
+**Attributes:** `AttributeUsageAttribute`
+
+## Constructors
+
+### SettingPlayerActionAttribute(String)
+
+```csharp
+public SettingPlayerActionAttribute(string settingPath)
+```
+
+Initializes the attribute with the path of the Binding setting.

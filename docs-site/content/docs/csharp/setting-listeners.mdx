@@ -18,6 +18,7 @@ them.
 | Attribute | Goes on | Binds to |
 |---|---|---|
 | [`[Setting]`](/docs/reference/attributes/setting-attribute) | a static field or property | assigns the setting itself to the member |
+| [`[SettingPlayerAction]`](/docs/reference/attributes/setting-player-action-attribute) | a static `PlayerAction` field or property | [reads the member](#attach-a-playeraction-to-a-binding) and assigns it to a Binding setting's `PlayerAction` |
 | [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) | a static method | `SettingValue` changed, which means the player saved. On a world path, [invoke-only](#settingonvaluechanged-on-a-world-path) |
 | [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) | a static method | `SelectedValue` changed, which means the player moved the control in the menu |
 | [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) | a static method | `Enabled` was turned on or off |
@@ -147,6 +148,40 @@ the bound setting wins.
 Tagging an auto-property's backing field with `[field: Setting("…")]` also works and binds through
 the field path. Tagging the property itself is simpler and gives a clearer error when something is
 wrong.
+
+## Attach a PlayerAction to a Binding
+
+A [Binding](/docs/csharp/global-settings#key-binding) row rebinds a `PlayerAction` that your mod
+owns. Tag a static field or property that holds that action with `[SettingPlayerAction("…")]`, and
+`BindSettingsClass` assigns it to the Binding's `PlayerAction`:
+
+```csharp
+public static class MyGlobalListeners
+{
+    // PlayerInput is your own InControl.PlayerActionSet, and Boost is a PlayerAction on it.
+    public static readonly PlayerInput Input = new PlayerInput();
+
+    [SettingPlayerAction("Controls.Vehicle.Boost")]
+    private static PlayerAction Boost => Input.Boost;
+}
+```
+
+This works the other way round from `[Setting]`. Gears **reads** the member and never writes to
+it, so the member must be:
+
+- **Static.** Gears reports and skips an instance field or property.
+- **Declared as `PlayerAction`**, or a class derived from it. Gears reports and skips any other type.
+- **Readable.** A field may be `readonly`. A property needs a getter, which may be private.
+
+The path must name a Binding setting. Gears reports and skips a path that names any other kind of
+setting.
+
+<Callout type="warn">
+  **Create your `PlayerActionSet` before you bind.** Gears reads the member once, while
+  `BindSettingsClass` runs, and never again. `SyncSettingsToClass` does not read it. A member that is
+  null at that point is reported and skipped, and the row reads **- Missing PlayerAction -** until you
+  assign `PlayerAction` yourself.
+</Callout>
 
 ## Bind a method to an event
 
@@ -439,3 +474,17 @@ The exception is the last line in the listener table, which reports a whole clas
 | `[Setting("…")] on '…' is not static. Only static properties can be bound. Skipping binding of property.` | an instance property |
 | `[Setting("…")] on '…' takes index parameters and cannot be assigned. Skipping binding of property.` | an indexed property, which C# cannot declare as static |
 | `[Setting("…")] on '…' is declared as 'ISliderGlobalSetting<Single>' but the setting is a 'SliderSettingInt'. Skipping binding of property.` | the property's declared type does not fit the setting, usually the wrong `T` |
+
+### PlayerAction assignments
+
+| Message | Cause |
+|---|---|
+| `[SettingPlayerActionAttribute("…")] on 'Ns.Type.Member' must use the format "tabName.CategoryName.SettingName". Skipping assignment of PlayerAction.` | wrong number of path segments |
+| `[SettingPlayerActionAttribute] on 'Ns.Type.Member' references unknown setting "…". Skipping assignment of PlayerAction.` | no setting at that path |
+| `[SettingPlayerAction("…")] on '…' targets a 'SliderSettingInt', not a Binding setting. Skipping assignment of PlayerAction.` | the path names a setting that is not a Binding |
+| `[SettingPlayerAction("…")] on '…' is not static. Only static fields and properties can be read. Skipping assignment of PlayerAction.` | an instance field or property |
+| `[SettingPlayerAction("…")] on '…' is declared as 'Object' but must be a 'PlayerAction'. Skipping assignment of PlayerAction.` | the member's declared type is not `PlayerAction` |
+| `[SettingPlayerAction("…")] on '…' has no getter and cannot be read. Skipping assignment of PlayerAction.` | a set-only property |
+| `[SettingPlayerAction("…")] on '…' takes index parameters and cannot be read. Skipping assignment of PlayerAction.` | an indexed property, which C# cannot declare as static |
+| `[SettingPlayerAction("…")] on '…' threw when it was read: … Skipping assignment of PlayerAction.` | the property's getter threw |
+| `[SettingPlayerAction("…")] on '…' was null when BindSettingsClass ran. Create the PlayerActionSet before binding. Skipping assignment of PlayerAction.` | the member held no action yet when you bound the class |

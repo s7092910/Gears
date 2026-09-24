@@ -273,7 +273,7 @@ its value type as a generic parameter, and the single `CurrentValue` became thre
 | `IGlobalModSettingsCategory : IModSetting` | `IGlobalModSettingsCategory : IGlobalModSetting` |
 | — | `IModSetting.IsChanged`, `IsDefault`, `ResetToDefault()`, `DiscardCurrentChange()`, `ApplyCurrentChange()`, `HasPreviews()`, `GetCurrentPreview()`, `AddPreview(string)` |
 | — | `IGlobalModSetting.RestartScope : SettingRestartScope` |
-| — | `BindSettingsClass(Type)` and `SyncSettingsToClass(Type)` on both `IModGlobalSettings` and `IModWorldSettings`, the `[Setting]` binding attribute, and the `[SettingOnValueChanged]`, `[SettingOnSelectedChanged]`, `[SettingOnApplied]` and `[SettingOnEnabled]` attributes |
+| — | `BindSettingsClass(Type)` and `SyncSettingsToClass(Type)` on both `IModGlobalSettings` and `IModWorldSettings`, the `[Setting]` and `[SettingPlayerAction]` binding attributes, and the `[SettingOnValueChanged]`, `[SettingOnSelectedChanged]`, `[SettingOnApplied]` and `[SettingOnEnabled]` attributes |
 | — | `[SettingsSerializationProvider]`, `[SettingParser]` and `[SettingFormatter]` |
 | Unchanged | `IGearsModApi`, `IGearsMod`, `GearsSettingsManager.GetMods()` and `GetGearsMod(name)`, all `Get*`, `Create*`, `GetOrCreate*`, `Add*` and `Remove*` on tabs and categories, `SaveSettings()`, `IControlBindingSetting.PlayerAction` and `ClearBinding()`, and `IModSetting.Enabled` |
 

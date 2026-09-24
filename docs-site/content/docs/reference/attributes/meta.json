@@ -4,6 +4,7 @@
   "pages": [
     "setting-path-attribute",
     "setting-attribute",
+    "setting-player-action-attribute",
     "setting-listener-attribute",
     "setting-on-value-changed-attribute",
     "setting-on-selected-changed-attribute",

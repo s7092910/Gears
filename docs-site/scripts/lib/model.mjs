@@ -61,7 +61,7 @@ export const SECTIONS = [
     id: 'attributes', ns: 'GearsAPI.Attributes', title: 'GearsAPI.Attributes', short: 'Attributes',
     blurb: 'Binding, listener and serialization attributes.',
     order: [
-      'SettingPathAttribute', 'SettingAttribute', 'SettingListenerAttribute',
+      'SettingPathAttribute', 'SettingAttribute', 'SettingPlayerActionAttribute', 'SettingListenerAttribute',
       'SettingOnValueChangedAttribute', 'SettingOnSelectedChangedAttribute',
       'SettingOnAppliedAttribute', 'SettingOnEnabledAttribute',
       'SettingsSerializationProvider', 'SettingParserAttribute', 'SettingFormatterAttribute',
