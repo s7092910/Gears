@@ -111,9 +111,11 @@ function ModTile({ mod }: { mod: ShowcaseMod }) {
           </ul>
         )}
       </div>
-      <div className="min-h-24 flex-1 border-t border-dashed border-fd-muted-foreground/60 bg-fd-background px-4 py-3">
-        <p className="mb-1 text-sm font-medium">{mod.name}</p>
-        <p className="line-clamp-3 text-xs text-fd-muted-foreground" title={mod.description}>
+      <div className="min-h-24 flex-1 border-t border-fd-border bg-fd-card px-4 py-3 transition-colors group-hover:bg-fd-accent">
+        <p className="mb-1 text-base font-semibold text-fd-card-foreground transition-colors group-hover:text-fd-primary">
+          {mod.name}
+        </p>
+        <p className="line-clamp-3 text-sm text-fd-card-foreground/80" title={mod.description}>
           {mod.description}
         </p>
       </div>
