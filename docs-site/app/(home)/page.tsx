@@ -3,7 +3,7 @@ import Image, { type StaticImageData } from 'next/image';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { DynamicCodeBlock } from 'fumadocs-ui/components/dynamic-codeblock';
 import { MediaSlot } from '@/components/media-slot';
-import { gitConfig } from '@/lib/shared';
+import { discordUrl, gitConfig } from '@/lib/shared';
 import type { ReactNode } from 'react';
 
 import settingTabs from '@/public/images/Setting-Tabs.png';
@@ -94,6 +94,7 @@ export default function HomePage() {
         <WhyGears />
         <SettingTypes />
         <GlobalAndWorld />
+        <Questions />
         <GetStarted />
       </div>
     </main>
@@ -375,6 +376,47 @@ function GlobalAndWorld() {
   );
 }
 
+function Questions() {
+  return (
+    <>
+      <SectionHeading
+        title="Questions"
+        lead="Most answers are already written down. When yours is not, ask the people who build and play with 7 Days to Die mods."
+      />
+
+      <FeatureCard title="Check the docs first">
+        <p>
+          Players can start with the Player FAQ, which covers installing Gears, who controls world
+          settings in multiplayer, and what to do when a mod&apos;s settings page looks wrong. Mod
+          authors can start with Troubleshooting, which matches a missing or misbehaving setting to the
+          line Gears writes in the game log.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-4">
+          <Link href="/docs/players/faq" className={secondaryButton}>
+            Player FAQ
+          </Link>
+          <Link href="/docs/troubleshooting" className={secondaryButton}>
+            Troubleshooting
+          </Link>
+        </div>
+      </FeatureCard>
+      <FeatureCard title="Ask on Discord">
+        <p>
+          Guppy&apos;s Unofficial 7DtD Modding Server is a community Discord for 7 Days to Die modding.
+          Ask about Gears in the <Brand>#laydors-toolshed</Brand> channel, whether you play with mods
+          or write them. Include the lines starting
+          with <code>[Gears]</code> from your game log so others can see what happened.
+        </p>
+        <div className="mt-6">
+          <a href={discordUrl} rel="noreferrer noopener" target="_blank" className={primaryButton}>
+            Join the Discord
+          </a>
+        </div>
+      </FeatureCard>
+    </>
+  );
+}
+
 function Showcase() {
   return (
     <>
@@ -432,6 +474,9 @@ function GetStarted() {
           </a>
           <a href={githubUrl} rel="noreferrer noopener" target="_blank" className={secondaryButton}>
             GitHub
+          </a>
+          <a href={discordUrl} rel="noreferrer noopener" target="_blank" className={secondaryButton}>
+            Discord
           </a>
         </div>
       </div>

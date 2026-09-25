@@ -14,6 +14,9 @@ export const gitConfig = {
   branch: 'main',
 };
 
+// Guppy's Unofficial 7DtD Modding Server, where players and modders ask for help.
+export const discordUrl = 'https://discord.gg/eS73U4RxVj';
+
 // The docs site is a subdirectory of the repo, so page paths need this prefix
 // to resolve against GitHub.
 export const repoContentPath = 'docs-site/content/docs';
