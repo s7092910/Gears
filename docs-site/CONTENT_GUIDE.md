@@ -120,11 +120,14 @@ Store every image in `docs-site/public/images/` and name it in kebab case, such 
 ## Add a mod to the showcase
 
 The Mod Showcase page at `/showcase` lists mods that use Gears. Each card shows a mod's name, a short
-description, and an image, and links to the mod's page. To add a mod:
+description, an image, and whether the mod has global settings and world settings, and links to the
+mod's page. To add a mod:
 
-1. Save its image in `docs-site/public/images/` as `Mod-Showcase-<Mod-Name>.png`. Do not use a
-   subfolder. The card crops the image to 16:9, so capture it at that ratio.
-2. Add an entry to `docs-site/content/mod-showcase.ts`. Cards appear in the order of the list.
+1. Save its image in `docs-site/public/images/showcase/` as `<Mod-Name>.png`. Capture it
+   at 16:9. The card shrinks any other shape to fit, leaving empty space at the sides or at the
+   top and bottom.
+2. Add an entry to `docs-site/content/mod-showcase.ts`. Set `image` to the file name only, such as
+   `My-Mod.png`. Cards appear in the order of the list.
 
 Write the description in one or two plain sentences that say what the mod does. The image rules
 above apply. A missing image does not fail the build or `npm run check`. The card shows a dashed

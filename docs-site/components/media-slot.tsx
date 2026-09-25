@@ -4,7 +4,7 @@ import Image, { type StaticImageData } from 'next/image';
 import { ImageIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-const publicDir = path.join(process.cwd(), 'public');
+const imagesDir = path.join(process.cwd(), 'public', 'images');
 
 /**
  * A screenshot or GIF that may not have been captured yet.
@@ -74,8 +74,10 @@ async function loadImage(src: string): Promise<StaticImageData | null> {
   const name = src.replace(/^\/images\//, '');
 
   // Guard the context import: a miss inside it is a runtime throw, and a name that escapes the
-  // directory should never reach the bundler in the first place.
-  if (name.includes('/') || name.includes('\\') || !fs.existsSync(path.join(publicDir, src))) {
+  // directory should never reach the bundler in the first place. Subfolders are fine; `..`
+  // segments and backslashes are not.
+  const escapes = name.includes('\\') || name.split('/').some((part) => part === '..' || part === '');
+  if (escapes || !fs.existsSync(path.join(imagesDir, name))) {
     return null;
   }
 

@@ -16,5 +16,6 @@ world settings, or settings read from C#.>
 
 ### Checklist
 
-- [ ] The image is in `docs-site/public/images/`, named `Mod-Showcase-<Mod-Name>.png`, at a 16:9 ratio.
+- [ ] The image is in `docs-site/public/images/showcase/`, named `<Mod-Name>.png`, at a 16:9 ratio.
 - [ ] The entry is added to the end of `showcaseMods` in `docs-site/content/mod-showcase.ts`.
+- [ ] `globalSettings` and `worldSettings` in the entry match the settings the mod has.

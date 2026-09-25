@@ -8,7 +8,10 @@ request on the [Gears GitHub repository](https://github.com/s7092910/Gears). A p
 proposed change that the Gears maintainer reviews before merging it into the site.
 
 The page lists mods that use Gears for their settings. Each card shows the mod's name, a short
-description, and an image, and links to the mod's page.
+description, and an image, and links to the mod's page. A card also shows whether the mod has
+global settings, which players can change from the main menu or in game, and world settings, which
+are set for each world and can't change while the world runs. For more on both, see
+[Global and World Settings](/docs/global-and-world-settings).
 
 ## Before you start
 
@@ -16,8 +19,8 @@ You need:
 
 - A [GitHub](https://github.com/) account.
 - [Git](https://git-scm.com/) installed.
-- An image of your mod, such as its settings page in the Mods menu, at a 16:9 ratio. The card crops
-  any other shape to 16:9.
+- An image of your mod, such as its settings page in the Mods menu, at a 16:9 ratio. The card shows
+  any other shape whole but smaller, with empty space at the sides or at the top and bottom.
 - The URL the card should open, such as your mod's Nexus Mods or GitHub page.
 
 To preview the page on your own computer before you submit it, you also need
@@ -41,9 +44,8 @@ git checkout -b mod-showcase/my-mod
 ```
 </Step>
 <Step>
-**Add the image.** Save it in `docs-site/public/images/` as `Mod-Showcase-<Mod-Name>.png`, such as
-`Mod-Showcase-My-Mod.png`. Put it directly in that folder, not in a subfolder. Keep the file size
-close to the screenshots already there.
+**Add the image.** Save it in `docs-site/public/images/showcase/` as `<Mod-Name>.png`,
+such as `My-Mod.png`. Keep the file size close to the images already there.
 </Step>
 <Step>
 **Add the entry.** Open `docs-site/content/mod-showcase.ts` and add an entry to the end of the
@@ -55,9 +57,11 @@ export const showcaseMods: ShowcaseMod[] = [
   {
     name: 'My Mod',
     description: 'Adds a configurable loot multiplier, set from the Mods menu.',
-    image: '/images/Mod-Showcase-My-Mod.png',
+    image: 'My-Mod.png',
     imageAlt: "My Mod's settings page in the Mods menu",
     url: 'https://www.nexusmods.com/7daystodie/mods/0000',
+    globalSettings: true,
+    worldSettings: false,
   },
 ];
 ```
@@ -66,11 +70,14 @@ export const showcaseMods: ShowcaseMod[] = [
 | --- | --- |
 | `name` | Your mod's name, shown as the card title. |
 | `description` | One or two plain sentences that say what the mod does. |
-| `image` | The image path from the previous step, starting with `/images/`. |
+| `image` | The image's file name from the previous step, such as `My-Mod.png`. Leave out the folder. |
 | `imageAlt` | What someone should see in the image, for readers who can't see it. |
 | `url` | The page the card opens. |
+| `globalSettings` | `true` if your mod has global settings, otherwise `false`. |
+| `worldSettings` | `true` if your mod has world settings, otherwise `false`. |
 
-Cards appear in list order.
+Cards appear in list order. The card shows a **Global settings** or **World settings** label for
+each field set to `true`, and no label for a field set to `false`.
 </Step>
 <Step>
 **Preview the page (optional).** From the `docs-site` folder, run:
@@ -81,14 +88,14 @@ npm run dev
 ```
 
 Open `http://localhost:3000/Gears/showcase/` and find your card. If the card shows a dashed box instead
-of your image, check that the file name and the `image` path match exactly, including capital
-letters.
+of your image, check that the image is in `docs-site/public/images/showcase/` and that its file name
+matches `image` exactly, including capital letters.
 </Step>
 <Step>
 **Commit and push.**
 
 ```bash
-git add docs-site/public/images/Mod-Showcase-My-Mod.png docs-site/content/mod-showcase.ts
+git add docs-site/public/images/showcase/My-Mod.png docs-site/content/mod-showcase.ts
 git commit -m "Add My Mod to the Mod Showcase"
 git push -u origin mod-showcase/my-mod
 ```
