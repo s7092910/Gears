@@ -21,6 +21,7 @@ export async function MediaSlot({
   title,
   alt,
   ratio = 'aspect-16/9',
+  className = 'h-auto w-full rounded-xl border border-fd-border',
   children,
 }: {
   /** Path under `public`, written from the site root, such as `/images/Home-Hero.gif`. */
@@ -29,6 +30,8 @@ export async function MediaSlot({
   alt: string;
   /** Tailwind aspect-ratio class shaping the placeholder. Ignored once the file exists. */
   ratio?: string;
+  /** Classes for the rendered image, once the file exists. Replaces the default framed style. */
+  className?: string;
   /** What the shot needs to show. */
   children: ReactNode;
 }) {
@@ -39,7 +42,7 @@ export async function MediaSlot({
       <Image
         src={image}
         alt={alt}
-        className="h-auto w-full rounded-xl border border-fd-border"
+        className={className}
       />
     );
   }

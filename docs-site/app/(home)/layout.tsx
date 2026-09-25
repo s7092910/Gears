@@ -10,7 +10,8 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       { text: 'Getting Started', url: '/docs/getting-started' },
       { text: 'Documentation', url: '/docs' },
       { text: 'API Reference', url: '/docs/reference' },
-      { text: 'For Players', url: '/docs/players', active: 'nested-url' }
+      { text: 'For Players', url: '/docs/players', active: 'nested-url' },
+      { text: 'Mod Showcase', url: '/showcase' }
     ]}
     >
       {children}

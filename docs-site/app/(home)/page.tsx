@@ -12,6 +12,7 @@ import sliderSetting from '@/public/images/Slider-Setting.png';
 import switchSetting from '@/public/images/Switch-Setting.png';
 import colorSetting from '@/public/images/Color-Setting.png';
 import bindingSetting from '@/public/images/Control-Binding-Setting.png';
+import supportsGearsBadge from '@/public/images/Supports-Gears-badge.png';
 
 const githubUrl = `https://github.com/${gitConfig.user}/${gitConfig.repo}`;
 
@@ -44,8 +45,8 @@ const patchXml = `<configs>
 const modCs = `// MyHud is your own class. Gears knows nothing about it.
 public class MyModGears : IGearsModApi
 {
-    public void InitMod(IGearsMod modInstance) 
-    { 
+    public void InitMod(IGearsMod modInstance)
+    {
         modInstance.GlobalSettings.BindSettingsClass(typeof(Global));
     }
 
@@ -72,71 +73,69 @@ public class MyModGears : IGearsModApi
     }
 }`;
 
+// Shared button styles. Primary is the one action a section wants most; secondary is the rest.
+const primaryButton =
+  'inline-flex justify-center rounded-full bg-fd-primary px-5 py-3 font-medium tracking-tight text-fd-primary-foreground transition-opacity hover:opacity-90 max-sm:text-sm';
+const secondaryButton =
+  'inline-flex justify-center rounded-full border border-fd-border bg-fd-secondary px-5 py-3 font-medium tracking-tight text-fd-secondary-foreground transition-colors hover:bg-fd-accent max-sm:text-sm';
+
+// A field of brand-colored dots, used as a texture behind panels.
+const dotPattern =
+  'bg-[radial-gradient(var(--color-fd-primary)_1.5px,transparent_1.5px)] bg-size-[10px_10px]';
+
 export default function HomePage() {
   return (
-    <main className="flex flex-1 flex-col">
+    <main className="flex flex-1 flex-col pb-12">
       <Hero />
-      <WhyGears />
-      <SettingTypes />
-      <XmlOrCsharp />
-      <GlobalAndWorld />
-      <GetStarted />
+      <div className="mx-auto mt-10 grid w-full max-w-350 grid-cols-1 gap-10 px-6 md:px-12 lg:mt-14 lg:grid-cols-2">
+        <Intro />
+        <XmlOrCsharp />
+        <Showcase />
+        <WhyGears />
+        <SettingTypes />
+        <GlobalAndWorld />
+        <GetStarted />
+      </div>
     </main>
   );
 }
 
 function Hero() {
   return (
-    <section className="px-4 py-20 md:py-28">
-      <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-balance md:text-6xl">
-          Give your mod a settings page
-        </h1>
-        <p className="mt-6 max-w-2xl text-lg text-fd-muted-foreground text-balance">
-          Gears draws your mod&apos;s settings in the game&apos;s own Mods menu, saves what the player
-          picks, sends per-world values to every client, and hands those values back to your XML
-          patches and your C#.
-        </p>
+    <div className="px-4 pt-4">
+      <div className="relative mx-auto flex h-[70vh] max-h-225 min-h-150 w-full max-w-350 flex-col overflow-hidden rounded-2xl border border-fd-border bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklab,var(--color-fd-primary)_22%,transparent),transparent_65%)]">
+        {/* Decoration only: a dotted disc behind the headline, fading out toward its lower edge. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute top-16 right-[12%] size-95 rounded-full bg-[radial-gradient(var(--color-fd-primary)_2.5px,transparent_2.5px)] bg-size-[8px_8px] [mask-image:radial-gradient(circle_at_35%_30%,black_20%,transparent_75%)] max-md:hidden"
+        />
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/docs/getting-started"
-            className="rounded-lg bg-fd-primary px-5 py-2.5 text-sm font-medium text-fd-primary-foreground transition-opacity hover:opacity-90"
-          >
-            Get Started
-          </Link>
-          <Link
-            href="/docs"
-            className="rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-fd-accent"
-          >
-            Documentation
-          </Link>
-          <a
-            href={nexusUrl}
-            rel="noreferrer noopener"
-            target="_blank"
-            className="rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-fd-accent"
-          >
-            Nexus Mods
-          </a>
-          <a
-            href={githubUrl}
-            rel="noreferrer noopener"
-            target="_blank"
-            className="rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-fd-accent"
-          >
-            GitHub
-          </a>
+        <div className="relative z-2 flex flex-col px-4 md:p-12 max-md:items-center max-md:text-center">
+          <p className="mt-12 w-fit rounded-full border border-fd-primary/50 p-2 text-xs font-medium text-fd-primary">
+            Mod settings for 7 Days to Die
+          </p>
+          <h1 className="my-8 text-4xl leading-tight font-medium xl:mb-12 xl:text-5xl">
+            Give your mod a
+            <br />
+            <span className="text-fd-primary">settings page</span>.
+          </h1>
+          <div className="flex w-fit flex-row flex-wrap items-center justify-center gap-4">
+            <Link href="/docs/getting-started" className={primaryButton}>
+              Get Started
+            </Link>
+            <Link href="/docs" className={secondaryButton}>
+              Documentation
+            </Link>
+          </div>
+          <p className="mt-6 text-sm text-fd-muted-foreground">Gears 8.0.0 · GearsAPI.dll 3.0.0</p>
         </div>
 
-        <p className="mt-6 text-sm text-fd-muted-foreground">
-          Gears 8.0.0 · GearsAPI.dll 3.0.0
-        </p>
-
-        <div className="mt-14 w-full">
+        {/* Overflows the box's lower-right corner on wide screens; the box clips it. */}
+        <div className="relative z-1 mt-12 px-4 md:absolute md:top-100 md:left-[20%] md:mt-0 md:w-300 md:px-0">
           <MediaSlot
             title="/images/Home-Hero.png"
             alt="A mod's settings page in the Mods menu, with a player stepping a Selector and dragging a Slider"
+            className="h-auto w-full rounded-xl border-2 border-fd-border shadow-2xl"
           >
             The Mods window open on a mod&apos;s settings page: the tab row, a category heading, and
             four or five rows of different types, with the description pane filled on the right. Step
@@ -146,58 +145,130 @@ function Hero() {
           </MediaSlot>
         </div>
       </div>
-    </section>
+    </div>
+  );
+}
+
+function Intro() {
+  return (
+    <p className="col-span-full text-2xl leading-snug font-light tracking-tight md:text-3xl xl:text-4xl">
+      Gears is a <Brand>mod settings framework</Brand> for <Brand>7 Days to Die</Brand>. It draws
+      your mod&apos;s settings in the game&apos;s own <Brand>Mods menu</Brand>, saves what the player
+      picks, sends per-world values to every client, and hands those values back to your{' '}
+      <Brand>XML patches</Brand> and your <Brand>C#</Brand>.
+    </p>
+  );
+}
+
+function XmlOrCsharp() {
+  return (
+    <div className="relative z-2 col-span-full overflow-hidden rounded-2xl bg-fd-primary/15 p-4 md:p-8">
+      <div aria-hidden className={`absolute inset-0 -z-1 opacity-40 ${dotPattern}`} />
+      <div className="mx-auto w-full max-w-200 rounded-2xl border border-fd-border bg-fd-card p-4 text-fd-card-foreground shadow-lg md:p-6">
+        <div className="mb-4 flex flex-row flex-wrap items-center gap-3">
+          <h2 className="w-fit rounded-xl border-2 border-fd-primary/50 px-2 font-mono font-bold text-fd-primary uppercase">
+            XML or C#
+          </h2>
+          <p className="text-sm text-fd-muted-foreground">
+            Declaring settings takes no code at all. Reach for C# when you want typed values and
+            callbacks.
+          </p>
+        </div>
+
+        <Tabs items={['XML only', 'XML plus C#']}>
+          <Tab value="XML only">
+            <p className="mb-4 text-sm text-fd-muted-foreground">
+              Put a <code>ModSettings.xml</code> next to your <code>ModInfo.xml</code> and Gears builds
+              the page from it. You write no C# and reference no assembly.
+            </p>
+            <DynamicCodeBlock lang="xml" code={modSettingsXml} />
+            <p className="mt-6 mb-4 text-sm text-fd-muted-foreground">
+              Read the value back in any of your <code>Config/*.xml</code> patches with{' '}
+              <code>modsetting()</code>.
+            </p>
+            <DynamicCodeBlock lang="xml" code={patchXml} />
+          </Tab>
+          <Tab value="XML plus C#">
+            <p className="mb-4 text-sm text-fd-muted-foreground">
+              Reference <code>GearsAPI.dll</code> and implement one interface. Gears hands your code the
+              typed settings at startup and again whenever the player applies a change.
+            </p>
+            <DynamicCodeBlock lang="csharp" code={modCs} />
+          </Tab>
+        </Tabs>
+      </div>
+    </div>
   );
 }
 
 function WhyGears() {
   return (
-    <Section muted>
+    <>
       <SectionHeading
         title="Why not a config file"
         lead="Every mod needs somewhere to keep its options. Here is what Gears does that a file in your mod folder does not."
       />
 
-      <div className="mt-12 grid gap-4 md:grid-cols-3">
-        <article className="rounded-xl border border-fd-border bg-fd-card p-6">
-          <h3 className="font-semibold">Players never edit a file</h3>
-          <p className="mt-3 text-sm text-fd-muted-foreground">
-            A config file means alt-tabbing, finding the mod folder, editing XML by hand, and no
-            feedback at all when a typo breaks it. Gears draws the settings in the Mods menu, saves
-            what the player picks, and restores it the next time the game starts.
-          </p>
-          <div className="mt-5">
-            <MediaSlot
-              title="/images/Mods-Menu.png"
-              alt="The Mods window listing installed mods, with one selected"
-              ratio="aspect-4/3"
-            >
-              The Mods window with several mods listed down the left and one selected, so a reader
-              sees where a player finds any of this. Crop to the window.
-            </MediaSlot>
-          </div>
-        </article>
+      <FeatureCard title="Players never edit a file">
+        <p>
+          A config file means alt-tabbing, finding the mod folder, editing XML by hand, and no
+          feedback at all when a typo breaks it. Gears draws the settings in the Mods menu, saves what
+          the player picks, and restores it the next time the game starts.
+        </p>
+        <CardImage>
+          <MediaSlot
+            title="/images/Mods-Menu.png"
+            alt="The Mods window listing installed mods, with one selected"
+            ratio="aspect-16/10"
+            className={cardImageClass}
+          >
+            The Mods window with several mods listed down the left and one selected, so a reader sees
+            where a player finds any of this. Crop to the window.
+          </MediaSlot>
+        </CardImage>
+      </FeatureCard>
 
-        <article className="rounded-xl border border-fd-border bg-fd-card p-6">
-          <h3 className="font-semibold">You would be writing UI, not gameplay</h3>
-          <p className="mt-3 text-sm text-fd-muted-foreground">
-            Building this yourself means a control for each setting type, a saved-values file and the
-            code that restores it, localization lookups, per-world serialization, the server-to-client
-            handoff, and a rebinding row that behaves like the game&apos;s own Controls screen. That is
-            what Gears already is.
-          </p>
-        </article>
+      <FeatureCard title="One host picks, every client gets it">
+        <p>
+          A config file belongs to one install. The host chooses a world&apos;s settings on the New
+          Game screen, Gears writes them into the save, and every client that joins receives the same
+          values.
+        </p>
+        <CardImage>
+          <MediaSlot
+            title="/images/World-Settings.png"
+            alt="A mod's world settings category on the New Game screen"
+            ratio="aspect-16/10"
+            className={wideCardImageClass}
+          >
+            The New Game screen&apos;s world settings page showing one mod&apos;s world category and
+            two or three rows, making it obvious these are picked at world creation rather than in the
+            Mods menu.
+          </MediaSlot>
+        </CardImage>
+      </FeatureCard>
 
-        <article className="rounded-xl border border-fd-border bg-fd-card p-6">
-          <h3 className="font-semibold">One host picks, every client gets it</h3>
-          <p className="mt-3 text-sm text-fd-muted-foreground">
-            A config file belongs to one install. The host chooses a world&apos;s settings on the New
-            Game screen, Gears writes them into the save, and every client that joins receives the
-            same values.
-          </p>
-        </article>
-      </div>
-    </Section>
+      <FeatureCard title="You would be writing UI, not gameplay">
+        <p>
+          Building this yourself means a control for each setting type, a saved-values file and the
+          code that restores it, localization lookups, per-world serialization, the server-to-client
+          handoff, and a rebinding row that behaves like the game&apos;s own Controls screen. That is
+          what Gears already is.
+        </p>
+      </FeatureCard>
+      <FeatureCard title="Gears stays optional">
+        <p>
+          Ship <code>GearsAPI.dll</code> in your own mod folder and your mod still loads for a player
+          who does not have Gears installed. They see no settings page, and the patches that read a
+          setting do not apply.
+        </p>
+        <div className="mt-6">
+          <Link href="/docs/csharp/getting-started" className={secondaryButton}>
+            Get Started with C#
+          </Link>
+        </div>
+      </FeatureCard>
+    </>
   );
 }
 
@@ -236,29 +307,36 @@ const settingTypes: { name: string; image: StaticImageData; description: string 
 
 function SettingTypes() {
   return (
-    <Section>
-      <SectionHeading
-        title="Five setting types"
-        lead="Tabs and categories group them, and each one is a row the player reads and changes without leaving the game."
-      />
+    <div className="col-span-full mt-4">
+      <h2 className="mb-8 text-center text-4xl font-medium tracking-tight text-fd-primary">
+        Five setting types
+      </h2>
+      <p className="mx-auto mb-8 w-full max-w-200 text-center">
+        Tabs and categories group them, and each one is a row the player reads and changes without
+        leaving the game.
+      </p>
 
-      <div className="mt-10 overflow-hidden rounded-xl border border-fd-border">
+      <div className="mx-auto mb-8 max-w-200 overflow-hidden rounded-xl border border-fd-border shadow-lg">
         <Image src={settingTabs} alt="A row of setting tabs across the top of a mod's settings page" />
       </div>
 
-      <div className="mt-8 flex flex-col gap-8">
+      <Tabs items={settingTypes.map((type) => type.name)}>
         {settingTypes.map((type) => (
-          <div key={type.name}>
-            <h3 className="font-semibold">{type.name}</h3>
-            <p className="mt-1 max-w-3xl text-sm text-fd-muted-foreground">{type.description}</p>
-            <div className="mt-3 overflow-hidden rounded-xl border border-fd-border">
-              <Image src={type.image} alt={`A ${type.name} setting as it appears in the game`} />
+          <Tab key={type.name} value={type.name}>
+            <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
+              <div className="overflow-hidden rounded-xl border border-fd-border shadow-sm">
+                <Image src={type.image} alt={`A ${type.name} setting as it appears in the game`} />
+              </div>
+              <div className="max-lg:row-start-1">
+                <h3 className="my-4 text-xl font-medium tracking-tight lg:text-2xl">{type.name}</h3>
+                <p>{type.description}</p>
+              </div>
             </div>
-          </div>
+          </Tab>
         ))}
-      </div>
+      </Tabs>
 
-      <p className="mt-10 text-sm text-fd-muted-foreground">
+      <p className="mx-auto mt-8 max-w-200 text-center text-sm text-fd-muted-foreground">
         Every type also takes a caption, a description, preview images shown as the value changes,
         localization keys for its labels, and a warning when a change needs a world reload or a game
         restart. See{' '}
@@ -267,163 +345,153 @@ function SettingTypes() {
         </Link>
         .
       </p>
-    </Section>
-  );
-}
-
-function XmlOrCsharp() {
-  return (
-    <Section muted>
-      <SectionHeading
-        title="Write XML, or XML plus C#"
-        lead="Declaring settings takes no code at all. Reach for C# when you want typed values and callbacks."
-      />
-
-      <div className="mt-10">
-        <Tabs items={['XML only', 'XML plus C#']}>
-          <Tab value="XML only">
-            <p className="mb-4 text-sm text-fd-muted-foreground">
-              Put a <code>ModSettings.xml</code> next to your <code>ModInfo.xml</code> and Gears builds
-              the page from it. You write no C# and reference no assembly.
-            </p>
-            <DynamicCodeBlock lang="xml" code={modSettingsXml} />
-            <p className="mt-6 mb-4 text-sm text-fd-muted-foreground">
-              Read the value back in any of your <code>Config/*.xml</code> patches with{' '}
-              <code>modsetting()</code>.
-            </p>
-            <DynamicCodeBlock lang="xml" code={patchXml} />
-          </Tab>
-          <Tab value="XML plus C#">
-            <p className="mb-4 text-sm text-fd-muted-foreground">
-              Reference <code>GearsAPI.dll</code> and implement one interface. Gears hands your code the
-              typed settings at startup and again whenever the player applies a change.
-            </p>
-            <DynamicCodeBlock lang="csharp" code={modCs} />
-          </Tab>
-        </Tabs>
-      </div>
-
-      <div className="mt-8 rounded-xl border border-fd-border bg-fd-card p-6">
-        <h3 className="font-semibold">Gears stays optional</h3>
-        <p className="mt-3 max-w-3xl text-sm text-fd-muted-foreground">
-          Ship <code>GearsAPI.dll</code> in your own mod folder and your mod still loads for a player
-          who does not have Gears installed. They see no settings page, and the patches that read a
-          setting do not apply. See{' '}
-          <Link
-            href="/docs/csharp/getting-started"
-            className="font-medium underline underline-offset-4"
-          >
-            Get Started with C#
-          </Link>
-          .
-        </p>
-      </div>
-    </Section>
+    </div>
   );
 }
 
 function GlobalAndWorld() {
   return (
-    <Section>
+    <>
       <SectionHeading
         title="Two kinds of setting"
         lead="Where a value is stored, and who gets to change it, is the one decision to make per setting."
       />
 
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
-        <article className="rounded-xl border border-fd-border bg-fd-card p-6">
-          <h3 className="font-semibold">Global settings</h3>
-          <p className="mt-3 text-sm text-fd-muted-foreground">
-            A <strong>global setting</strong> belongs to the player. They change it from the main menu
-            or the in-game menu, the value applies in every world, and Gears saves it to one file
-            shared by every mod.
-          </p>
-        </article>
+      <FeatureCard title="Global settings">
+        <p>
+          A <strong>global setting</strong> belongs to the player. They change it from the main menu or
+          the in-game menu, the value applies in every world, and Gears saves it to one file shared by
+          every mod.
+        </p>
+      </FeatureCard>
+      <FeatureCard title="World settings">
+        <p>
+          A <strong>world setting</strong> belongs to one world. The host picks it when creating or
+          continuing that world, every client that joins receives it, and it cannot be changed while
+          the world is running.
+        </p>
+      </FeatureCard>
+    </>
+  );
+}
 
-        <article className="rounded-xl border border-fd-border bg-fd-card p-6">
-          <h3 className="font-semibold">World settings</h3>
-          <p className="mt-3 text-sm text-fd-muted-foreground">
-            A <strong>world setting</strong> belongs to one world. The host picks it when creating or
-            continuing that world, every client that joins receives it, and it cannot be changed while
-            the world is running.
-          </p>
-        </article>
-      </div>
-
-      <div className="mt-8">
-        <MediaSlot
-          title="/images/World-Settings.png"
-          alt="A mod's world settings category on the New Game screen"
-          ratio="aspect-16/9"
-        >
-          The New Game screen&apos;s world settings page showing one mod&apos;s world category and two
-          or three rows, making it obvious these are picked at world creation rather than in the Mods
-          menu.
-        </MediaSlot>
-      </div>
-    </Section>
+function Showcase() {
+  return (
+    <>
+      <FeatureCard title="Mods that use Gears">
+        <p>
+          The Mod Showcase lists mods that give players a settings page with Gears. Each one links to
+          the mod&apos;s own page. To list yours, open a pull request with its name, description,
+          image, and link.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-4">
+          <Link href="/showcase" className={primaryButton}>
+            Mod Showcase
+          </Link>
+          <Link href="/docs/mod-showcase" className={secondaryButton}>
+            Add Your Mod
+          </Link>
+        </div>
+      </FeatureCard>
+      {/* The badge's silver lettering needs a dark backdrop, so this panel is dark in both themes. */}
+      <BrandPanel tone="dark">
+        <Image
+          src={supportsGearsBadge}
+          alt="The Supports Gears badge"
+          className="relative h-auto w-full max-w-100"
+        />
+      </BrandPanel>
+    </>
   );
 }
 
 function GetStarted() {
   return (
-    <Section muted>
-      <div className="flex flex-col items-center text-center">
-        <h2 className="text-3xl font-bold tracking-tight text-balance">
-          Start with a ModSettings.xml
+    <div className="relative col-span-full overflow-hidden rounded-2xl border border-fd-border bg-fd-card p-8 text-center shadow-lg md:p-12">
+      <div
+        aria-hidden
+        className={`absolute inset-0 opacity-20 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)] ${dotPattern}`}
+      />
+      <div className="relative flex flex-col items-center">
+        <h2 className="text-3xl font-medium tracking-tight text-balance">
+          Start with a <span className="text-fd-primary">ModSettings.xml</span>
         </h2>
         <p className="mt-4 max-w-2xl text-fd-muted-foreground text-balance">
           One file beside your <code>ModInfo.xml</code> gives your mod a settings page. Add C# later,
           or never.
         </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/docs/getting-started"
-            className="rounded-lg bg-fd-primary px-5 py-2.5 text-sm font-medium text-fd-primary-foreground transition-opacity hover:opacity-90"
-          >
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <Link href="/docs/getting-started" className={primaryButton}>
             Get Started
           </Link>
-          <Link
-            href="/docs/setting-types"
-            className="rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-fd-accent"
-          >
+          <Link href="/docs/setting-types" className={secondaryButton}>
             Choose a Setting Type
           </Link>
-          <a
-            href={nexusUrl}
-            rel="noreferrer noopener"
-            target="_blank"
-            className="rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-fd-accent"
-          >
+          <a href={nexusUrl} rel="noreferrer noopener" target="_blank" className={secondaryButton}>
             Nexus Mods
           </a>
-          <a
-            href={githubUrl}
-            rel="noreferrer noopener"
-            target="_blank"
-            className="rounded-lg border border-fd-border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-fd-accent"
-          >
+          <a href={githubUrl} rel="noreferrer noopener" target="_blank" className={secondaryButton}>
             GitHub
           </a>
         </div>
       </div>
-    </Section>
+    </div>
   );
 }
 
-function Section({ children, muted = false }: { children: ReactNode; muted?: boolean }) {
-  return (
-    <section className={`border-t border-fd-border ${muted ? 'bg-fd-card/40' : ''}`}>
-      <div className="mx-auto w-full max-w-5xl px-4 py-16 md:py-24">{children}</div>
-    </section>
-  );
+function Brand({ children }: { children: ReactNode }) {
+  return <span className="font-medium text-fd-primary">{children}</span>;
 }
 
 function SectionHeading({ title, lead }: { title: string; lead: string }) {
   return (
-    <div className="max-w-2xl">
-      <h2 className="text-3xl font-bold tracking-tight text-balance">{title}</h2>
+    <div className="col-span-full mt-4 -mb-4 max-w-2xl">
+      <h2 className="text-3xl font-medium tracking-tight text-balance">{title}</h2>
       <p className="mt-4 text-fd-muted-foreground">{lead}</p>
+    </div>
+  );
+}
+
+function FeatureCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-fd-border bg-fd-card p-6 text-sm text-fd-muted-foreground shadow-lg">
+      <h3 className="mb-6 text-xl font-medium tracking-tight text-fd-card-foreground lg:text-2xl">
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+// Every CardImage crops to the same shape, so two cards side by side end up the same height. A tall
+// shot keeps its top edge; a wide one is trimmed evenly from both sides.
+const cardImageClass = 'block aspect-16/10 h-auto w-full object-cover object-top';
+const wideCardImageClass = cardImageClass.replace('object-top', 'object-center');
+
+// A screenshot filling the foot of a FeatureCard. The negative margins cancel the card's padding, so
+// it runs to the card's side and bottom edges, and the card's rounded corners clip it.
+function CardImage({ children }: { children: ReactNode }) {
+  return (
+    <div className="-mx-6 -mb-6 mt-auto pt-6">
+      <div className="border-t border-fd-border">{children}</div>
+    </div>
+  );
+}
+
+// A colored card that frames an image, the counterpart to a FeatureCard beside it. `dark` stays
+// dark in both themes, for images that need a dark backdrop.
+function BrandPanel({ tone = 'brand', children }: { tone?: 'brand' | 'dark'; children: ReactNode }) {
+  return (
+    <div
+      className={`relative flex items-center justify-center overflow-hidden rounded-2xl p-6 shadow-lg md:p-8 ${
+        tone === 'brand' ? 'bg-fd-primary' : 'bg-neutral-950'
+      }`}
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-[radial-gradient(rgb(255_255_255/0.18)_1.5px,transparent_1.5px)] bg-size-[10px_10px]"
+      />
+      <div className="relative flex w-full justify-center">{children}</div>
     </div>
   );
 }

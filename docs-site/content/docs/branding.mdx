@@ -1,0 +1,103 @@
+---
+title: Show Gears Support
+description: Add the Supports Gears badge to your mod's pages, and describe your mod's use of Gears so players know whether they need to install it.
+---
+
+Tell players that your mod uses Gears on your mod's download page and in its README. They learn that
+the mod has a settings page in the game's **Mods** menu, and whether they need to install Gears to
+use it.
+
+This page covers the Supports Gears badge, where to put it, and how to describe your mod's use of
+Gears.
+
+## The Supports Gears badge
+
+![The Supports Gears badge: a rusted gear beside the words SUPPORTS GEARS](/images/Supports-Gears-badge.png)
+
+The badge is a 1000 × 400 PNG with a transparent background. Use it at this URL, or save a copy and upload
+it with your mod's other images:
+
+```text
+https://s7092910.github.io/Gears/images/Supports-Gears-badge.png
+```
+
+When you use the badge:
+
+- Scale it evenly. Keep its 5:2 shape, such as 250 × 100 or 500 × 200.
+- Do not crop it, recolor it, or add to it.
+- Place it on a dark background. The word "SUPPORTS" is a light silver that is hard to read on white
+  or other light colors. Nexus Mods and GitHub's dark theme both work. On a light page, check that
+  the whole badge is readable.
+- Put it where players look for requirements, such as the top of your description or a requirements
+  section.
+- Link it to the [Gears page on Nexus Mods](https://www.nexusmods.com/7daystodie/mods/4017), so
+  players can install Gears from it.
+
+## Add the badge to your mod's pages
+
+### Nexus Mods
+
+Nexus Mods descriptions use BBCode. Paste this where you want the badge to appear:
+
+```text
+[url=https://www.nexusmods.com/7daystodie/mods/4017][img]https://s7092910.github.io/Gears/images/Supports-Gears-badge.png[/img][/url]
+```
+
+If Gears is required, also add it under **Requirements** on your mod's page, so Nexus Mods lists it
+as a dependency.
+
+### GitHub README
+
+Markdown shows the badge at full size. Use HTML to set a smaller width:
+
+```html
+<a href="https://www.nexusmods.com/7daystodie/mods/4017">
+  <img src="https://s7092910.github.io/Gears/images/Supports-Gears-badge.png" alt="Supports Gears" width="250">
+</a>
+```
+
+## Describe how your mod uses Gears
+
+Say plainly whether players need Gears. Whether they do depends on how you built your mod. See
+[Keep Gears optional](/docs/csharp/getting-started#keep-gears-optional).
+
+| Your mod | What to write |
+| --- | --- |
+| Gears is **required** | "Requires Gears. Install Gears to use this mod and change its settings in the Mods menu." |
+| Gears is **optional** | "Supports Gears. Install Gears to change this mod's settings in the Mods menu. Without Gears, the mod uses its default settings." |
+
+Check the optional wording against your mod before you use it. A mod that reads its settings only in
+XML patches loses the patches that read a setting when Gears is absent. See
+[Read Settings in XML Patches](/docs/xml/xml-patches).
+
+Tell players what they can change, not only that there are settings. For example: "Change the loot
+multiplier and the horde night length from the Mods menu."
+
+If your mod has world settings, say so. A world setting is set per world by the host, and players
+can't change it while that world is running. Every player in a multiplayer game needs Gears, and so
+does the server. For details a player may need, link to
+[Gears for Players](/docs/players).
+
+### Language to use and avoid
+
+- Write "Gears" with a capital G. Don't use "GEARS" in prose. The all-capitals form is only for
+  the badge.
+- Use "supports Gears" or "uses Gears for its settings." Don't write "powered by Gears" or
+  "built on Gears." Gears provides the settings page, not your mod's features.
+- Don't describe your mod as official, endorsed, or reviewed by Gears.
+- Don't promise that Gears adds anything beyond the settings page.
+
+## Add screenshots of your settings page
+
+A screenshot of your settings page shows players what they can change before they download. Capture
+your mod's page in the **Mods** menu with the setting descriptions visible. For a mod with world
+settings, also capture them on the **Mods World Settings** screen, opened from the New Game screen.
+
+If your mod declares a `<Banner>` in its `ModInfo.xml`, Gears shows it at the top of your settings
+page. Use your own mod's banner there, not the Supports Gears badge. See
+[Check your ModInfo.xml](/docs/getting-started#check-your-modinfoxml).
+
+## List your mod on the Mod Showcase
+
+The Mod Showcase page on the Gears site lists mods that use Gears. To add yours, see
+[Join the Mod Showcase](/docs/mod-showcase).

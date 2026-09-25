@@ -35,6 +35,7 @@ const PAGES = [
   '/docs/reference/settings/i-mod-setting/',
   '/docs/reference/attributes/setting-factory-fixed-attribute/',
   '/docs/setting-types/',
+  '/showcase/',
   '/images/Setting-Tabs.png',
 ];
 

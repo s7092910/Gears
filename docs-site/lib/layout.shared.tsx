@@ -16,6 +16,11 @@ export function baseOptions(): BaseLayoutProps {
         active: 'nested-url',
         on: 'nav',
       },
+      {
+        text: 'Mod Showcase',
+        url: '/showcase',
+        on: 'nav',
+      },
     ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
