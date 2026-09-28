@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { Globe, Map as MapIcon, Plus, type LucideIcon } from 'lucide-react';
+import { Plus, type LucideIcon } from 'lucide-react';
+import { GlobalSettingsIcon, WorldSettingsIcon } from '@/lib/icons';
 import { MediaSlot } from '@/components/media-slot';
 import { ShowcaseGrid } from '@/components/showcase-grid';
 import { showcaseMods, type ShowcaseMod } from '@/content/mod-showcase';
@@ -96,13 +97,13 @@ function ModTile({ mod }: { mod: ShowcaseMod }) {
         {(mod.globalSettings || mod.worldSettings) && (
           <ul className="absolute top-2 left-2 z-2 flex flex-wrap gap-1.5">
             {mod.globalSettings && (
-              <SettingsTag icon={Globe} title="Players change these from the main menu or in game.">
+              <SettingsTag icon={GlobalSettingsIcon}title="Players change these from the main menu or in game.">
                 Global settings
               </SettingsTag>
             )}
             {mod.worldSettings && (
               <SettingsTag
-                icon={MapIcon}
+                icon={WorldSettingsIcon}
                 title="Set for each world. They can't change while the world runs."
               >
                 World settings

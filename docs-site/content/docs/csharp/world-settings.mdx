@@ -20,11 +20,15 @@ differs.
 
 There is no tab level. Categories sit directly on the mod:
 
+<SettingsApiTree kind="world">
+
 ```text
 IModWorldSettings
 └── IWorldModSettingsCategory        (GetCategory / CreateCategory / GetOrCreateCategory)
     └── IWorldModSetting             (GetSetting / CreateSetting / GetOrCreateSetting)
 ```
+
+</SettingsApiTree>
 
 The lookups mirror the global side exactly: `GetCategory`, `CreateCategory` and
 `GetOrCreateCategory` on [`IModWorldSettings`](/docs/reference/world/i-mod-world-settings), then

@@ -4,6 +4,9 @@ export const appName = 'Gears';
 
 // GitHub Pages project site: the repo name is part of the path.
 export const siteUrl = 'https://s7092910.github.io/Gears';
+// Must match `basePath` in next.config.mjs. Next adds it to <Link> and assets, but not to hrefs
+// or fetch URLs that we build ourselves.
+export const basePath = '/Gears';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';

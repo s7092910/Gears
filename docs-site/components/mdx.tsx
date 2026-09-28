@@ -5,6 +5,7 @@ import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { TypeMeta } from '@/components/type-meta';
 import { MediaSlot } from '@/components/media-slot';
+import { SettingsApiTree, SettingsHierarchy } from '@/components/settings-hierarchy';
 import type { MDXComponents } from 'mdx/types';
 
 export function getMDXComponents(components?: MDXComponents) {
@@ -21,6 +22,8 @@ export function getMDXComponents(components?: MDXComponents) {
     Step,
     TypeMeta,
     MediaSlot,
+    SettingsHierarchy,
+    SettingsApiTree,
     ...components,
   } satisfies MDXComponents;
 }

@@ -5,13 +5,21 @@ import {
   DocsPage,
   DocsTitle,
   MarkdownCopyButton,
-  ViewOptionsPopover,
 } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/mdx';
+import { ViewOptionsPopover } from '@/components/page-actions';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
-import { appName, getPageImageUrl, getPageMarkdownUrl, gitConfig, repoContentPath } from '@/lib/shared';
+import {
+  appName,
+  basePath,
+  getPageImageUrl,
+  getPageMarkdownUrl,
+  gitConfig,
+  repoContentPath,
+  siteUrl,
+} from '@/lib/shared';
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -19,7 +27,8 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   if (!page) notFound();
 
   const MDX = page.data.body;
-  const markdownUrl = getPageMarkdownUrl(page).url;
+  // Fumadocs fetches and links this as-is, so it needs the basePath added by hand.
+  const markdownUrl = basePath + getPageMarkdownUrl(page).url;
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
@@ -28,6 +37,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       <div className="flex flex-row gap-2 items-center border-b pb-6">
         <MarkdownCopyButton markdownUrl={markdownUrl} />
         <ViewOptionsPopover
+          pageUrl={`${siteUrl}${page.url}/`}
           markdownUrl={markdownUrl}
           githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/${repoContentPath}/${page.path}`}
         />

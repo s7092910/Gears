@@ -15,12 +15,16 @@ in `GearsAPI.Settings`, `GearsAPI.Settings.Global` and `GearsAPI.Settings.Base`.
 
 Global settings form three levels:
 
+<SettingsApiTree kind="global">
+
 ```text
 IModGlobalSettings
 └── IGlobalModSettingsTab            (GetTab / CreateTab / GetOrCreateTab)
     └── IGlobalModSettingsCategory   (GetCategory / CreateCategory / GetOrCreateCategory)
         └── IGlobalModSetting        (GetSetting / CreateSetting / GetOrCreateSetting)
 ```
+
+</SettingsApiTree>
 
 Every level offers the same three lookups. `Get…` returns null when the name is unknown, `Create…`
 throws when the name is already taken, and `GetOrCreate…` does whichever is needed.
