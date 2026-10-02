@@ -1,87 +1,75 @@
 ---
 title: Gears for Players
-description: What Gears does for a player, how to install it, where each kind of mod setting is changed, and where the values are saved.
+description: Install Gears, change the settings of the mods that use it, and set world and global settings on a dedicated server.
 ---
 
-Gears is a mod that gives other mods a settings page inside 7 Days to Die. If a mod you installed
-uses Gears, you change its options in the game's menus instead of editing files in its folder.
+Gears is a mod settings framework for 7 Days to Die. These pages are for players and server admins
+who installed a mod that uses Gears. If you are building a mod, read the
+[Gears Documentation](/docs) instead.
 
-Gears changes nothing on its own. Every setting you see belongs to the mod that declared it.
+With Gears installed, you can:
 
-## Install Gears
+- Change a mod's settings from the **Mods** button on the main menu or the in-game menu.
+- Pick a world's settings on the New Game and Continue Game screens.
+- Keep your settings between game sessions, and when Gears or a mod updates.
+- Set a dedicated server's settings in a file.
 
-1. Download Gears and unzip it.
-2. Put the `Gears` folder in your **Mods** folder, beside the mods that need it. On Windows that is
-   `%APPDATA%\7DaysToDie\Mods`; the game also reads a `Mods` folder next to the game's own
-   executable.
-3. Start the game with EasyAntiCheat turned **off**. Gears ships a `.dll`, and the game only loads
-   code mods with EAC off.
+Gears adds no items, blocks or gameplay of its own. Every setting you see belongs to the mod that
+declared it.
 
-Every player in a multiplayer game needs Gears and the mods that use it, and so does the server.
-
-You know it worked when a **Mods** button appears on the main menu.
-
-## Change a mod's settings
-
-Mod settings come in two kinds, and each is changed in its own place.
-
-| Kind | Who changes it | Where |
-|---|---|---|
-| **Global setting** — yours, and it applies in every world | you | the **Mods** button, from the main menu or while playing |
-| **World setting** — the world's, and everyone in it plays with the same value | whoever starts the world | **Mods World Settings**, on the New Game and Continue Game screens |
-
-### Global settings, in the Mods menu
-
-Open **Mods**, pick a mod from the list, and open its **Settings** tab. Change the rows you want,
-then press **APPLY**. **DEFAULTS** puts every row on the page back to what the mod shipped with, and
-**BACK** leaves without saving.
-
-![The Mods menu with a mod selected, showing the rows of its settings](/images/Mods-Menu.png)
-
-A mod can mark a setting as needing a world reload or a full game restart. Gears tells you when you
-change one; the mod decides what actually happens until then.
-
-### World settings, before the world starts
-
-Press **Mods World Settings** on the New Game screen to pick the values a new world starts with, or
-on the Continue Game screen to change them for a world you already have. Press **SAVE** when you are
-done.
-
-![A mod's world settings category on the Mods World Settings screen](/images/World-Settings.png)
-
-World settings cannot be changed while the world is running. Leave the world, change them on the
-Continue Game screen, and start it again.
-
-In multiplayer, the host's world settings are the ones everyone plays with. Your own copy of those
-values is replaced by the server's when you join. Your global settings are untouched — they stay
-yours on every server.
-
-On a server you rent or run yourself, there is no menu to press. See
-[Change World Settings on a Dedicated Server](/docs/players/dedicated-server-world-settings).
-
-## Where your settings are saved
-
-| What | File |
+| Component | Version |
 |---|---|
-| Your global settings, for every mod at once | `%APPDATA%\7DaysToDie\Gears\ModSettings.xml` |
-| One world's settings | `WorldModSettings.xml`, in that world's save folder |
-| The values a new world will start with | `newGameWorldModSettings.xml`, beside your saves |
+| Gears | 8.0.0 |
 
-Gears writes all three. You never have to edit them by hand to play, and the in-game menus are the
-supported way to change them.
+## Terms these pages use
 
-<Callout type="warn" title="Renaming or removing a mod loses its saved values">
-  Gears rewrites the global settings file at every startup from the mods that are installed now. If
-  you remove a mod, or a mod update renames one of its settings, the value saved under the old name
-  is dropped and cannot be recovered. Note anything you would not want to set up again.
-</Callout>
+A **mod setting** is one of a mod's options that Gears shows and saves. Mod settings come in two
+kinds, and the difference decides who can change it and where.
+
+| Term | Meaning |
+|---|---|
+| **global setting** | Yours. You change it from the main menu or the in-game menu, and the value applies in every world. |
+| **world setting** | The world's. Whoever starts the world picks it, everyone in the world plays with the same value, and it cannot be changed while the world is running. |
+
+## Where to go next
+
+### Start here
+
+<Cards>
+  <Card
+    title="Getting Started"
+    href="/docs/players/getting-started"
+    description="Install and update Gears, change each kind of mod setting, and find where the values are saved."
+  />
+  <Card
+    title="Player FAQ"
+    href="/docs/players/faq"
+    description="Short answers, including what to do when Gears does not load or a mod's settings page looks wrong."
+  />
+</Cards>
+
+### Dedicated servers
+
+<Cards>
+  <Card
+    title="World Settings on a Dedicated Server"
+    href="/docs/players/dedicated-server-world-settings"
+    description="Edit WorldModSettings.xml in the save folder, and confirm the values took."
+  />
+  <Card
+    title="Global Settings on a Dedicated Server"
+    href="/docs/players/dedicated-server-global-settings"
+    description="Edit the server's own copy of each mod's global settings in Gears\ModSettings.xml."
+  />
+</Cards>
 
 ## Get help
 
-- [Player FAQ](/docs/players/faq) — the short answers, including what to do when a mod's settings
-  page looks wrong.
-- [Change World Settings on a Dedicated Server](/docs/players/dedicated-server-world-settings) — the
-  file to edit, and when the server reads it.
+A problem with one mod's settings is usually that mod's to fix, so report it to the mod's author.
+The [Player FAQ](/docs/players/faq) says how to tell the difference.
 
-Gears is a framework, so a problem with one mod's settings is usually that mod's to fix. The FAQ
-says how to tell the difference before you report it.
+When the problem is with Gears itself, ask in the `#laydors-toolshed` channel on
+[Guppy's Unofficial 7DtD Modding Server](https://discord.gg/eS73U4RxVj), a community Discord for 7
+Days to Die modding, or open an issue on [GitHub](https://github.com/s7092910/Gears/issues). Include
+your game version, your Gears version, and the full log file from the session where the problem
+happened. The [Player FAQ](/docs/players/faq#where-is-the-log) says where to find the log.

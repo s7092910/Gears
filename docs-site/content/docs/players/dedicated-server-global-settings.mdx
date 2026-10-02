@@ -1,0 +1,125 @@
+---
+title: Global Settings on a Dedicated Server
+description: A dedicated server keeps its own copy of every mod's global settings in Gears\ModSettings.xml. Edit it while the server is stopped. This page covers where the file is, what it looks like, and how to confirm the values took.
+---
+
+A dedicated server keeps its own copy of every mod's global settings, separate from the players'
+copies. The server has no menu, so you change them in `Gears\ModSettings.xml` under the server's
+user data folder.
+
+Mods running on the server read the server's copy. Gears does not send global settings between
+machines, so each player keeps their own values and the server keeps its own. Whether a global
+setting changes anything on a server depends on the mod.
+
+You need file access to the server and the ability to stop and start it.
+
+<Callout type="warn" title="Stop the server before you edit">
+  Gears **rewrites** `ModSettings.xml` at every server start, from the values it has loaded. An edit
+  made while the server is running is overwritten the next time it starts.
+</Callout>
+
+## Before you start
+
+- Install Gears and the mods on the **server**, exactly as you would on a client. A server without
+  Gears has no `ModSettings.xml`, and its mods run on their own defaults.
+- Set `EACEnabled` to `false` in `serverconfig.xml`. Players run Gears with EasyAntiCheat off, and
+  a server with EasyAntiCheat on does not let them join.
+- Know where the server's user data folder is. It is `%APPDATA%\7DaysToDie` on Windows and
+  `~/.local/share/7DaysToDie` on Linux, unless `UserDataFolder` in `serverconfig.xml` moves it.
+- Check the mod's documentation for which global settings it reads on a server.
+
+## Change the settings
+
+<Steps>
+<Step>
+### Start the server once
+
+Gears writes `ModSettings.xml` at every start, so the first start creates the file with every
+installed mod's global settings already in it, at their default values. That gives you the exact
+names to use.
+
+Skip this step if the file already exists.
+</Step>
+<Step>
+### Stop the server
+
+Stop it fully. An edit made while the server runs is lost at the next start.
+</Step>
+<Step>
+### Open `Gears\ModSettings.xml` in the user data folder
+
+The file is in the `Gears` folder inside the server's user data folder. If it is not there, check
+`UserDataFolder` in `serverconfig.xml`.
+
+It looks like this:
+
+```xml title="ModSettings.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<ModSettings>
+	<Mod name="MyMod">
+		<Tab name="General">
+			<Category name="Hud">
+				<Setting name="ShowCompass" value="True" />
+			</Category>
+		</Tab>
+	</Mod>
+</ModSettings>
+```
+
+There is one `<Mod>` element per mod, named by the mod's `<Name>` from its `ModInfo.xml`. Mods sort
+their global settings into tabs and categories, so each `<Setting>` sits inside a `<Tab>` and a
+`<Category>`.
+</Step>
+<Step>
+### Edit the values
+
+Change the `value` attributes and nothing else. Gears finds each setting by its mod, tab, category
+and setting names, so leave them as they are.
+
+Write each value the way Gears wrote it:
+
+| Setting shows | Write |
+|---|---|
+| an on/off switch | `True` or `False` |
+| a number | the number, in the same form the file already uses |
+| a named choice | the name exactly as the file spells it |
+
+A value Gears cannot read is reported in the log, and that setting keeps its default value. The rest
+of the file still loads.
+</Step>
+<Step>
+### Start the server
+
+Gears loads the file, applies the values, then writes the file back out with every installed mod's
+current values.
+</Step>
+</Steps>
+
+## Confirm the values took
+
+Open `ModSettings.xml` again after the server has started. Gears rewrites it from the values it
+actually applied, so a value that went back to its default was not accepted. Check its spelling.
+
+The server log records the rest. Search it for `[Gears]`:
+
+| Log line | Meaning |
+|---|---|
+| `[SavedModSettingsFromXml] Mod <name> not found installed, unable to load the mod's current settings` | the `<Mod name="…">` does not match an installed mod, usually a typo or a mod that is not on the server |
+| `[SavedModSettingsFromXml] Mod <name> : Setting <name> not found` | that category has no setting by that name; the mod may have renamed it |
+| `[SavedModSettingsFromXml] Mod <name> : Setting <name> has no value attribute, using default value` | a `<Setting>` element is missing `value` |
+| a line naming a setting with `could not parse` | the value could not be read as that setting's type |
+
+A misspelled `<Tab>` or `<Category>` name writes no log line. Gears reads this file before
+`gears debug on` can be run, and that is the only time those lines are written. If a value does not
+take and no line above explains why, compare your file with the one Gears wrote back. Gears drops the
+misspelled element and writes the setting under its real tab and category, at its default value.
+
+## Notes
+
+- There is no way to change a global setting while the server is running. Stop it, edit, start it.
+- Deleting `ModSettings.xml` resets every mod's global settings on the server to their defaults at
+  the next start, and Gears writes a fresh file.
+- Removing a mod from the server leaves its `<Mod>` element in the file, so its values come back if
+  you install the mod again. You can delete the element.
+- World settings are in a different file. See
+  [World Settings on a Dedicated Server](/docs/players/dedicated-server-world-settings).

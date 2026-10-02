@@ -42,13 +42,14 @@ and the difference decides where the value is stored and who can change it.
     Put a `ModSettings.xml` next to your `ModInfo.xml` and Gears builds the settings page from it.
     Read the values in your `Config/*.xml` patches with the `modsetting()` function. You write no
     C# and reference no Gears assembly, and your mod still loads for a player who does not have
-    Gears installed. That player sees no settings page, and the patches that read a setting do not
-    apply.
+    Gears installed. That player sees no settings page, and a patch that reads a setting fails and
+    logs errors unless you guard it with `mod_loaded('Gears')`. See
+    [Read Settings in XML Patches](/docs/xml/xml-patches#guard-the-patch-for-players-without-gears).
   </Tab>
   <Tab value="XML plus C#">
     Reference `GearsAPI.dll` and implement one interface. Gears hands your code the typed settings
-    at startup and again whenever the player applies a change. You can also create settings from
-    code instead of declaring them in XML.
+    once at startup, and raises events when the player applies a change. You can also create
+    settings from code instead of declaring them in XML.
   </Tab>
 </Tabs>
 
@@ -183,4 +184,4 @@ Gears writes three files of its own, and you never author any of them by hand:
 |---|---|
 | `<user data folder>\Gears\ModSettings.xml` | the player's saved global values, shared by every mod |
 | `<save folder>\WorldModSettings.xml` | one world's values, written when the world starts |
-| `<saves root>\newGameWorldModSettings.xml` | the values the host picked on the New Game screen, which sets the settings for the next world they create |
+| `<saves root>\newGameWorldModSettings.xml` | the values last used on the New Game screen's **Mods World Settings**, which the next new world starts with |

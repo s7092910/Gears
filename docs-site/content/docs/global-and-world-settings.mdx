@@ -25,7 +25,7 @@ The rest of this page is what to do when that question is not enough.
 |---|---|---|
 | Belongs to | the player | one world |
 | Who changes it | each player | the host |
-| Where they change it | the **Mods** menu, from the main menu or in game | **Mods World Settings**, on the New Game and Continue Game screens |
+| Where they change it | the **Mods** menu, from the main menu or in game | **Mods World Settings**, on the **Mods** tab of the New Game and Continue Game screens |
 | When it can change | any time | only while no world is running |
 | Applies to | every world that player loads | everyone in that world |
 | Stored in | `<user data folder>\Gears\ModSettings.xml`, shared by every mod | `<save folder>\WorldModSettings.xml`, one file per world |
@@ -58,15 +58,18 @@ world can hold different values, and a client's value is never overwritten by th
 
 ## What a world setting is
 
-A world setting belongs to one save. The host picks it on the **Mods World Settings** button of the
-New Game or Continue Game screen, before the world starts.
+A world setting belongs to one save. The host picks it before the world starts: on the New Game or
+Continue Game screen, they open the **Mods** tab, after the Multiplayer tab, and press **Mods World
+Settings**.
 
 ![A mod's world settings category on the Mods World Settings screen](/images/World-Settings.png)
 
 Gears writes the chosen values into the save folder as `WorldModSettings.xml` and sends them to every
-client that joins, so everyone in that world plays with the same values. The values the host picks on
-the **New Game** screen are kept separately, in `newGameWorldModSettings.xml` beside the saves, and
-they seed the next world they create.
+client that joins, so everyone in that world plays with the same values.
+
+A new world starts with every world setting at its `defaultValue`, unless the host changed values
+on the New Game screen's **Mods World Settings**. Then it starts with the values last used there.
+Gears keeps those values separately, in `newGameWorldModSettings.xml` beside the saves.
 
 A world setting cannot be changed while the world is running. The host has to leave the world to
 reach the screen again, which is what makes a world setting the right place for a rule the rest of
@@ -87,12 +90,12 @@ Work down this list. The first answer that fits decides the kind.
 
 1. **Would two players disagreeing about it break the game they share?** Spawn counts, loot
    multipliers, recipe costs and anything else the server simulates have to be a world setting.
-2. **Is it about what one player sees or hears?** HUD scale, colors, units, hint text and audio are
-   personal. Make them global.
+2. **Is it about what one player sees or hears?** Heads-up display (HUD) scale, colors, units, hint
+   text and audio are personal. Make them global.
 3. **Does the player need to change it while playing?** Only a global setting can change during a
    session. A world setting is fixed until the host stops the world.
 4. **Is it a color or a key binding?** Those exist only as global settings. Gears drops a `Color` or
-   `Binding` declared under `<World>`.
+   `Binding` declared under `<World>`, and writes nothing to the log about it.
 5. **Does it change the meaning of a value already saved into the world?** Prefer a world setting, so
    the value travels with the save that depends on it.
 
@@ -128,7 +131,8 @@ decides where it sits on their screen.
 
 A world setting raises no `OnValueChanged` because its applied value arrives with the world rather
 than changing under the player. A method tagged `[SettingOnValueChanged]` on a world path still
-binds, as an invoke-only listener that `SyncSettingsToClass` calls. See
+binds, as an invoke-only listener that only `SyncSettingsToClass` calls. Write it with
+`includeInSync: true`, or it never runs. See
 [`[SettingOnValueChanged]` on a world path](/docs/csharp/setting-listeners#settingonvaluechanged-on-a-world-path).
 
 ## Declare each kind
@@ -176,9 +180,10 @@ attributes alike.
 
 <Callout type="warn">
   **A world setting's name must be unique across every world category of your mod.** Gears looks up
-  saved world values by setting name alone, so two categories that each declare a `Speed` setting
-  both restore the first one's value. Global settings are keyed by tab, category and name, so they do
-  not have this constraint.
+  saved world values by setting name alone. If two categories each declare a `Speed` setting, the
+  first category's `Speed` receives the saved value of whichever one is written last, and the other
+  `Speed` is never restored and stays at its default. Global settings are keyed by tab, category and
+  name, so they do not have this constraint.
 </Callout>
 
 ## Read each kind in C#

@@ -16,8 +16,9 @@ it:
 [Gears] [XmlSettingsParserV2] Slider 'fov' has no defaultValue; defaultValue is required, skipping.
 ```
 
-Search the log for `[Gears]`. The log file is at `7DaysToDie_Data\output_log*.txt`, and you can also
-read it in the in-game console.
+Search the log for `[Gears]`. On Windows, the log files are in `%APPDATA%\7DaysToDie\logs`. In the
+game, press F1 to open the console, then press the button in its top-right corner to open the log
+folder. You can also read the lines in the console itself.
 
 Some lines are debug-only and hidden by default: the "does not contain a ModSettings.xml" notice,
 the per-setting world values at world start, and the inline `modsetting()` expansions. Turn them on
@@ -36,13 +37,13 @@ Running `gears debug` on its own toggles the setting. The argument may be `on`, 
 |---|---|
 | `[ModSettingsFromXml]` | Whole-file problems: no `version`, a `version` other than `2`, malformed XML, the wrong root element, or no elements. **The mod's entire `ModSettings.xml` was skipped.** |
 | `[XmlSettingsParserV2]` | A single setting dropped, or a property ignored, while parsing: a missing `type` or `defaultValue`, an unknown or unsupported type, an unparseable `increment`, `minValue`, `maxValue`, `allowedValues` or preview value, and Color per-value previews. |
-| `[GlobalModValueSetting]` or `[WorldModValueSetting]` | An unparseable `defaultValue` or saved value. The setting survived at its previous value or its default. |
-| `[SelectorSetting]` or `[SelectorWorldSetting]` | An `<Incremental>` on a string or enum selector, or an increment of 0 or less. Gears ignored the range. |
+| `[GlobalModValueSetting]` or `[WorldModValueSetting]` | An unparseable `defaultValue` or saved value. A bad saved value leaves the setting at its default. A bad `defaultValue` leaves it at its type's empty value: 0, `false`, empty, or black. |
+| `[SelectorSetting]` or `[SelectorWorldSetting]` | An `<Incremental>` on a string or enum selector, an increment of 0 or less, or a `minValue` above `maxValue`. Gears ignored the range. |
 | `[SavedModSettingsFromXml]` | A problem restoring the player's saved global values: a mod, tab, category or setting named in the file no longer exists, usually because it was renamed, or an element is missing its `name` or `value`. The setting kept its default. |
 | `[WorldSettingsFromXml]` | The same, for a world's `WorldModSettings.xml`. |
 | `[GearsMod]` | A problem with your `IGearsModApi`: a type with no public parameterless constructor, a constructor that threw, a callback that threw (`Error thrown in <Callback>() by <Type> for <Mod>`), the outdated-GearsAPI warning, or a settings class you bound and never synced. |
 | `[Gears]` with no second tag, on a listener or binding message | `BindSettingsClass` skipped a member: a bad path format, an unknown setting, an unsupported event, or a wrong method signature. For a `[Setting]` field or property, it may be readonly, const, non-static, missing a setter, or declared as the wrong type. For a `[SettingPlayerAction]` member, it may be non-static, null when binding ran, not declared as a `PlayerAction`, or aimed at a setting that is not a Binding. See [Bind Settings with Attributes](/docs/csharp/setting-listeners). |
-| An XML patch error mentioning `modsetting` | A `modsetting()` call with the wrong argument count, group, or path shape, or a mod, tab, category or setting name that does not exist. See [Read Settings in XML Patches](/docs/xml/xml-patches). |
+| An XML patch error mentioning `modsetting` | A `modsetting()` call with the wrong argument count, group, or path shape, or a mod, tab, category or setting name that does not exist. For an inline call, Gears also logs `[Gears] XML.<file> (<attribute>, line <n> at pos <m>): …` with no second tag. See [Read Settings in XML Patches](/docs/xml/xml-patches). |
 
 An `InvalidOperationException` at startup, rather than a log line, means a `[SettingParser]` or
 `[SettingFormatter]` method has the wrong signature. The message spells out the signature Gears
@@ -50,10 +51,18 @@ expects.
 
 ## Match a symptom to its cause
 
-**My mod is not in the Mods menu at all, or has no Settings tab.**
+**My mod is in the Mods menu but has no Settings tab.**
 The whole file was rejected. Look for `[ModSettingsFromXml]`. The usual causes are a root with no
 `version="2"`, which means a V1 file, a file that is not at the mod root beside `ModInfo.xml`, or
 XML that does not parse.
+
+<Callout type="warn" title="A rejected file removes your players' saved values">
+  If the whole `ModSettings.xml` is rejected and your mod creates no global settings from C#, Gears
+  removes your mod's section from each player's saved settings file at that startup. Every saved
+  global value for your mod is lost, even after you fix the file. This keeps the saved file from
+  growing with entries for settings that no longer load. Test the file in the game before every
+  release.
+</Callout>
 
 **One setting is missing.**
 Look for `[XmlSettingsParserV2]` lines naming it. In rough order of likelihood:
@@ -67,10 +76,15 @@ Look for `[XmlSettingsParserV2]` lines naming it. In rough order of likelihood:
    only a parser registered.
 5. A `Color` or `Binding` under `<World>`. Gears drops these without a log line.
 6. A setting placed directly under `<Tab>` instead of inside a `<Category>`. Also silent.
+7. Another setting with the same `name` earlier in the same `<Category>` element, or its whole
+   category repeating a category `name` earlier in the same `<Tab>` element. Gears drops the second
+   one without a log line. See
+   [How duplicate names merge](/docs/xml/modsettings-reference#how-duplicate-names-merge).
 
 **A selector shows no values.**
-One entry in `allowedValues` did not parse, which drops the whole list. Or `<Incremental>` had a bad
-bound or a zero increment. Or the selector is a `string` or enum with an `<Incremental>`.
+It is not an enum selector and declares neither `<List>` nor `<Incremental>`. Or one entry in `allowedValues` did not parse,
+which drops the whole list. Or `<Incremental>` had a bad bound, a zero increment, or a `minValue`
+above `maxValue`. Or the selector is a `string` with an `<Incremental>`.
 
 **A selector shows the wrong set of values.**
 It declares both `<List>` and `<Incremental>`. Gears applies the range last, so the range wins.
@@ -99,7 +113,9 @@ value, and `[SavedModSettingsFromXml]` says which one.
 Gears skips world settings entirely for the worlds named `Empty` and `Playtesting`. It writes no
 `WorldModSettings.xml` and never calls `OnWorldSettingsLoaded`. Test in a real world.
 
-**Two world settings share a value.**
+**After a world reloads, one world setting is back at its default and another has its value.**
+The two settings share a `name` in different world categories. Gears restores saved world values
+by name alone, into the first setting with that name, so the second one never gets its value back.
 A world setting's name must be unique across all of a mod's world categories, not only within one.
 
 **My `IGearsModApi` callbacks never run.**

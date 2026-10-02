@@ -1,5 +1,5 @@
 ---
-title: Change World Settings on a Dedicated Server
+title: World Settings on a Dedicated Server
 description: A dedicated server has no menu to pick world settings in, so edit WorldModSettings.xml in the save folder while the server is stopped. This page covers the file, the order to do it in, and how to confirm the values took.
 ---
 
@@ -18,6 +18,8 @@ You need file access to the server and the ability to stop and start it.
 
 - Install Gears and the mods on the **server**, exactly as you would on a client. A server without
   Gears sends nothing, and every player joining it falls back to the mods' default values.
+- Set `EACEnabled` to `false` in `serverconfig.xml`. Players run Gears with EasyAntiCheat off, and
+  a server with EasyAntiCheat on does not let them join.
 - Every player needs the same mods, and Gears, on their own machine.
 - Know which save the server loads. It is the `GameWorld` and `GameName` pair from
   `serverconfig.xml`.
@@ -110,8 +112,8 @@ The server log records the rest. Search it for `[Gears]`:
 
 If you would rather use the menus, set the values on a client and copy the result over:
 
-1. On a machine with the same mods, start a single player world and press **Mods World Settings** on
-   the New Game screen. Pick the values and press **SAVE**.
+1. On a machine with the same mods, open the New Game screen, open its **Mods** tab, and
+   press **Mods World Settings**. Pick the values and press **SAVE**.
 2. Play into the world once so the save folder exists, then quit.
 3. Copy `WorldModSettings.xml` out of that save folder into the server's save folder, with the
    server stopped.
@@ -128,3 +130,5 @@ share a world or a name.
   not installed and carries on; you can delete the element.
 - Settings a player changes under **Mods** are theirs alone. Nothing on the server changes them, and
   they are not part of this file.
+- The server's own global settings are in a different file. See
+  [Global Settings on a Dedicated Server](/docs/players/dedicated-server-global-settings).

@@ -26,6 +26,14 @@ New to Gears? Start with [Getting Started](/docs/getting-started) instead.
 | Wrong root name or no child elements | The whole file is skipped with an error. |
 | When it is read | Once, at game start (`GameAwake`), for every loaded mod in the game's load order. |
 
+<Callout type="warn" title="A skipped file removes your players' saved values">
+  When Gears skips the whole file and your mod creates no global settings from C#, the mod has no
+  global settings that startup. Gears then removes the mod's section from each player's saved
+  settings file, so every saved global value for your mod is lost and cannot be recovered. This
+  keeps the saved file from growing with entries for settings that no longer load. Test your
+  `ModSettings.xml` in the game before you release it.
+</Callout>
+
 ## Document structure
 
 ```xml
@@ -69,7 +77,7 @@ Categories have the same shape under Global and World.
 
 | Attribute | Required | Notes |
 |---|---|---|
-| `name` | yes | Identity within its tab, for a global setting, or within World. Duplicates merge. |
+| `name` | yes | Identity within its tab, for a global setting, or within World. See [How duplicate names merge](#how-duplicate-names-merge). |
 | `displayKey` | no | Falls back to `name`. |
 
 A category counts as a setting for display purposes, so it accepts `<Caption>`, `<Description>` and
@@ -99,7 +107,7 @@ elements they take are described under [Child elements](#child-elements).
 
 | Attribute | Required | Notes |
 |---|---|---|
-| `name` | yes | Identity within its category, and the key the player's saved value is stored under. Duplicates merge. Renaming a setting after release discards the saved value, so treat a released `name` as fixed; see [Troubleshooting](/docs/troubleshooting). **A world setting's name must also be unique across every world category of the mod.** Gears looks up saved world values by name alone, so two categories that share a setting name both restore the first one's value. |
+| `name` | yes | Identity within its category, and the key the player's saved value is stored under. See [How duplicate names merge](#how-duplicate-names-merge). Renaming a setting after release discards the saved value, so treat a released `name` as fixed; see [Troubleshooting](/docs/troubleshooting). **A world setting's name must also be unique across every world category of the mod.** Gears restores saved world values by name alone, into the first setting with that name. When two categories share a setting name, the first category's setting takes the value saved last, and the second one goes back to its default every time the world loads. |
 | `displayKey` | no | Falls back to `name`. |
 | `type` | yes, except on `Color` and `Binding` | See [Value types](#value-types). |
 | `defaultValue` | **yes**, except on `Binding` | See [defaultValue](#defaultvalue). |
@@ -114,7 +122,7 @@ Gears trims `type` and matches it case-insensitively.
 | `float`, `Single` | single-precision float. Accepts a `%` suffix, so `50%` is stored as `0.5`. This applies wherever a float is parsed: `defaultValue`, `increment`, `minValue`, `maxValue`, `List` entries and `Image value`. |
 | `string` | text |
 | `bool`, `boolean` | `true` or `false` |
-| `Color`, `Color32` | `R,G,B` or `R,G,B,A`, each 0–255 |
+| `Color`, `Color32` | resolves, but no Selector or Switch exists for it, so the setting is dropped. Use the [`<Color>`](#color) element instead, which ignores `type`. |
 | `double` | resolves, but **no Selector, Slider or Switch exists for it**, so the setting is dropped |
 | anything else | treated as a type name and looked up in every loaded assembly, case-insensitively. Write the full name (`MyMod.Difficulty`), the assembly-qualified name (`MyMod.Difficulty, MyMod`), or the bare name (`Difficulty`). For an enum declared inside a class, separate the class from the enum with a plus sign (`MyMod.PlayerController+Difficulty`); a dot does not resolve. The type must be an enum or have a registered parser. See [Use Custom Value Types](/docs/csharp/custom-value-types#name-an-enum-declared-inside-a-class). |
 
@@ -141,7 +149,7 @@ there is one, replaces the last two after the file has loaded.
 | Case | Result |
 |---|---|
 | Missing or whitespace | Setting dropped: `<Element> '<name>' has no defaultValue; defaultValue is required, skipping.` |
-| Present but unparseable | Setting kept at `default(T)`: 0, `false`, empty, or black. `[GlobalModValueSetting]` or `[WorldModValueSetting]` logs `Setting '<name>': could not parse defaultValue '<raw>' as <Type> - <message>` |
+| Present but unparseable | Setting kept at `default(T)`: 0, `false`, empty, or black. `[GlobalModValueSetting]` or `[WorldModValueSetting]` logs `Setting '<name>': could not parse defaultValue '<raw>' as <Type> - <message>`, then the same line twice more with `value` and `selectedValue` in place of `defaultValue` |
 | Outside the `List`, the `Incremental` range or the `Buttons` values | Not checked. The setting loads with the value you gave. |
 
 ### `<Selector>`
@@ -208,8 +216,10 @@ Global only.
 ```
 
 A Color setting has a fixed type, so `type` is accepted and ignored. It takes `defaultValue`, which
-is required, plus `<Caption>`, `<Description>`, `<RestartScope>` and a value-less `<Preview>`. Gears
-serializes it as `R,G,B` in the range 0–255.
+is required, plus `<Caption>`, `<Description>`, `<RestartScope>` and a value-less `<Preview>`.
+
+Write `defaultValue` as `R,G,B` or `R,G,B,A`, each 0–255. Gears serializes the value as `R,G,B`
+only, so an alpha value is not kept once the player's value has been saved.
 
 ### `<Binding>`
 
@@ -252,7 +262,8 @@ applies none of them.** Each failure logs
 
 Gears splits the value on commas, then trims and parses each entry. **One bad entry drops the whole
 list**, logging `Setting '<name>': could not parse allowedValues entry '<raw>' as <Type> - <message>`.
-The setting survives with no allowed values. There is no way to include a literal comma in a value.
+The setting survives with no allowed values, except that an enum Selector keeps its declared
+members. There is no way to include a literal comma in a value.
 
 When a Selector declares both `<List>` and `<Incremental>`, Gears applies the list first and the
 range second, whatever order they appear in, so the range wins.
@@ -343,16 +354,32 @@ Here `MyMod` is the `<Name>` from `ModInfo.xml`.
 
 ## How duplicate names merge
 
-Gears merges two tabs, categories or settings that share a `name` in the same place, rather than
-creating two of them. For a value setting, the later default, applied and selected values overwrite
-the earlier ones. A Selector's allowed values, formatters and prefix are taken only when the earlier
-one had none. `Wrap` is true if either one set it.
+Whether a repeated `name` merges or is dropped depends on where the repeat is:
+
+| Repeat | Result |
+|---|---|
+| Two `<Tab>` elements with the same `name` under `<Global>` | Merged into one tab. Their categories merge by the same rules. |
+| Two `<Category>` elements with the same `name` under `<World>` | Merged into one category. |
+| A category with the same `name` as one in a **separate** `<Tab>` element of the same name | Merged, along with the settings inside it. |
+| Two settings with the same `name` in categories that merge | Merged into one setting, as described below. |
+| Two `<Category>` elements with the same `name` inside **one** `<Tab>` element | The second category and every setting in it are dropped, without a log line. |
+| Two settings with the same `name` inside **one** `<Category>` element | The second setting is dropped, without a log line. |
+
+When two settings merge, the later default, applied and selected values overwrite the earlier
+ones. A Selector's allowed values, formatters and prefix are taken only when the earlier one had
+none. `Wrap` is true if either one set it.
+
+To keep the file predictable, give every tab, category and setting a unique `name` in its parent.
+Two world settings in different categories never merge, but they still need different names; see
+[Attributes every setting takes](#attributes-every-setting-takes).
 
 ## What gets dropped and what survives
 
 | Problem | Outcome |
 |---|---|
-| No `version`, wrong `version`, malformed XML, wrong root | **Whole file skipped** |
+| No `version`, wrong `version`, malformed XML, wrong root | **Whole file skipped.** With no global settings from C#, the mod's saved global values are also removed. |
+| A category name repeated inside one `<Tab>` element | Second category and its settings dropped, no log line |
+| A setting name repeated inside one `<Category>` element | Second setting dropped, no log line |
 | Setting with no `type`, an unknown `type`, or a `type` with no implementation for that element | Setting dropped |
 | Selector, Slider, Switch or Color with no `defaultValue` | Setting dropped |
 | `string` or `bool` on a Slider | Setting dropped |
@@ -434,6 +461,7 @@ Every element in one place. Copy it and delete what you do not need. Remember th
 				<Binding name="" displayKey="">
 					<Caption key="" />
 					<Description key="" />
+					<RestartScope scope="(none/reload/restart)" />
 					<Preview>
 						<Image path=""/>
 					</Preview>

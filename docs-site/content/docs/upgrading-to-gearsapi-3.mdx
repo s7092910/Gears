@@ -12,8 +12,6 @@ Work through the parts that apply to your mod:
 2. [Move C# from GearsAPI 2.x to 3.0](#part-2-move-c-from-gearsapi-2x-to-30).
 3. [Check your work](#part-3-check-your-work).
 
-Every step is mechanical.
-
 ---
 
 ## Part 1: Convert ModSettings.xml from V1 to V2
@@ -21,8 +19,16 @@ Every step is mechanical.
 V2 moved almost everything off attributes and onto named child elements, made a setting's value type
 explicit instead of guessing it from which property you used, and made `defaultValue` mandatory.
 
-In short: add `version="2"`, add `type`, give every value setting a `defaultValue`, and turn
-`tooltipKey`, `leftValue`, `rightValue` and `formatString` into child elements.
+In short: add `version="2"`, add `type`, give every value setting a `defaultValue`, turn
+`tooltipKey`, `<Property>`, `leftValue` and `rightValue`, and `wrap` into child elements, rename
+the Color `defaultColor` to `defaultValue`, and delete `value` and `color`.
+
+<Callout type="warn">
+  Gears ignores V1 markup it does not recognize without logging it. A leftover `<Property>`,
+  `leftValue`, `wrap` or `value` loads cleanly and is simply dropped, so a clean log does not prove
+  the conversion is complete. See [Part 3](#part-3-check-your-work).
+</Callout>
+
 <Steps>
 <Step>
 ### Mark the file as V2
@@ -128,8 +134,9 @@ A V1 `<Property type="x" ... />` becomes an element named after what that `type`
 | `<Property type="formatter" formatString="0.0" />` | `<Formatter ui="0.0" />` |
 
 Both incremental variants collapse into one `<Incremental>`, because the int and float distinction
-now lives in `type`. `increment` must be greater than 0, and `minValue` no greater than `maxValue`,
-or Gears ignores the range.
+now lives in `type`. On a Selector, `increment` must be greater than 0 and `minValue` no greater
+than `maxValue`, or Gears logs an error and ignores the range. A Slider does not check its range,
+so check those values yourself.
 
 `<Formatter>` gained a second half. `ui` is what the player sees, and `serialize` is what Gears
 writes to the saved settings file and returns from `modsetting()`. You may leave out either one:
@@ -236,8 +243,9 @@ value up for display, with no separator, so `metric` renders through the key `my
 <LocalizationPrefix prefix="myModUnits" />
 ```
 
-**Percentages.** A `float` accepts a `%` suffix and stores it as a fraction, so `50%` becomes `0.5`.
-This works in `defaultValue`, `increment`, `minValue` and `maxValue`. It is a different thing from
+**Percentages everywhere.** V1 already accepted a `%` suffix on a float's `increment`, `minValue`
+and `maxValue`. V2 accepts it on every `float` value, including `defaultValue`, `<List>` entries and
+preview values, and stores it as a fraction, so `50%` becomes `0.5`. It is a different thing from
 `<Formatter ui="0%" />`, which only changes how the stored number is displayed.
 
 ---
@@ -247,36 +255,6 @@ This works in `defaultValue`, `increment`, `minValue` and `maxValue`. It is a di
 GearsAPI 2.x stored every value as a `string`. GearsAPI 3.0 is typed: each setting interface takes
 its value type as a generic parameter, and the single `CurrentValue` became three typed values.
 
-### The member map
-
-| GearsAPI 2.x | GearsAPI 3.0 |
-|---|---|
-| `ISelectorGlobalSetting`, `ISliderGlobalSetting`, `ISwitchGlobalSetting` (non-generic) | `ISelectorGlobalSetting<T>`, `ISliderGlobalSetting<T>`, `ISwitchGlobalSetting<T>` |
-| `ISelectorWorldSetting`, `ISliderWorldSetting`, `ISwitchWorldSetting` | `ISelectorWorldSetting<T>`, `ISliderWorldSetting<T>`, `ISwitchWorldSetting<T>` |
-| `IGlobalValueSetting.CurrentValue : string` | `IGlobalValueSetting<T>.SettingValue : T` (applied), `SelectedValue : T` (the menu), `DefaultValue : T` |
-| `IGlobalValueSetting.DefaultValue : string` | `DefaultValue : T` |
-| `IWorldModSetting.CurrentValue` and `DefaultValue : string` | on the typed interfaces through `IValueModSetting<T>`; `IWorldModSetting` keeps only `Category` |
-| string in, string out everywhere | `IValueModSettingBase.SetSettingValueFromString(string)` and `GetSerializedFormattedSettingValue()` for code that must stay stringly typed |
-| `OnSettingChanged`, an `OnSettingChangedEvent(IGlobalModSetting setting, string newValue)` | `OnSettingApplied`, an `OnSettingAppliedEvent(IGlobalModSetting setting)`, with no value argument |
-| — | `ValueChangedEvent<T>(IValueModSetting<T> setting, T newValue)` through `OnValueChanged`, global only |
-| — | `OnSelectedChangedEvent<T>(IValueModSetting<T> setting, T newValue)` through `OnSelectedChanged` |
-| `ISelectorGlobalSetting.SetAllowedValues(string)`, a comma list | gone; split it yourself and call `SetAllowedValues(T[])` |
-| `SetAllowedValues(string[])` | `SetAllowedValues(T[])` |
-| `SetAllowedValues(int inc, int min, int max)` and `(float, float, float)` | `SetAllowedValues(T increment, T min, T max)` |
-| `GetAllowedValues() : string[]` | `GetAllowedValues() : T[]`, plus `GetAllowedValuesDisplay() : string[]` |
-| `FormatterString` on Selector and Slider | `UiFormatter` and `SerializationFormatter` |
-| — | `LocalizationPrefix` and `SelectByIndex(int)` on Selector |
-| `ISliderGlobalSetting.GetAllowedValues()` | gone; use `Increment`, `Min` and `Max` |
-| `ISwitchGlobalSetting.LeftValue` and `RightValue : string`, `SetSwitchValues(string, string)` | `LeftValue` and `RightValue : T`, `SetSwitchValues(T, T)`, plus `GetLeftText()`, `GetRightText()`, `SelectButton` and `GetSelectedButton` |
-| `IColorSelectorGlobalSetting`, string-based | `IColorSelectorGlobalSetting : IGlobalValueSetting<UnityEngine.Color>` |
-| `IModSetting.TooltipKey`, `HasToolTip()`, `GetToolTipText()` | `DescriptionKey`, `HasDescription()`, `GetDescriptionText()`, plus the new `CaptionKey`, `HasCaption()` and `GetCaptionText()`. `TooltipKey` survives **only** on `IGlobalModSettingsTab`. |
-| `IGlobalModSettingsCategory : IModSetting` | `IGlobalModSettingsCategory : IGlobalModSetting` |
-| — | `IModSetting.IsChanged`, `IsDefault`, `ResetToDefault()`, `DiscardCurrentChange()`, `ApplyCurrentChange()`, `HasPreviews()`, `GetCurrentPreview()`, `AddPreview(string)` |
-| — | `IGlobalModSetting.RestartScope : SettingRestartScope` |
-| — | `BindSettingsClass(Type)` and `SyncSettingsToClass(Type)` on both `IModGlobalSettings` and `IModWorldSettings`, the `[Setting]` and `[SettingPlayerAction]` binding attributes, and the `[SettingOnValueChanged]`, `[SettingOnSelectedChanged]`, `[SettingOnApplied]` and `[SettingOnEnabled]` attributes |
-| — | `[SettingsSerializationProvider]`, `[SettingParser]` and `[SettingFormatter]` |
-| Unchanged | `IGearsModApi`, `IGearsMod`, `GearsSettingsManager.GetMods()` and `GetGearsMod(name)`, all `Get*`, `Create*`, `GetOrCreate*`, `Add*` and `Remove*` on tabs and categories, `SaveSettings()`, `IControlBindingSetting.PlayerAction` and `ClearBinding()`, and `IModSetting.Enabled` |
-
 ### Compare the old and new code
 
 Here is the most common pattern, reading a value and reacting to a change:
@@ -284,6 +262,8 @@ Here is the most common pattern, reading a value and reacting to a change:
 <Tabs items={['GearsAPI 2.x', 'GearsAPI 3.0', 'GearsAPI 3.0, attribute form']}>
   <Tab value="GearsAPI 2.x">
     ```csharp
+    using GearsAPI.Settings.Global;
+
     public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
     {
         ISliderGlobalSetting fov = modSettings.GetTab("General")
@@ -302,6 +282,9 @@ Here is the most common pattern, reading a value and reacting to a change:
   </Tab>
   <Tab value="GearsAPI 3.0">
     ```csharp
+    using GearsAPI.Settings;          // IValueModSetting<T>
+    using GearsAPI.Settings.Global;
+
     public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
     {
         ISliderGlobalSetting<int> fov = modSettings.GetTab("General")?
@@ -327,6 +310,10 @@ Here is the most common pattern, reading a value and reacting to a change:
     handler but never calls it:
 
     ```csharp
+    using GearsAPI.Attributes;        // [SettingOnValueChanged] and the other attributes
+    using GearsAPI.Settings;
+    using GearsAPI.Settings.Global;
+
     public void InitMod(IGearsMod mod)
     {
         mod.GlobalSettings.BindSettingsClass(typeof(MyModGears));
@@ -346,6 +333,10 @@ Here is the most common pattern, reading a value and reacting to a change:
   </Tab>
 </Tabs>
 
+Most 3.0 code needs `using GearsAPI.Settings;` beside `GearsAPI.Settings.Global` or
+`GearsAPI.Settings.World`, because the typed `IValueModSetting<T>` lives there. The binding and
+listener attributes need `using GearsAPI.Attributes;`.
+
 ### Behavior changes to check for
 
 - **`GetSetting<T>` needs the closed generic.** `GetSetting<ISliderGlobalSetting>("Fov")` no longer
@@ -356,10 +347,20 @@ Here is the most common pattern, reading a value and reacting to a change:
   `SelectedValue` now.
 - **`OnSettingChanged` is now `OnSettingApplied`, and carries no value.** Read `SettingValue` from
   the setting argument, or switch to `OnValueChanged`, which carries it, typed.
+- **Call `RefreshUI()` after changing a value from code.** Assigning `SelectedValue` or
+  `SettingValue` does not redraw the row, and Apply does not commit it, until you call `RefreshUI()`
+  on the setting. See
+  [Change a setting from code](/docs/csharp/global-settings#change-a-setting-from-code).
+- **Categories now appear in setting lists.** A category is a setting in 3.0, so a category's
+  `GetAllSettings()` returns the category itself first, followed by its settings. The
+  `GetAllGlobalSettings()`, `GetAllWorldSettings()` and tab `GetAllModSettings()` lists include
+  every category too. A 2.x loop that treats each entry as a value setting now meets categories, so
+  skip any entry that is an `IGlobalModSettingsCategory` or `IWorldModSettingsCategory`.
 - **World settings have no `OnValueChanged` or `OnSettingApplied`.** Read `SettingValue` in
   `OnWorldSettingsLoaded`, which fires every time a world's values arrive. A
   `[SettingOnValueChanged]` on a world path does work, but only as an invoke-only listener that
-  `SyncSettingsToClass` calls — it is never raised.
+  `SyncSettingsToClass` calls — it is never raised. Write it with `includeInSync: true`. Without
+  the flag it never runs, and Gears logs nothing.
 - **`InitMod` now runs after `ModSettings.xml` is read**, not before. Settings you create in code
   there land on top of whatever the XML declared, so where the two disagree your code now wins
   where the XML used to; and `GetOrCreateSetting<T>` throws `ArgumentException` if the XML declared
@@ -378,26 +379,59 @@ Here is the most common pattern, reading a value and reacting to a change:
 - **A callback that throws no longer silences your other `IGearsModApi` classes**, but Gears still
   logs it as an error naming the type. Look for `[GearsMod] Error thrown in`.
 
+### The member map
+
+| GearsAPI 2.x | GearsAPI 3.0 |
+|---|---|
+| `ISelectorGlobalSetting`, `ISliderGlobalSetting`, `ISwitchGlobalSetting` (non-generic) | `ISelectorGlobalSetting<T>`, `ISliderGlobalSetting<T>`, `ISwitchGlobalSetting<T>` |
+| `ISelectorWorldSetting`, `ISliderWorldSetting`, `ISwitchWorldSetting` | `ISelectorWorldSetting<T>`, `ISliderWorldSetting<T>`, `ISwitchWorldSetting<T>` |
+| `IGlobalValueSetting.CurrentValue : string` | `IGlobalValueSetting<T>.SettingValue : T` (applied), `SelectedValue : T` (the menu), `DefaultValue : T` |
+| `IGlobalValueSetting.DefaultValue : string` | `DefaultValue : T` |
+| `IWorldModSetting.CurrentValue` and `DefaultValue : string` | on the typed interfaces through `IValueModSetting<T>`; `IWorldModSetting` keeps only `Category` |
+| string in, string out everywhere | `IValueModSettingBase.SetSettingValueFromString(string)` and `GetSerializedFormattedSettingValue()` for code that must stay stringly typed |
+| `OnSettingChanged`, an `OnSettingChangedEvent(IGlobalModSetting setting, string newValue)` | `OnSettingApplied`, an `OnSettingAppliedEvent(IGlobalModSetting setting)`, with no value argument |
+| — | `ValueChangedEvent<T>(IValueModSetting<T> setting, T newValue)` through `OnValueChanged`, global only |
+| — | `OnSelectedChangedEvent<T>(IValueModSetting<T> setting, T newValue)` through `OnSelectedChanged` |
+| `ISelectorGlobalSetting.SetAllowedValues(string)`, a comma list | gone; split it yourself and call `SetAllowedValues(T[])` |
+| `SetAllowedValues(string[])` | `SetAllowedValues(T[])` |
+| `SetAllowedValues(int inc, int min, int max)` and `(float, float, float)` | `SetAllowedValues(T increment, T min, T max)` |
+| `GetAllowedValues() : string[]` | `GetAllowedValues() : T[]`, plus `GetAllowedValuesDisplay() : string[]` |
+| `FormatterString` on Selector and Slider | `UiFormatter` and `SerializationFormatter` |
+| — | `LocalizationPrefix` and `SelectByIndex(int)` on Selector |
+| `ISliderGlobalSetting.GetAllowedValues()` | gone; use `Increment`, `Min` and `Max` |
+| `ISwitchGlobalSetting.LeftValue` and `RightValue : string`, `SetSwitchValues(string, string)` | `LeftValue` and `RightValue : T`, `SetSwitchValues(T, T)`, plus `GetLeftText()`, `GetRightText()`, `SelectButton` and `GetSelectedButton` |
+| `IColorSelectorGlobalSetting`, string-based | `IColorSelectorGlobalSetting : IGlobalValueSetting<UnityEngine.Color>` |
+| `IModSetting.TooltipKey`, `HasToolTip()`, `GetToolTipText()` | `DescriptionKey`, `HasDescription()`, `GetDescriptionText()`, plus the new `CaptionKey`, `HasCaption()` and `GetCaptionText()`. `TooltipKey` survives **only** on `IGlobalModSettingsTab`. |
+| `IGlobalModSettingsCategory : IModSetting` | `IGlobalModSettingsCategory : IGlobalModSetting` |
+| `IWorldModSettingsCategory : IModSetting` | `IWorldModSettingsCategory : IWorldModSetting` |
+| — | `IModSetting.IsChanged`, `IsDefault`, `ResetToDefault()`, `DiscardCurrentChange()`, `ApplyCurrentChange()`, `RefreshUI()`, the `OnEnabled` event, `HasPreviews()`, `GetCurrentPreview()`, `AddPreview(string)` |
+| — | `IValueModSetting<T>.GetPreview(T)` and `AddPreview(T, string)` for per-value images |
+| — | `IGlobalModSetting.RestartScope : SettingRestartScope` |
+| — | `BindSettingsClass(Type)` and `SyncSettingsToClass(Type)` on both `IModGlobalSettings` and `IModWorldSettings`, the `[Setting]` and `[SettingPlayerAction]` binding attributes, and the `[SettingOnValueChanged]`, `[SettingOnSelectedChanged]`, `[SettingOnApplied]` and `[SettingOnEnabled]` attributes |
+| — | `[SettingsSerializationProvider]`, `[SettingParser]` and `[SettingFormatter]` |
+| Unchanged | `IGearsModApi`, `IGearsMod`, `GearsSettingsManager.GetMods()` and `GetGearsMod(name)`, all `Get*`, `Create*`, `GetOrCreate*`, `Add*` and `Remove*` on tabs and categories, `SaveSettings()`, `IControlBindingSetting.PlayerAction` and `ClearBinding()`, and `IModSetting.Enabled` |
+
 ---
 
 ## Part 3: Check your work
 
-Start the game and search the log for `[Gears]`.
+Start the game and search the log for these lines. Each one names your mod, a setting, a type or
+an assembly:
 
-1. A `[Gears] [ModSettingsFromXml]` line naming your mod means the **whole file** was rejected.
-   Almost always this is a missing or wrong `version="2"`.
-2. `[Gears] [XmlSettingsParserV2]` lines name each **dropped setting** and why. In rough order of
-   likelihood:
-   1. No `defaultValue`, from Step 3.
-   2. No `type`, or one that is misspelled or unknown, from Step 2.
-   3. A `string` or `bool` on a `Slider`.
-   4. A `type` that resolves to a real type with no setting implementation, such as `double`.
-   5. A `Color` or `Binding` under `<World>`, which Gears drops silently.
-3. `[Gears] [GearsMod] '<Mod>' is using an outdated GearsAPI` means the C# half still targets 2.x.
-   Rebuild against the shipped `GearsAPI.dll`.
-4. Open the Mods menu and confirm every setting you expect is there, with the text you expect. A raw
-   key such as `myModFov` means a missing `Localization.csv` row.
+| Log line | What it means |
+|---|---|
+| `[Gears] [ModSettingsFromXml]` | The **whole file** was rejected. Almost always the `version="2"` is missing or wrong. |
+| `[Gears] [XmlSettingsParserV2]` | That setting was **dropped**, most often for a missing `defaultValue` (Step 3) or a missing or unknown `type` (Step 2). |
+| `[Gears] [GearsMod] '<Mod>' is using an outdated GearsAPI` | The C# still targets 2.x and reached a type that no longer exists. Rebuild against the shipped `GearsAPI.dll`. |
+| `[Gears] [GearsMod] Error thrown in <Callback>() by <Type>`, with a `MissingMethodException` | The code calls a 2.x member that was removed from a type that still exists, such as `TooltipKey` or `OnSettingChanged`. |
+| `[Gears] Failed iterating types in assembly` | A type in your assembly could not load, often because a field still uses a removed 2.x type. Gears found no `IGearsModApi` there, so none of its callbacks ran. |
 
-An unparseable `defaultValue`, a bad `minValue` or `maxValue`, an unparseable `allowedValues` entry,
-and a non-boolean `<Wrap>` are all survivable: the setting loads with that one piece ignored. See
-[Troubleshooting](/docs/troubleshooting) for the full list.
+The log does not catch everything. Gears ignores leftover V1 markup without a word, and drops a
+`Color` or `Binding` under `<World>` the same way. Search your `ModSettings.xml` for `<Property`,
+`leftValue`, `rightValue`, `wrap=`, a `value` or `color` attribute on a setting, and
+`tooltipKey` on anything but a `<Tab>`.
+
+Then open the Mods menu and confirm every setting you expect is there, with the text you expect. A
+raw key such as `myModFov` means a missing `Localization.csv` row.
+
+See [Troubleshooting](/docs/troubleshooting) for every log line and its fix.

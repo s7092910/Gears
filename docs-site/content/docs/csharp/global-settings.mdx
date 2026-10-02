@@ -29,8 +29,10 @@ IModGlobalSettings
 Every level offers the same three lookups. `Get…` returns null when the name is unknown, `Create…`
 throws when the name is already taken, and `GetOrCreate…` does whichever is needed.
 
-Tabs and categories also take `Add…` and `Remove…` for objects you built yourself, and every level
-can list its children. For the full member lists, see
+A tab also has `AddCategory` and `RemoveCategory`, and a category has `AddSetting` and
+`RemoveSetting`. `Add…` moves a category or setting that Gears created, such as one you removed
+from somewhere else, and returns false for any object Gears did not create. There is no `AddTab`
+or `RemoveTab`. Every level can list its children. For the full member lists, see
 [`IModGlobalSettings`](/docs/reference/global/i-mod-global-settings),
 [`IGlobalModSettingsTab`](/docs/reference/global/i-global-mod-settings-tab) and
 [`IGlobalModSettingsCategory`](/docs/reference/global/i-global-mod-settings-category).
@@ -86,10 +88,11 @@ public void InitMod(IGearsMod mod)
 assign onto it **overrides what the XML said**; if it did not, you get a fresh one. The player's
 saved value is restored on top of either, after `InitMod` returns.
 
-<Callout type="info">
-  Declaring the same setting in both `ModSettings.xml` and code is worth avoiding — one silently
-  overrides the other and it is easy to lose track of which. Pick a place per setting.
-</Callout>
+The display key you pass to `GetOrCreate…` applies only when Gears creates the object. For an
+object the XML already declared, the XML's display key stays, and `DisplayKey` is read-only.
+
+Avoid declaring the same setting in both `ModSettings.xml` and code. One silently overrides the
+other, and it is easy to lose track of which. Pick one place per setting.
 
 `CreateSetting<T>` throws in two cases:
 
@@ -103,7 +106,7 @@ saved value is restored on top of either, after `InitMod` returns.
 `GetOrCreateSetting<T>` throws `ArgumentException` on top of those, when a setting of that name
 already exists but is not a `T`:
 
-```
+```text
 Setting 'Fov' in category 'Display' is a ISliderGlobalSetting<Single>, not the requested
 ISliderGlobalSetting<Int32>. A setting declared in both ModSettings.xml and code must use the same
 type in both.
@@ -137,7 +140,7 @@ Three more methods drive the settings window, and they define the three-value mo
 |---|---|
 | `ResetToDefault()` | Sets the selected value to the default value. The applied value is untouched. |
 | `DiscardCurrentChange()` | Sets the selected value to the applied value. |
-| `ApplyCurrentChange()` | Sets the applied value to the selected value, raising `OnValueChanged` and, on a global setting, `OnSettingApplied`. |
+| `ApplyCurrentChange()` | Sets the applied value to the selected value, raising `OnValueChanged` if the value changed. On a global setting it also raises `OnSettingApplied`, even when the value did not change. |
 
 <Callout type="warn">
   `ResetToDefault()` moves only the **selected** value. To reset the value your mod acts on, call
@@ -147,6 +150,10 @@ Three more methods drive the settings window, and they define the three-value mo
 [`IGlobalModSetting`](/docs/reference/global/i-global-mod-setting) adds what only a player-level
 setting has: a [`RestartScope`](/docs/reference/settings/setting-restart-scope), the `Category` and
 `Tab` it belongs to, and the `OnSettingApplied` event that `ApplyCurrentChange()` raises.
+
+The player sees only categories and settings that are in the settings tree. A category that was
+never added to a tab, or a setting that was never added to a category, has a null `Tab` and does
+not appear in the settings window. The same applies to one you removed with `Remove…`.
 
 ### Change a setting from code
 
@@ -158,6 +165,16 @@ player edited, and closing the window or switching to another mod discards it.
 ```csharp
 hudScale.SelectedValue = 1.25f;
 hudScale.RefreshUI();          // without this the row still reads the old value
+```
+
+If your code changes `SettingValue`, set `SelectedValue` to the same value before you call
+`RefreshUI()`. Otherwise the row counts as changed, and Apply puts `SettingValue` back to the
+old selected value:
+
+```csharp
+hudScale.SettingValue = 1.25f;
+hudScale.SelectedValue = 1.25f;
+hudScale.RefreshUI();
 ```
 
 Call it after changing the allowed values too, since the row caches the list it draws. Changing
@@ -220,8 +237,10 @@ presentation: `UiFormatter`, `SerializationFormatter`, `LocalizationPrefix`, `Wr
 Gears builds the display strings when they are first asked for, so a formatter or prefix you assign
 after the values still applies.
 
-`SetAllowedValues(increment, min, max)` requires `increment > 0` and `min <= max`. Otherwise it logs
-the problem and leaves the values alone. An enum selector starts with every declared member.
+`SetAllowedValues(increment, min, max)` works only on an `int` or `float` selector. On a `string` or
+enum selector it logs that it needs a numeric type and does nothing. It also requires
+`increment > 0` and `min <= max`. Otherwise it logs the problem and leaves the values alone. An enum
+selector starts with every declared member.
 
 ## Slider
 
@@ -229,7 +248,8 @@ the problem and leaves the values alone. An enum selector starts with every decl
 read-only `Increment`, `Min` and `Max`, which you set together through `SetAllowedValues`. The
 formatting comes from [`ISliderSettingBase`](/docs/reference/base/i-slider-setting-base).
 
-Only `int` and `float` sliders exist.
+Only `int` and `float` sliders exist. A slider's `SetAllowedValues` does not check its arguments, so
+pass an increment greater than 0 and a minimum no larger than the maximum.
 
 ## Switch
 
@@ -262,8 +282,9 @@ image. Per-value previews are ignored.
 It has no `SettingValue`, and it adds only a `PlayerAction` property and a `ClearBinding()` method of
 its own.
 
-Declaring a `<Binding>` in XML or creating one in code gives the player a row to rebind. Attach the
-game `PlayerAction` it controls yourself:
+Declaring a `<Binding>` in XML or creating one in code gives the player a row to rebind. The row
+works with the action's keyboard and mouse binding only. Controller bindings are not shown or
+changed by it. Attach the game `PlayerAction` it controls yourself:
 
 ```csharp
 // myPlayerActionSet is your own InControl.PlayerActionSet, and Boost is a PlayerAction on it.
@@ -286,14 +307,15 @@ The methods `IModSetting` declares act on that `PlayerAction` rather than on a s
 
 | Member | Effect on a Binding |
 |---|---|
-| `ResetToDefault()` | Calls `PlayerAction.ResetBindings()`, putting the action back to the binding it was declared with. |
-| `DiscardCurrentChange()` | Restores the binding recorded when you assigned `PlayerAction`, or when the row was last applied. |
-| `ApplyCurrentChange()` | Records the current binding as the new baseline and raises `OnSettingApplied`. |
-| `ClearBinding()` | Removes the binding, which is what the row's clear button does. |
+| `ResetToDefault()` | Calls `PlayerAction.ResetBindings()`, putting the action back to the bindings it was declared with, controller bindings included. |
+| `DiscardCurrentChange()` | Restores the keyboard and mouse binding recorded when you assigned `PlayerAction`, or when the row was last applied. |
+| `ApplyCurrentChange()` | Raises `OnSettingApplied` and records the current binding as the new baseline. |
+| `ClearBinding()` | Removes the keyboard and mouse binding, which is what the row's clear button does. |
 | `IsChanged` | True while the action's binding differs from the baseline. |
 | `IsDefault` | Always false. |
 
-All of them do nothing while `PlayerAction` is null.
+All of them do nothing to the binding while `PlayerAction` is null. `ApplyCurrentChange()` still
+raises `OnSettingApplied` then.
 
 Gears does not store bindings in its saved settings file. The binding lives with the `PlayerAction`
 set it belongs to, and that set is responsible for saving it.

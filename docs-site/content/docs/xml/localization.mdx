@@ -26,8 +26,13 @@ the text later.
 | `<Selector/Slider/Switch/Color/Binding displayKey="">` | that key | falls back to `name` |
 | `<Caption key="">` on a setting or category | that key | falls back to the display name |
 | `<Description key="">` on a setting or category | that key | nothing is shown |
-| `<LocalizationPrefix prefix="P">` on a Selector | `P` plus each allowed value, and `P` plus the current and selected value | the raw value is shown when there is no prefix |
-| `<LocalizationPrefix prefix="P">` on a Switch | `P` plus the left value, `P` plus the right value, and `P` plus the current and selected value | the raw value is shown |
+| `<LocalizationPrefix prefix="P">` on a Selector | `P` plus each allowed value, and `P` plus the current and selected value | the value itself is looked up as a key |
+| `<LocalizationPrefix prefix="P">` on a Switch | `P` plus the left value, `P` plus the right value, and `P` plus the current and selected value | the value itself is looked up as a key |
+
+Without a prefix, Gears still passes each value to `Localization.Get`. Usually no key matches, so
+the raw value is shown. If a value happens to match a key that the game or another mod defines, the
+player sees that key's text instead. Add a prefix to be sure the value shows as you wrote it, or as
+you localized it.
 
 <Callout type="warn">
   Gears joins the prefix to the value **with no separator**. Put any separator you want inside the
@@ -70,5 +75,5 @@ world is loaded, and the game does not make rows without that mark available the
 ## Keys that belong to Gears
 
 Gears localizes the Mods window itself — the buttons, headers, Enabled and Disabled labels, and sort
-options — from its own `Localization.csv`. You do not need to supply any of those keys. Do not reuse
-them for your own text either: they are the keys beginning `gearsUI` and `gearsSortBy`.
+options — from its own `Localization.csv`. You do not need to supply any of those keys. Gears
+reserves every key beginning `gears`, so do not start your own keys with it.

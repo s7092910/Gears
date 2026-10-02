@@ -4,7 +4,7 @@ description: Use Enabled to gray out the settings another setting has taken over
 ---
 
 When one setting decides whether others matter, gray the others out. Set `Enabled` to false on a
-setting and Gears draws its row dimmed and stops the player changing it.
+Selector, Slider or Switch and Gears dims its control and stops the player changing it.
 
 This guide covers what `Enabled` does, the one behavior that surprises people, and why Gears has no
 way to hide a setting outright. It needs C#; `ModSettings.xml` has no conditional element.
@@ -21,11 +21,23 @@ way to hide a setting outright. It needs C#; `ModSettings.xml` has no conditiona
 ## Gray a row out
 
 `Enabled` lives on [`IModSetting`](/docs/reference/settings/i-mod-setting), so every setting has it,
-categories included. It starts true.
+categories included, but only some setting types act on it. It starts true.
 
 ```csharp
-hudDetail.Enabled = false;
+hudScale.Enabled = false;
 ```
+
+What the player sees depends on the setting type:
+
+| Type | While `Enabled` is false |
+|---|---|
+| Selector, Slider, Switch | The control is dimmed and does not respond. The name label stays as it was. |
+| Color | Nothing changes on screen. The player can still pick a color, but Apply does not apply it. |
+| Binding | Nothing changes. The player can still rebind or clear the key, and Apply keeps it. |
+| Category | Nothing changes, and the settings in the category stay enabled. `Enabled` does not cascade. |
+
+So use `Enabled` on Selectors, Sliders and Switches. To gray out a whole category, set it on each
+setting in the category.
 
 Unlike a value change, this needs no `RefreshUI()` call. Assigning `Enabled` raises `OnEnabled`, and
 the row redraws itself from that. See
@@ -37,17 +49,35 @@ that applies to everything else.
 ## A grayed setting never applies
 
 <Callout type="warn" title="Disable after applying, not before">
-  While `Enabled` is false, `ApplyCurrentChange()` does nothing at all. The applied value does not
-  move, and neither `OnValueChanged` nor `OnSettingApplied` fires. Assigning `SelectedValue` still
-  changes the value but raises no `OnSelectedChanged`. So a row you gray out keeps the applied value
-  it already had, however the selected value moves afterwards.
+  While a value setting (Selector, Slider, Switch or Color) has `Enabled` set to false,
+  `ApplyCurrentChange()` does nothing at all. The applied value does not move, and neither
+  `OnValueChanged` nor `OnSettingApplied` fires. Assigning `SelectedValue` still changes the value
+  but raises no `OnSelectedChanged`. So a row you gray out keeps the applied value it already had,
+  however the selected value moves afterwards.
 </Callout>
 
 This catches people who gray a row out and expect its current value to be saved along with the rest.
 It is not. If the value on a row matters, either apply it before disabling the row, or leave the row
 enabled and ignore its value in your own code.
 
-The gate is the same on a global setting and on a world setting.
+The gate is the same on a global setting and on a world setting. Two cases sit outside it:
+
+- **A Binding is not gated.** `ApplyCurrentChange()` on a disabled Binding still applies the key
+  and raises `OnSettingApplied`.
+- **Code can still move the applied value.** Assigning `SettingValue` on a disabled setting
+  changes the applied value, and Gears saves it with the rest. It raises no `OnValueChanged`, so
+  your own listeners do not hear about it.
+
+### Edit, then disable
+
+The gate also catches an edit the player made before the row grayed out. Say the player moves
+HudScale, then turns the custom HUD off before pressing Apply. Apply skips the disabled slider, so
+the new scale is not applied, and it is not discarded either. The slider keeps showing the
+unapplied value, and Apply will not commit it until the player changes that row again.
+
+If that matters to your mod, call `DiscardCurrentChange()` on a setting just before you set its
+`Enabled` to false. The row goes back to its applied value, and the redraw that `Enabled` triggers
+shows it.
 
 <MediaSlot
   title="/images/Disabled-Row.png"
@@ -63,6 +93,33 @@ The gate is the same on a global setting and on a world setting.
 Listen to the controlling setting and set `Enabled` on the ones it governs. Use
 `[SettingOnSelectedChanged]` so the gray follows the menu while the player is still deciding, rather
 than waiting for Apply.
+
+The example drives two sliders from one switch, declared in the `General` tab's `Hud` category:
+
+```xml title="ModSettings.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<ModSettings version="2">
+	<Global>
+		<Tab name="General" displayKey="myModTabGeneral">
+			<Category name="Hud" displayKey="myModCatHud">
+				<Switch name="UseCustomHud" displayKey="myModUseCustomHud" type="bool" defaultValue="true" />
+
+				<Slider name="HudScale" displayKey="myModHudScale" type="float" defaultValue="100%">
+					<Incremental increment="5%" minValue="50%" maxValue="150%" />
+					<Formatter ui="0%" />
+				</Slider>
+
+				<Slider name="HudOpacity" displayKey="myModHudOpacity" type="float" defaultValue="100%">
+					<Incremental increment="5%" minValue="0%" maxValue="100%" />
+					<Formatter ui="0%" />
+				</Slider>
+			</Category>
+		</Tab>
+	</Global>
+</ModSettings>
+```
+
+The class below binds those three settings and grays the sliders out while the switch is off:
 
 ```csharp
 public static class HudSettings
@@ -122,8 +179,8 @@ at all.
 Removing it with `IGlobalModSettingsCategory.RemoveSetting` does take the row away, but it is a poor
 substitute for hiding:
 
-- The settings window does not lay itself out again for an open page, so the row does not disappear
-  until the window is reopened.
+- The settings window does not lay itself out again on its own, so the row stays on an open page
+  until the player switches tabs, presses Apply or reopens the window.
 - The setting is gone from the tree, so `GetSetting` returns null and any listener bound to it is
   bound to an object nothing else references.
 - Gears saves the values of the settings that exist. A removed setting is not among them.

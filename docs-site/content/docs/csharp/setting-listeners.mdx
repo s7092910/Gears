@@ -19,14 +19,15 @@ them.
 |---|---|---|
 | [`[Setting]`](/docs/reference/attributes/setting-attribute) | a static field or property | assigns the setting itself to the member |
 | [`[SettingPlayerAction]`](/docs/reference/attributes/setting-player-action-attribute) | a static `PlayerAction` field or property | [reads the member](#attach-a-playeraction-to-a-binding) and assigns it to a Binding setting's `PlayerAction` |
-| [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) | a static method | `SettingValue` changed, which means the player saved. On a world path, [invoke-only](#settingonvaluechanged-on-a-world-path) |
+| [`[SettingOnValueChanged]`](/docs/reference/attributes/setting-on-value-changed-attribute) | a static method | `SettingValue` changed, because the player pressed Apply or your code assigned it. On a world path, [invoke-only](#settingonvaluechanged-on-a-world-path) |
 | [`[SettingOnSelectedChanged]`](/docs/reference/attributes/setting-on-selected-changed-attribute) | a static method | `SelectedValue` changed, which means the player moved the control in the menu |
 | [`[SettingOnEnabled]`](/docs/reference/attributes/setting-on-enabled-attribute) | a static method | `Enabled` was turned on or off |
 | [`[SettingOnApplied]`](/docs/reference/attributes/setting-on-applied-attribute) | a static method | the setting was applied |
 
-Every attribute takes the setting path as its first argument. A null or empty path throws
-`ArgumentException` from the attribute constructor, which surfaces the first time Gears inspects the
-class. `[SettingOnValueChanged]` and `[SettingOnSelectedChanged]` take one more, optional argument,
+Every attribute takes the setting path as its first argument. A null, empty or whitespace path
+compiles, but the attribute constructor throws `ArgumentException` the first time Gears inspects the
+class. See [Exceptions that stop a bind](#exceptions-that-stop-a-bind).
+`[SettingOnValueChanged]` and `[SettingOnSelectedChanged]` take one more, optional argument,
 [`includeInSync`](#opting-a-listener-in).
 
 ## Setting paths
@@ -104,8 +105,19 @@ world's values already applied.
 "Already bound" is tracked per settings tree, so the global and world trees keep their own record.
 Binding one type does not stop a different one binding.
 
-`BindSettingsClass(null)` throws `ArgumentNullException`. Gears logs every other problem and skips
+`BindSettingsClass(null)` throws `ArgumentNullException`. Gears logs most other problems and skips
 that one member, and the rest still bind.
+
+### Exceptions that stop a bind
+
+Two problems are not caught, and they stop the whole bind rather than one member:
+
+- An attribute with a null, empty or whitespace path, whose constructor throws `ArgumentException`.
+- A `[Setting]` property whose setter throws.
+
+The exception leaves `BindSettingsClass`, so the members after it are not bound, and the type is
+not recorded as bound. Called from `InitMod`, it is logged as
+`Error thrown in InitMod() by <YourType> for <Your Mod>`.
 
 ## Bind a setting to a field or property
 
@@ -128,16 +140,16 @@ public static class MyGlobalListeners
 Either kind of member must be:
 
 - **Static.** Gears reports and skips a tagged instance field or property.
-- **Declared as a type the setting actually is.** Any interface or class in the setting's own
-  hierarchy works: `IModSetting`, `IGlobalModSetting`, `IValueModSetting<T>`,
-  `ISliderGlobalSetting<T>`, even the concrete class. Gears reports a mismatch, most often the wrong
-  `T`, and leaves the member alone.
+- **Declared as a type the setting actually is.** Any interface the setting implements works:
+  `IModSetting`, `IGlobalModSetting`, `IValueModSetting<T>`, `ISliderGlobalSetting<T>`. Gears
+  reports a mismatch, most often the wrong `T`, and leaves the member alone.
 
 A **field** must also be assignable, so neither `readonly` nor `const`. Gears reports and skips
 both.
 
 A **property** must also have a setter. Both `{ get; set; }` and `{ get; private set; }` bind, and
-Gears calls the setter, so a property with a body runs whatever logic it contains. A get-only
+Gears calls the setter, so a property with a body runs whatever logic it contains. A setter that
+throws [stops the bind](#exceptions-that-stop-a-bind). A get-only
 property, written `{ get; }` or as an expression body, has nothing to assign through, so Gears
 reports and skips it.
 
@@ -153,9 +165,13 @@ wrong.
 
 A [Binding](/docs/csharp/global-settings#key-binding) row rebinds a `PlayerAction` that your mod
 owns. Tag a static field or property that holds that action with `[SettingPlayerAction("…")]`, and
-`BindSettingsClass` assigns it to the Binding's `PlayerAction`:
+`BindSettingsClass` assigns it to the Binding's `PlayerAction`. This example assumes a `<Binding>`
+named `Boost` in the `Vehicle` category of a `Controls` tab:
 
 ```csharp
+using GearsAPI.Attributes;
+using InControl;
+
 public static class MyGlobalListeners
 {
     // PlayerInput is your own InControl.PlayerActionSet, and Boost is a PlayerAction on it.
@@ -227,11 +243,8 @@ public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
 }
 ```
 
-<Callout type="warn" title="Binding never calls a listener">
-  `BindSettingsClass` binds and only binds, on **both** sides. If it also called listeners, a mod
-  that binds and syncs would run every opted-in listener twice the first time and once every time
-  after. `SyncSettingsToClass` being the only caller is what makes every call identical.
-</Callout>
+`SyncSettingsToClass` is the only thing that calls a listener with a value no event delivered, so a
+bind followed by a sync runs each opted-in listener exactly once.
 
 ### Opting a listener in
 
@@ -267,18 +280,9 @@ Named arguments read better when the path is long:
 ### Keeping up with world values
 
 This is also how a mod keeps up with world values. `OnWorldSettingsLoaded` fires on every world load
-and rejoin, and Gears applies the incoming values *before* it fires, so by the time your listener
-runs the settings already hold the current world's values:
-
-```csharp
-public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
-{
-    worldSettings.SyncSettingsToClass(typeof(MyWorldListeners));
-}
-```
-
-This is the clearest reason to bind in `InitMod`: the world class is wired up once, and this
-callback does nothing but hand over each new world's values.
+and rejoin, with the new values already applied, so calling `SyncSettingsToClass` there hands each
+world's values to the listeners you bound once in `InitMod`. See
+[Hand each world's values to your listeners](/docs/csharp/world-settings#hand-each-worlds-values-to-your-listeners).
 
 ### Loading a value in raises nothing
 
@@ -288,7 +292,8 @@ loaded. While Gears reads values from XML, the value events are held back:
 | What moved the value | `OnValueChanged` / `OnSelectedChanged` |
 |---|---|
 | Gears restoring the player's saved global values at startup | silent |
-| Gears loading a world's values, or resetting them to defaults | silent |
+| Gears loading a world's values, or resetting them to defaults for a client | silent |
+| The host opening **Mods World Settings**, which resets each selected value to its default first | `OnSelectedChanged` raised |
 | The player moving a control in the menu | raised |
 | Your own code assigning `SettingValue` or `SelectedValue` | raised |
 
@@ -352,6 +357,9 @@ private static void SpawnChanged(IValueModSetting<int> setting, int newValue)
 ```
 
 ## Example
+
+This example uses the `ModSettings.xml` from [Getting Started](/docs/getting-started), plus a
+`<Color>` setting named `Accent` in the `HUD` category of a `Colors` tab:
 
 ```csharp
 using GearsAPI.Attributes;
@@ -449,8 +457,8 @@ The exception is the last line in the listener table, which reports a whole clas
 | `[SettingOnApplied("…")] on '…' targets a setting that does not support OnSettingApplied (only global settings expose it). Skipping registration of listener.` | `[SettingOnApplied]` on a world path |
 | `[SettingOnValueChangedAttribute("…")] on '…' targets a setting that holds no value and raises no 'OnValueChanged'. Skipping registration of listener.` | either value attribute on a Binding, which holds no value at all. A world setting is not this case: it holds a value, so the listener binds [invoke-only](#settingonvaluechanged-on-a-world-path) |
 | `'Ns.Type' has not been bound, so its listeners cannot be invoked. Call BindSettingsClass on it first.` | `SyncSettingsToClass` for a type no `BindSettingsClass` ever saw |
-| ``[SettingOnValueChangedAttribute] on '…' has an invalid signature, skipping registration of listener. Expected: static Void Method(IValueModSetting`1, Int32).`` | wrong parameter types, wrong parameter count, a non-void return, or a non-static method |
-| `[SettingOnValueChangedAttribute("…")] on '…' threw when it was invoked with the setting's current value: …` | your handler threw on an `SyncSettingsToClass` call; the remaining calls still run |
+| ``[SettingOnValueChangedAttribute] on '…' has an invalid signature, skipping registration of listener. Expected: static Void Method(IValueModSetting`1, Int32).`` | wrong parameter types, wrong parameter count, or a non-void return. An instance method is not reported: Gears never looks at it |
+| `[SettingOnValueChangedAttribute("…")] on '…' threw when it was invoked with the setting's current value: …` | your handler threw on a `SyncSettingsToClass` call; the remaining calls still run |
 | `'Ns.Type' of '<Your Mod>' was bound with BindSettingsClass and has [SettingOnValueChanged] or [SettingOnSelectedChanged] listeners written with includeInSync: true, but SyncSettingsToClass(typeof(Type)) was not called in OnGlobalSettingsLoaded(). …` | the class was bound but never synced in that callback. Carries the `[GearsMod]` tag, and names `OnWorldSettingsLoaded()` for a world class. See [Gears warns when the sync is missing](#gears-warns-when-the-sync-is-missing) |
 
 ### Field bindings

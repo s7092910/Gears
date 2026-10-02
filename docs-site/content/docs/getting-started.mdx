@@ -15,6 +15,7 @@ each kind does and which one a setting belongs in.
 
 - Install Gears. Players need it too, unless you keep it optional.
 - Have a mod folder with a `ModInfo.xml` in it.
+
 <Steps>
 <Step>
 ## Check your `ModInfo.xml`
@@ -84,8 +85,8 @@ searches no other location.
 
 	<World>
 		<Category name="Zombies" displayKey="myModCatZombies">
-			<Switch name="FeralNights" displayKey="myModFeralNights" type="bool" defaultValue="false">
-				<Description key="myModFeralNightsDesc" />
+			<Switch name="BiggerHordes" displayKey="myModBiggerHordes" type="bool" defaultValue="false">
+				<Description key="myModBiggerHordesDesc" />
 			</Switch>
 
 			<Slider name="SpawnMultiplier" displayKey="myModSpawnMultiplier" type="int" defaultValue="1">
@@ -98,11 +99,15 @@ searches no other location.
 
 That file declares five settings. Here is what each part does:
 
-- `<Global>` holds the player's settings. Tabs hold categories, and categories hold settings.
+- `<Global>` holds the player's settings. Tabs hold categories, and categories hold settings. A
+  `<Category>` placed directly under `<Global>`, outside a `<Tab>`, is ignored without a log line.
 - `<World>` holds one world's settings. World has no tabs, only categories.
-- Every `Selector`, `Slider`, `Switch` and `Color` needs a `type` and a `defaultValue`. Leave out
-  either one and Gears drops that setting and writes a line to the log. The rest of the file still
-  loads.
+- Every `Selector`, `Slider` and `Switch` needs a `type` and a `defaultValue`, and a `Color` needs a
+  `defaultValue`. Leave one out and Gears drops that setting and writes a line to the log. The rest
+  of the file still loads.
+- Give each category a name that is unique within its tab, and each setting a name that is unique
+  within its category. Gears drops a second category or setting with the same name, without a log
+  line.
 - A `float` accepts percent notation. `100%` is stored as `1.0`, and `<Formatter ui="0%">` displays
   it as a percentage again.
 - `<RestartScope>` tells the player that a change needs the world reloaded. With
@@ -133,8 +138,8 @@ myModHudScaleDesc,UI,Menu,x,,Size of the heads-up display as a percentage of the
 myModShowHints,UI,Menu,x,,Show hints
 myModShowHintsDesc,UI,Menu,x,,Show the on-screen hints.
 myModCatZombies,UI,Menu,x,,Zombies
-myModFeralNights,UI,Menu,x,,Feral nights
-myModFeralNightsDesc,UI,Menu,x,,Every night is a feral night.
+myModBiggerHordes,UI,Menu,x,,Bigger hordes
+myModBiggerHordesDesc,UI,Menu,x,,Blood moon hordes keep more zombies alive at once.
 myModSpawnMultiplier,UI,Menu,x,,Spawn multiplier
 ```
 
@@ -147,33 +152,39 @@ Settings](/docs/xml/localization).
 ## See the settings in the game
 
 Start the game with Gears and your mod installed. From the main menu, open **Mods**, pick your mod,
-and open the **Settings** tab. Edit the global settings there and press **APPLY**.
+and open the **Settings** tab. Edit the global settings there and press **Apply**. During a game,
+the same page opens from the **Mods** button of the pause menu.
 
-World settings are on the **Mods World Settings** button of the New Game and Continue Game screens.
+To edit world settings, open the **Mods** tab of the New Game or Continue Game screen, after the
+Multiplayer tab, and press **Mods World Settings**. Edit the values there and press **Save**.
 
-Gears stores the two kinds of value in different files:
+Gears saves global values to one file in the game's user data folder, shared by every mod, and
+world values to a file in each world's save folder. On Windows the user data folder is
+`%APPDATA%\7DaysToDie`. [Choose Global or World Settings](/docs/global-and-world-settings) lists the
+exact files.
 
-| Settings | File |
-|---|---|
-| Global | `<user data folder>\Gears\ModSettings.xml`, one file shared by every mod. On Windows the user data folder is `%APPDATA%\7DaysToDie`. |
-| World | `<save folder>\WorldModSettings.xml`, one file per world. |
-
-A setting with no saved value starts at its `defaultValue`.
+A setting with no saved value starts at its `defaultValue`. A new world starts with every world
+setting at its default, unless the player changed values on the New Game screen's **Mods World
+Settings**. Then it starts with the values last used there.
 </Step>
 <Step>
 ## Read a value from an XML patch
 
-Call `modsetting()` in any of your `Config/*.xml` patch files:
+Call `modsetting()` in any of your `Config/*.xml` patch files. The name of the patch file picks the
+game file it patches, so this patch to the blood moon horde lives in `Config/gamestages.xml`:
 
-```xml
+```xml title="Config/gamestages.xml"
 <configs>
 	<conditional>
-		<if cond="modsetting('MyMod', 'World', 'Zombies.FeralNights') == 'True'">
-			<set xpath="/gamestages/spawner[@name='BloodMoonHorde']/@count">4</set>
+		<if cond="modsetting('MyMod', 'World', 'Zombies.BiggerHordes') == 'True'">
+			<set xpath="/gamestages/spawner[@name='BloodMoonHorde']/gamestage/spawn/@maxAlive">6</set>
 		</if>
 	</conditional>
 </configs>
 ```
+
+When the host turns on **Bigger hordes**, every blood moon spawn entry that sets `maxAlive` keeps up
+to six zombies alive at once.
 
 A global path has three parts, `Tab.Category.Setting`. A world path has two,
 `Category.Setting`. The function returns the setting's serialized value as a **string**, so compare
@@ -197,7 +208,7 @@ public class MyModGears : IGearsModApi
 {
     // Your own mod reads these two properties.
     public static bool ShowHints { get; private set; } = true;
-    public static bool FeralNights { get; private set; }
+    public static bool BiggerHordes { get; private set; }
 
     public void InitMod(IGearsMod modInstance)
     {
@@ -218,11 +229,11 @@ public class MyModGears : IGearsModApi
 
     public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
     {
-        ISwitchWorldSetting<bool> feral = worldSettings
+        ISwitchWorldSetting<bool> hordes = worldSettings
             .GetCategory("Zombies")?
-            .GetSetting<ISwitchWorldSetting<bool>>("FeralNights");
+            .GetSetting<ISwitchWorldSetting<bool>>("BiggerHordes");
 
-        FeralNights = feral != null && feral.SettingValue;
+        BiggerHordes = hordes != null && hordes.SettingValue;
     }
 
     [SettingOnValueChanged("General.Display.ShowHints")]

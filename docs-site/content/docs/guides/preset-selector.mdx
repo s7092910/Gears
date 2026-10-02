@@ -74,8 +74,32 @@ localization key, which is how the row reads "Low" rather than `Low`. See
 </ModSettings>
 ```
 
-Keep the preset and the settings it drives in the same category. Nothing enforces that, but the
-player needs to see the rows move.
+<Callout type="warn" title="Put the driven settings on the preset's tab">
+  The settings window only tracks the rows on the tab it is showing. A driven setting on another tab
+  still moves when the preset changes, but Apply never commits it and closing the window never puts
+  it back. Keep every driven setting on the same tab as the preset. The same category is best, so
+  the player sees the rows move.
+</Callout>
+
+Give the preset the `defaultValue` whose values match the driven settings' defaults. Here Medium
+stands for 120, true and 2, which are the defaults above. Otherwise the first launch shows a preset
+that does not describe its rows, and the Defaults button ends on Custom.
+
+Each value the preset and the Shadows switch can show needs a row in `Localization.csv`, or the row
+shows the raw key. A bool switch looks up its prefix followed by `True` or `False`. The other
+`displayKey` values need rows too, as described in [Localize Your Settings](/docs/xml/localization):
+
+```csv title="Config/Localization.csv"
+Key,File,Type,UsedInMainMenu,NoTranslate,english
+myModPreset,UI,Menu,x,,Detail Preset
+myModPresetDesc,UI,Menu,x,,Sets the three display settings below it together.
+myModPreset_Low,UI,Menu,x,,Low
+myModPreset_Medium,UI,Menu,x,,Medium
+myModPreset_High,UI,Menu,x,,High
+myModPreset_Custom,UI,Menu,x,,Custom
+myModOnOff_True,UI,Menu,x,,On
+myModOnOff_False,UI,Menu,x,,Off
+```
 
 ## Write the preset table
 
@@ -105,6 +129,30 @@ private static readonly Dictionary<DetailPreset, Detail> presets =
         { DetailPreset.Medium, new Detail(120, true,  2) },
         { DetailPreset.High,   new Detail(300, true,  3) },
     };
+```
+
+## Bind the four settings
+
+The snippets below live on one static class, `DisplaySettings`, and reach the settings through
+these fields. [The whole thing](#the-whole-thing) shows the class with its `BindSettingsClass` call.
+
+```csharp
+private const string PresetPath = "General.Display.Preset";
+private const string DrawDistancePath = "General.Display.DrawDistance";
+private const string ShadowsPath = "General.Display.Shadows";
+private const string TextureQualityPath = "General.Display.TextureQuality";
+
+[Setting(PresetPath)]
+private static ISelectorGlobalSetting<DetailPreset> preset;
+
+[Setting(DrawDistancePath)]
+private static ISliderGlobalSetting<int> drawDistance;
+
+[Setting(ShadowsPath)]
+private static ISwitchGlobalSetting<bool> shadows;
+
+[Setting(TextureQualityPath)]
+private static ISelectorGlobalSetting<int> textureQuality;
 ```
 
 ## Move the rows when the preset changes
@@ -239,8 +287,8 @@ ones that were saved together, so they already agree.
   would rather not offer it, leave it out of the enum and accept that the preset row keeps naming a
   preset whose values the player has since changed.
 - **World settings work the same way**, with two-segment paths such as
-  `"Display.Preset"`. `[SettingOnSelectedChanged]` is the only value listener a world setting
-  exposes, which is the one this guide uses. Put the world members on their own type, because each
+  `"Display.Preset"`. `[SettingOnSelectedChanged]` is the only value listener Gears raises on a
+  world setting, which is the one this guide uses. Put the world members on their own type, because each
   `BindSettingsClass` call resolves every path on the type it is given. See
   [Use World Settings in C#](/docs/csharp/world-settings).
 

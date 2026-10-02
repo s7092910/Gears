@@ -61,14 +61,17 @@ their global counterparts, the same value types, and the same three values: `Def
 | `RestartScope` | no | a world value is applied with the world, so there is nothing to restart |
 | `OnSettingApplied` | no | there is no per-player Apply step to hook |
 | `OnValueChanged` | **no** | the applied value arrives with the world rather than changing under the player, so there is no event — but see below |
-| `OnSelectedChanged` | yes | it fires while the host is picking values on the world settings screen, but **not** while Gears loads a world's values in |
+| `OnSelectedChanged` | yes | it fires while the host is picking values on the world settings screen, but **not** while Gears loads a world's values in. See the note below the table |
 | `Enabled` and its gate | yes | it behaves exactly as it does on a global setting |
 
+Opening **Mods World Settings** resets every world setting's selected value to its default before
+it loads the saved values. That reset raises `OnSelectedChanged` for each setting whose selected
+value was not already the default, so a listener can run when the host only opens the screen.
+
 There is no `OnValueChanged` *event* on a world setting, but `[SettingOnValueChanged]` still works on
-a world path. Gears binds it **invoke-only**: the method is never raised by a change, and is instead
-called with the setting's current `SettingValue` every time you call `SyncSettingsToClass`.
-That is the natural shape for a world value, which only ever arrives with a world. Because that call
-is its only way to run, it has to be written with `includeInSync: true`.
+a world path. Gears binds it **invoke-only**, and only `SyncSettingsToClass` calls it, so write it
+with `includeInSync: true`. See
+[`[SettingOnValueChanged]` on a world path](/docs/csharp/setting-listeners#settingonvaluechanged-on-a-world-path).
 
 <Callout type="warn">
   `[SettingOnApplied]` has no such fallback — there is no per-player Apply step on a world setting —
@@ -94,17 +97,25 @@ current world:
 | Situation | What `SettingValue` holds |
 |---|---|
 | Main menu, no world loaded | the `defaultValue`, or the last world's values if the player has already been in a world this session |
-| Hosting or single player, after world start | the values from the world's `WorldModSettings.xml`, or the defaults for a new world |
-| Client, and the server sent settings | the server's values |
+| Hosting or single player, after world start | the values from the world's `WorldModSettings.xml`. A new world starts at the defaults, unless the player changed settings with **Mods World Settings** on the New Game screen's **Mods** tab, in which case it starts with the values last used on that screen |
+| Client, and the server sent settings | the server's values. A setting the server's file does not include, such as one from a mod the server does not run, keeps the value it already held |
 | Client, and the server sent nothing because it has no Gears | every world setting reset to its default |
 
 `OnWorldSettingsLoaded` can fire more than once per session, so treat it as "the world values have
 changed" rather than as a startup callback. Gears does not fire it for a mod that has no world
-settings.
+settings. It runs before the world is loaded, so do not reach for the world or its entities from
+it. See [Startup order](/docs/csharp/getting-started#startup-order).
 
-Loading those values raises no `OnSelectedChanged`, on any of the three routes above — that callback
-is how a mod finds out, and `SyncSettingsToClass` is how it gets the values. See [Loading a
-value in raises nothing](/docs/csharp/setting-listeners#loading-a-value-in-raises-nothing).
+Loading those values raises no `OnSelectedChanged`, on any of the three routes above.
+`OnWorldSettingsLoaded` is how a mod finds out that values arrived, and `SyncSettingsToClass` is how
+it gets them. See [Loading a value in raises
+nothing](/docs/csharp/setting-listeners#loading-a-value-in-raises-nothing).
+
+A dedicated server never opens the world settings screen. The server admin edits the save's
+`WorldModSettings.xml` while the server is stopped instead. See
+[World Settings on a Dedicated Server](/docs/players/dedicated-server-world-settings).
+
+## Hand each world's values to your listeners
 
 Bind once in `InitMod`, sync on every load. `SyncSettingsToClass` pushes the new world's values into
 the listeners that are already bound. `MyMod` below stands for your own class:

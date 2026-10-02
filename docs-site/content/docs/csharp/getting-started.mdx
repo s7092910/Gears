@@ -1,4 +1,4 @@
-﻿---
+---
 title: Get Started with C#
 description: Reference GearsAPI.dll, implement IGearsModApi, learn when each callback fires, and reach your settings without a callback.
 ---
@@ -25,14 +25,21 @@ project. Whether you also ship a copy of it depends on whether Gears is optional
   be loadable the moment it compiles any method that mentions a GearsAPI type.
 </Callout>
 
+If you ship your own copy, ship the `GearsAPI.dll` from the current Gears release. A player who has
+Gears installed then has two copies, and they must be the same version, or you get the mismatch
+described below.
+
 When your mod is built against one GearsAPI version and the player runs a different one, the
-mismatch surfaces as a `TypeLoadException` inside your callback. Gears catches it and logs:
+mismatch can surface as a `TypeLoadException` inside your callback. When Gears can tell that the
+two versions differ, it catches the exception and logs:
 
 ```text
 [Gears] [GearsMod] '<Your Mod>' is using an outdated GearsAPI: it was built against v2.0.1.0 but Gears is running v3.0.0.0, so '<type>' could not be loaded. The mod needs rebuilding against the current GearsAPI.
 ```
 
-Rebuild against the current `GearsAPI.dll` when you see that line.
+A member that no longer exists surfaces as a `MissingMethodException` or `MissingFieldException`
+instead, and Gears logs it as an ordinary [callback error](#startup-order). Rebuild against the
+current `GearsAPI.dll` when you see either.
 
 ## Keep Gears optional
 
@@ -68,7 +75,8 @@ Gears instantiates every matching class and invokes every callback on every inst
 the normal case, and several are allowed.
 
 A constructor that throws is logged, and Gears skips that class. An assembly whose types cannot be
-enumerated is logged and skipped as well.
+loaded is logged and skipped as well. Any other error while scanning is logged and stops the scan of
+your mod's remaining assemblies.
 
 ## Startup order
 
@@ -117,7 +125,9 @@ Gears calls your callbacks in this order:
 <Step>
 **World Start** `OnWorldSettingsLoaded(IModWorldSettings)` fires in one of three ways:
    - **Hosting or single player:** when the world starts, after the save's `WorldModSettings.xml`
-     has been loaded, or after defaults have been applied for a new save.
+     has been loaded. A new world starts with every world setting at its default, unless the
+     player changed them with **Mods World Settings** on the New Game screen's **Mods** tab. Then
+     it starts with the values last used on that screen.
    - **Joining a server:** when the server's world settings arrive with the other config files.
    - **Joining a server that sent none:** Gears resets every world setting to its default, then
      fires the callback.
@@ -126,6 +136,12 @@ Gears calls your callbacks in this order:
 
 `OnWorldSettingsLoaded` can fire **more than once per session**, for example when the player leaves
 one world and joins another. Gears **skips it for a mod that has no world settings**.
+
+<Callout type="warn" title="The world does not exist yet">
+  `OnWorldSettingsLoaded` runs while the game is still starting or joining the world, before the
+  world is loaded. Read your values there, but do not reach for `GameManager.Instance.World`,
+  players or entities. Use the values later, from your own game hooks.
+</Callout>
 
 When one of your callbacks throws, Gears logs
 `Error thrown in <Callback>() by <YourType> for <Your Mod>` with the exception and carries on. Your
@@ -168,29 +184,29 @@ public class MyModGears : IGearsModApi
 {
     // The rest of your mod reads these two properties.
     public static float HudScale { get; private set; } = 1f;
-    public static bool FeralNights { get; private set; }
+    public static bool BiggerHordes { get; private set; }
 
     // Bind here: ModSettings.xml has been read, so every setting exists, and this runs once.
     public void InitMod(IGearsMod modInstance)
     {
-        modInstance.GlobalSettings.BindSettingsClass(typeof(Global));
-        modInstance.WorldSettings.BindSettingsClass(typeof(World));
+        modInstance.GlobalSettings.BindSettingsClass(typeof(GlobalBindings));
+        modInstance.WorldSettings.BindSettingsClass(typeof(WorldBindings));
     }
 
     // Read values here, where they are final.
     public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
     {
-        HudScale = Global.HudScale.SettingValue;
+        HudScale = GlobalBindings.HudScale.SettingValue;
     }
 
     public void OnWorldSettingsLoaded(IModWorldSettings worldSettings)
     {
-        FeralNights = World.FeralNights.SettingValue;
+        BiggerHordes = WorldBindings.BiggerHordes.SettingValue;
     }
 
     // Global and world members need separate types. Each call resolves every path on the type it is
     // given, and the two kinds of path have different formats.
-    private static class Global
+    private static class GlobalBindings
     {
         // [Setting] finds the setting for you and assigns it to the field.
         [Setting("General.Display.HudScale")]
@@ -203,16 +219,16 @@ public class MyModGears : IGearsModApi
         }
     }
 
-    private static class World
+    private static class WorldBindings
     {
-        [Setting("Zombies.FeralNights")]
-        public static ISwitchWorldSetting<bool> FeralNights;
+        [Setting("Zombies.BiggerHordes")]
+        public static ISwitchWorldSetting<bool> BiggerHordes;
     }
 }
 ```
 
 That example assumes a `ModSettings.xml` that declares a `HudScale` slider in the `Display` category
-of the `General` tab, and a `FeralNights` switch in the `Zombies` world category. See
+of the `General` tab, and a `BiggerHordes` switch in the `Zombies` world category. See
 [Getting Started](/docs/getting-started) for that file.
 
 It reads each `SettingValue` in the loaded callbacks, which is the shortest way to start. To let the

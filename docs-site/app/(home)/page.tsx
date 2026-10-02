@@ -404,8 +404,8 @@ function Questions() {
         <p>
           Guppy&apos;s Unofficial 7DtD Modding Server is a community Discord for 7 Days to Die modding.
           Ask about Gears in the <Brand>#laydors-toolshed</Brand> channel, whether you play with mods
-          or write them. Include the lines starting
-          with <code>[Gears]</code> from your game log so others can see what happened.
+          or write them. Include the full log file from the session where the problem happened so
+          others can see what happened.
         </p>
         <div className="mt-6">
           <a href={discordUrl} rel="noreferrer noopener" target="_blank" className={primaryButton}>

@@ -1,10 +1,14 @@
 {
   "title": "For Players",
-  "description": "Install Gears, change a mod's settings, and set world settings on a dedicated server.",
+  "description": "Install Gears, change a mod's settings, and set world and global settings on a dedicated server.",
   "root": true,
   "pages": [
     "index",
+    "---Start here---",
+    "getting-started",
     "faq",
-    "dedicated-server-world-settings"
+    "---Dedicated Servers---",
+    "dedicated-server-world-settings",
+    "dedicated-server-global-settings"
   ]
 }

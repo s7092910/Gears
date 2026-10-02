@@ -22,6 +22,10 @@ modsetting('ModName', 'SettingsGroup', 'SettingPath')
 | `SettingsGroup` | `Global` or `World`, in any case. |
 | `SettingPath` | For a global setting, `TabName.CategoryName.SettingName`, exactly three parts. For a world setting, `CategoryName.SettingName`, exactly two. The names are the `name` attributes from `ModSettings.xml`, not the display keys. |
 
+Gears matches `ModName` and every part of `SettingPath` exactly, including case. Only the function
+name and `SettingsGroup` ignore case. Gears splits `SettingPath` on every `.`, so `modsetting()`
+cannot read a tab, category or setting whose `name` contains a dot.
+
 The function returns the setting's **serialized value as a string**, which is the same text Gears
 writes to the saved settings file:
 
@@ -39,10 +43,10 @@ Compare the result against a quoted string: `== 'True'`, `== 'Hard'`, `== '2'`.
 <configs>
 	<conditional>
 		<if cond="modsetting('MyMod', 'Global', 'General.Difficulty.Mode') == 'Hard'">
-			<set xpath="/progression/@experience_multiplier">0.5</set>
+			<set xpath="/progression/level/@experience_multiplier">1.1</set>
 		</if>
 		<else>
-			<set xpath="/progression/@experience_multiplier">1.0</set>
+			<set xpath="/progression/level/@experience_multiplier">1.05</set>
 		</else>
 	</conditional>
 </configs>
@@ -51,7 +55,7 @@ Compare the result against a quoted string: `== 'True'`, `== 'Hard'`, `== '2'`.
 A world setting uses the two-part path:
 
 ```xml
-<if cond="modsetting('MyMod', 'World', 'Zombies.FeralNights') == 'True'">
+<if cond="modsetting('MyMod', 'World', 'Zombies.BiggerHordes') == 'True'">
 ```
 
 `modsetting` sits alongside the game's own condition functions, such as `mod_loaded`, `mod_version`,
@@ -81,8 +85,8 @@ This form is a plain text substitution, so it follows a few rules of its own:
   a parenthesis.
 - Gears replaces every call in an attribute, not just the first. If the resulting value itself
   contains the text `modsetting(`, Gears leaves it alone rather than expanding it again.
-- A call with no closing `)` is an error naming the file, attribute and line, and patching of that
-  file stops.
+- A call with no closing `)` is an error, and patching of that file stops. So is any of the
+  failures listed under [Error messages](#error-messages).
 
 ## Guard the patch for players without Gears
 
@@ -98,7 +102,7 @@ This form is a plain text substitution, so it follows a few rules of its own:
 		<if cond="mod_loaded('Gears')">
 			<append xpath="/windows/window[@name='windowHUD']">
 				<label depth="4" width="500" height="40"
-				       text="Day of the week: modsetting('MyMod', 'World', 'Calendar.DayOfWeek')" />
+				       text="Day of the week: modsetting('MyMod', 'Global', 'Calendar.Selectors.DayOfWeek')" />
 			</append>
 		</if>
 		<else>
@@ -115,15 +119,22 @@ This form is a plain text substitution, so it follows a few rules of its own:
 Gears populates settings at game start, before any XML is patched, so a **global setting** always
 holds its current value at patch time.
 
-A **world setting** belongs to the world. On the host, Gears loads it when the world starts. On a
-client, it arrives from the server with the other config files. Both happen before the world's XML
-is patched, so a world patch reads the right values.
+A **world setting** belongs to the world. On the host, Gears loads it when the world starts, before
+the world's XML is patched, so a world patch reads the right values. A client does not patch the
+world's config files itself. It receives them from the server already patched, so they carry the
+server's values.
 
-Before any world is loaded, a world setting reads as its `defaultValue`.
+Before the first world is loaded, a world setting reads as its `defaultValue`. After the host leaves
+a world, a world setting keeps that world's values until the next world loads.
 
 ## Error messages
 
-Gears reports every failure as an XML patch error in the log, with the file and the line.
+Gears reports every failure as an XML patch error in the log. For the inline form, Gears first
+logs a warning that names the file, the attribute and the position of the call:
+
+```text
+[Gears] XML.<file> (<attribute>, line <n> at pos <m>): <message>
+```
 
 These messages check the arguments themselves. In the conditional form each one is prefixed
 `Calling function `; inline it is not:
@@ -131,11 +142,20 @@ These messages check the arguments themselves. In the conditional form each one 
 | Message | Cause |
 |---|---|
 | `modsetting with invalid number of arguments (N, expected 3)` | wrong argument count |
-| `modsetting: Parameter ModName expected string argument` | the first argument is empty or not a string |
-| `modsetting: Parameter SettingsGroup expected string argument` | the second argument is empty or not a string |
-| `modsetting: Parameter SettingsGroup expected to be either 'Global or World'` | the second argument is something else |
-| `modsetting: Parameter SettingName expected string argument` | the third argument is empty or not a string |
-| `modsetting: mod <ModName> could not be found` | no loaded mod has that `<Name>` |
+| `modsetting: Parameter ModName expected string argument` | conditional: the first argument is not a quoted string. Inline: it is empty. |
+| `modsetting: Parameter SettingsGroup expected string argument` | conditional: the second argument is not a quoted string. Inline: it is empty. |
+| `modsetting: Parameter SettingsGroup expected to be either 'Global or World'` | the second argument is something else, including an empty `''` in the conditional form |
+| `modsetting: Parameter SettingName expected string argument` | conditional: the third argument is not a quoted string. Inline: it is empty. |
+| `modsetting: mod <ModName> could not be found` | no loaded mod has that `<Name>`, including an empty `''` in the conditional form |
+
+In the conditional form, an empty `''` third argument is a string, so it fails as a path with the
+wrong number of parts instead.
+
+The inline form has one more message of its own:
+
+| Message | Cause |
+|---|---|
+| `modsetting( at position <n> has no closing ')' in "<value>"` | the call has no closing parenthesis |
 
 These messages come from resolving the path, and they carry the `Calling function ` prefix in
 **both** forms:

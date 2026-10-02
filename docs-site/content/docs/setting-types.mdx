@@ -30,10 +30,11 @@ Global                          World
 Tabs appear as a row of buttons across the top of the mod's settings page. A category is a heading
 within a tab, and the settings sit under it. World settings have no tabs.
 
-![Tabs](/images/Setting-Tabs.png)
+![A row of five tab buttons, Selectors, Sliders, Switches, Bindings and Color, with arrows at each end](/images/Setting-Tabs.png)
 
-A tab is only a heading. A category does more: it can carry a caption, a description and a preview
-image, which appear in the description pane when the player hovers over it.
+A tab carries only a label and an optional hover tooltip, set with `tooltipKey`. A category does
+more: it can carry a caption, a description and a preview image, which appear in the description
+pane when the player hovers over it.
 
 ## Pick a type
 
@@ -46,15 +47,16 @@ image, which appear in the description pane when the player hovers over it.
 | rebind a key | [Binding](#binding) | none | yes | no |
 
 <Callout type="warn">
-  Every Selector, Slider, Switch and Color must declare a `type` and a `defaultValue`. Gears drops a
-  setting that is missing either one, and writes a line to the log. Nothing appears in the menu.
+  Every Selector, Slider and Switch must declare a `type` and a `defaultValue`, and every Color a
+  `defaultValue`. Gears drops a setting that is missing one, and writes a line to the log. Nothing
+  appears in the menu.
 </Callout>
 
 ---
 
 ## Selector
 
-![Selector](/images/Selector-Setting.png)
+![A Selector row showing the value Monday between a left and a right arrow](/images/Selector-Setting.png)
 
 A Selector shows one value at a time, with arrows on either side to step through the allowed
 values. Use it when the options form a fixed and fairly short list: quality levels, a day of the
@@ -66,7 +68,8 @@ Set the allowed values in one of three ways:
 - Give an `<Incremental increment minValue maxValue/>` range, which Gears expands to every step.
   `int` and `float` only.
 - Name an enum as the `type`. Gears uses the enum's own members, in declaration order, and you write
-  nothing else.
+  nothing else. Write the enum's full name, such as `MyMod.Difficulty`, or add the assembly name,
+  such as `MyMod.Difficulty, MyMod`. See [Use Custom Value Types](docs/csharp/custom-value-types/).
 
 Gears shows each value through the optional `<Formatter ui="…"/>` and `<LocalizationPrefix/>`, so a
 `string` selector can display translated labels for its raw values. Add `<Wrap wrap="true"/>` to let
@@ -93,12 +96,18 @@ the last value step round to the first.
 ```
 
 The second example attaches a preview image to two of its values. The pane beside the setting shows
-the image for whichever value is selected.
+the image for whichever value is selected. `@modfolder(MyMod):` is the game's prefix for a path
+inside a mod's folder. Replace `MyMod` with the `<Name>` from your `ModInfo.xml`.
 
 In C# a Selector is an [`ISelectorGlobalSetting<T>`](/docs/reference/global/i-selector-global-setting)
-or an [`ISelectorWorldSetting<T>`](/docs/reference/world/i-selector-world-setting):
+or an [`ISelectorWorldSetting<T>`](/docs/reference/world/i-selector-world-setting). The C# examples
+on this page assume the settings sit in a `Display` category of a `General` tab, and look that
+category up first:
 
 ```csharp
+// modSettings is the IModGlobalSettings that OnGlobalSettingsLoaded receives.
+IGlobalModSettingsCategory category = modSettings.GetTab("General")?.GetCategory("Display");
+
 ISelectorGlobalSetting<string> units = category.GetSetting<ISelectorGlobalSetting<string>>("Units");
 string current = units.SettingValue;           // "metric" or "imperial"
 string[] all = units.GetAllowedValues();       // { "metric", "imperial" }
@@ -106,7 +115,7 @@ string[] all = units.GetAllowedValues();       // { "metric", "imperial" }
 
 ## Slider
 
-![Slider](/images/Slider-Setting.png)
+![A Slider row with a bar, its current value drawn over it, and an arrow at each end](/images/Slider-Setting.png)
 
 A Slider is a bar the player drags, with arrows that nudge it one step. The current value is drawn
 over the bar. Use it for a number with many possible values, where the exact figure matters less
@@ -143,7 +152,7 @@ float step = hudScale.Increment;               // 0.05f
 
 ## Switch
 
-![Switch](/images/Switch-Setting.png)
+![A Switch row with an Off button and an On button side by side, with On lit](/images/Switch-Setting.png)
 
 A Switch is two buttons side by side, and the lit one is the current value. Use it to turn something
 on or off, or for any either-or choice: metric or imperial, left or right, easy or hard.
@@ -168,7 +177,7 @@ keys. That is how a `bool` switch reads "Off" and "On" instead of "False" and "T
 </Switch>
 
 <!-- MyMod.Difficulty is an enum your own mod declares. -->
-<Switch name="Hardcore" displayKey="myModHardcore" type="MyMod.Difficulty" defaultValue="Easy">
+<Switch name="Difficulty" displayKey="myModDifficulty" type="MyMod.Difficulty" defaultValue="Easy">
 	<Buttons left="Easy" right="Hard" />
 </Switch>
 ```
@@ -182,7 +191,7 @@ bool show = hints.SettingValue;
 
 ## Color
 
-![Color](/images/Color-Setting.png)
+![A Color row with R, G, B and hex value fields, a color picker and a swatch of the chosen color](/images/Color-Setting.png)
 
 A Color setting opens the game's own color picker and shows the chosen color as a swatch. Use it for
 anything the player might want to tint: heads-up display (HUD) text, a marker, an outline. Its type
@@ -213,7 +222,7 @@ attributes accept directly.
 
 ## Binding
 
-![Binding](/images/Control-Binding-Setting.png)
+![A Binding row that reads - Missing PlayerAction - beside a cross button](/images/Control-Binding-Setting.png)
 
 A Binding is a row in the mod's settings page where the player rebinds one of your mod's controls,
 using the same control the game's own Controls screen uses. The cross clears the binding. A Binding
@@ -228,11 +237,20 @@ holds no value of its own: the key lives with the game's `PlayerAction` behind i
 A Binding is **global only**, takes no `type` and no `defaultValue`, and is not written to the saved
 settings file. The binding is stored wherever your `PlayerAction` set stores it.
 
+This Binding sits in a `Vehicle` category of a `Controls` tab, so its path is
+`Controls.Vehicle.Boost`:
+
 ```xml
-<Binding name="Boost" displayKey="myModBoost">
-	<Description key="myModBoostDesc" />
-</Binding>
+<Tab name="Controls" displayKey="myModTabControls">
+	<Category name="Vehicle" displayKey="myModCatVehicle">
+		<Binding name="Boost" displayKey="myModBoost">
+			<Description key="myModBoostDesc" />
+		</Binding>
+	</Category>
+</Tab>
 ```
+
+Assign the `PlayerAction` when the global settings have loaded:
 
 ```csharp
 public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
@@ -248,6 +266,10 @@ public void OnGlobalSettingsLoaded(IModGlobalSettings modSettings)
     }
 }
 ```
+
+You can also tag a static field or property that holds the `PlayerAction` with
+`[SettingPlayerAction]`, and `BindSettingsClass` assigns it for you. See
+[Attach a PlayerAction to a Binding](/docs/csharp/setting-listeners#attach-a-playeraction-to-a-binding).
 
 ---
 

@@ -3,7 +3,7 @@ title: Join the Mod Showcase
 description: Open a pull request on the Gears GitHub repository to add your mod's card to the Mod Showcase page.
 ---
 
-To list your mod on the [Mod Showcase](https://s7092910.github.io/Gears/showcase/) page, open a pull
+To list your mod on the [Mod Showcase](/showcase) page, open a pull
 request on the [Gears GitHub repository](https://github.com/s7092910/Gears). A pull request is a
 proposed change that the Gears maintainer reviews before merging it into the site.
 
@@ -11,7 +11,7 @@ The page lists mods that use Gears for their settings. Each card shows the mod's
 description, and an image, and links to the mod's page. A card also shows whether the mod has
 global settings, which players can change from the main menu or in game, and world settings, which
 are set for each world and can't change while the world runs. For more on both, see
-[Global and World Settings](/docs/global-and-world-settings).
+[Choose Global or World Settings](/docs/global-and-world-settings).
 
 ## Before you start
 
@@ -132,9 +132,16 @@ world settings, or settings read from C#.>
 **Description:** <One or two sentences on what the mod does.>
 
 **Download page:** <URL of the mod's download page, such as its Nexus Mods page>
+
+### Checklist
+
+- [ ] The image is in `docs-site/public/images/showcase/`, named `<Mod-Name>.png`, at a 16:9 ratio.
+- [ ] The entry is added to the end of `showcaseMods` in `docs-site/content/mod-showcase.ts`.
+- [ ] `globalSettings` and `worldSettings` in the entry match the settings the mod has.
 ```
 
 - `<Mod Name>` is the same value as `name` in your entry.
+- Tick each checklist item once it is true, by changing `[ ]` to `[x]`.
 - The description can be longer than the one on the card. Use it to give the reviewer context.
 - The download page is usually the same as `url` in your entry.
 

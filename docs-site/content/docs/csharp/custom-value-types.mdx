@@ -141,6 +141,13 @@ The rules:
 - Gears catches a parser that throws at the point of use. It logs the bad value, and the setting
   keeps its previous value.
 
+<Callout type="warn" title="Fix a provider that fails to load before you ship">
+  Nothing catches the `InvalidOperationException` from a parser or formatter with the wrong
+  signature. Gears scans providers first, before it loads any mod's settings, so the exception stops
+  Gears loading settings for **every** mod the player has installed, not only yours. Start the game
+  with your mod installed and check the log for `has an invalid signature` before you release it.
+</Callout>
+
 <Callout type="warn" title="Registration is game-wide and last-wins">
   Gears keeps one parser and one formatter per value type for the whole game, not per mod. Whichever
   provider is scanned last replaces the ones before it, with nothing in the log. Registering `int` or
@@ -158,7 +165,7 @@ The rules:
 
 With the `Vector2` provider above:
 
-- `type="UnityEngine.Vector2"` in XML resolves and has a parser, but the parser then logs
+- `type="UnityEngine.Vector2"` in XML resolves and has a parser, but Gears then logs
   `Setting 'x' of type 'UnityEngine.Vector2' could not be created: No ISelectorGlobalSetting implementation registered for value type 'UnityEngine.Vector2'`
   and drops the setting.
 - `CreateSetting<ISelectorGlobalSetting<Vector2>>(...)` throws `InvalidOperationException` with the

@@ -7,7 +7,7 @@ overwrites them. CI fails the build if they are stale.
 npm run gen:api          # regenerate the reference pages
 npm run gen:api:report   # only print the drift report, write nothing
 npm run gen:api:check    # fail if the pages are stale (used by CI)
-npm run check            # gen:api:check + check:links
+npm run check            # gen:api:check + check:links + check:versions
 ```
 
 ## Where each piece of a page comes from
@@ -88,6 +88,7 @@ there to publish it.
 | `lib/model.mjs` | namespace→section map, reading order, and all derived relationships |
 | `lib/dump.mjs` | debug aid: `node scripts/lib/dump.mjs` prints everything the parser found |
 | `check-links.mjs` | audits every internal doc link and heading anchor |
+| `check-versions.mjs` | fails when a Gears or GearsAPI version on the site differs from `ModInfo.xml` or `AssemblyInfo.cs` |
 | `check-subpath.mjs` | verifies the export works under `/Gears/`, as GitHub Pages serves it |
 
 ### Checking the export the way Pages serves it

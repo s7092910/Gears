@@ -5,6 +5,16 @@ import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..', 'content', 'docs');
 const PUBLIC = path.resolve(import.meta.dirname, '..', 'public');
+const APP = path.resolve(import.meta.dirname, '..', 'app');
+
+/** True when app/<route>/page.tsx exists, directly or inside a route group such as app/(home). */
+function appRouteExists(route) {
+  const groups = fs
+    .readdirSync(APP, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && /^\(.+\)$/.test(e.name))
+    .map((e) => e.name);
+  return ['', ...groups].some((g) => fs.existsSync(path.join(APP, g, route, 'page.tsx')));
+}
 
 function walk(d) {
   return fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => {
@@ -75,6 +85,12 @@ for (const f of files) {
       if (!fs.existsSync(path.join(PUBLIC, target.replace(/^\//, '')))) {
         report(`MISSING IMAGE ${target}  (in ${path.relative(ROOT, f)})`);
       }
+      continue;
+    }
+    // Site pages outside /docs, such as /showcase, are routes under app/. Accept one when its
+    // page.tsx exists, ignoring route groups like (home).
+    const route = target.split('#')[0].replace(/\/$/, '');
+    if (!target.startsWith('/docs') && route.startsWith('/') && appRouteExists(route)) {
       continue;
     }
     if (!target.startsWith('/docs')) {

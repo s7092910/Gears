@@ -1,52 +1,102 @@
 ---
 title: Player FAQ
-description: Short answers for players — what Gears does, who controls which settings in multiplayer, where the values are saved, and what to do when a mod's settings page looks wrong.
+description: Short answers for players — installing and updating Gears, who controls which settings in multiplayer, where the values are saved, and what to do when something looks wrong.
 ---
 
 Short answers for players. For the longer version of any of these, start at
-[Gears for Players](/docs/players).
+[Getting Started](/docs/players/getting-started).
 
-## What does Gears do?
+## About Gears
+
+### What does Gears do?
 
 Gears draws a settings page for other mods, saves what you pick, and hands the values back to those
 mods. It adds no items, blocks or gameplay of its own.
 
-## Do I need Gears for every mod?
+### Do I need Gears for every mod?
 
 No. Only mods that were built to use it. Those mods say so, and they usually stop working, or fall
 back to their defaults, without it.
 
-## Nothing happens when I install Gears
+### Is Gears safe to remove?
+
+Yes, but the mods that use it lose their settings pages, and most of them need it to run at all.
+Your saved values stay where they are until you delete them: global settings in
+`%APPDATA%\7DaysToDie\Gears`, and each world's settings in its `WorldModSettings.xml`. Reinstalling
+Gears brings them back.
+
+## Installing and updating
+
+### Nothing happens when I install Gears
 
 Gears adds a **Mods** button to the main menu and a **Mods** button to the in-game menu. If neither
 appears, the mod is not being loaded:
 
-- The `Gears` folder has to sit **directly** inside `Mods`, with its `ModInfo.xml` inside it. A
+- The `00000-Gears` folder has to sit **directly** inside `Mods`, with its `ModInfo.xml` inside it. A
   second folder in between stops the game finding it.
 - EasyAntiCheat has to be off. Gears ships a `.dll`, and the game refuses to load code mods with EAC
   on.
 - The game has to be restarted after installing.
 
-## Where do I change a mod's settings?
+To check, search the [log](#where-is-the-log) for `[Gears] Initializing Gears' Setting Manager`.
+Gears writes that line every time it loads. If it is missing, the game did not load Gears.
+
+### Gears does not work on an experimental build
+
+Gears has no official releases for experimental builds of 7 Days to Die. Any Gears build published
+for an experimental update is for mod developers to test their mods against. It is not meant for
+playing, and it may not work.
+
+To play with Gears, use the game's current stable build and the latest official Gears release.
+
+### Which version of Gears do I need?
+
+The latest official release on the
+[Gears page on Nexus Mods](https://www.nexusmods.com/7daystodie/mods/4017), on the game's current
+stable build. Your installed version is the `Version` value in `00000-Gears\ModInfo.xml`.
+
+If a mod was built for a different Gears version than the one you have, the log shows a `[Gears]`
+line saying the mod "was built against v…" a different version than "Gears is running". If the
+mod's version is newer, update Gears. If it is older, the mod needs an update from its author.
+
+### How do I update Gears?
+
+Close the game, delete the old `00000-Gears` folder from `Mods`, and put the new one in its place.
+Your settings are stored outside the mod folder, so they are kept. See
+[Update Gears](/docs/players/getting-started#update-gears).
+
+## Changing settings
+
+### Where do I change a mod's settings?
 
 Your own settings are under **Mods** on the main menu or the in-game menu: pick the mod, open its
 **Settings** tab, change the rows, press **APPLY**.
 
-A world's settings are under **Mods World Settings** on the New Game and Continue Game screens.
+A world's settings are on the **Mods** tab of the New Game and Continue Game screens: press **Mods
+World Settings**, change the rows, press **SAVE**.
 
-## Why can I not change a world setting while I am playing?
+### Why can't I change a world setting while I am playing?
 
 A world setting is fixed while the world runs, because everyone in the world has to be playing with
 the same value and mods read it when the world starts. Leave the world, change it on the Continue
 Game screen, and start the world again.
 
-## Who decides world settings in multiplayer?
+### How do I put a mod's settings back to normal?
+
+Open the mod's **Settings** tab and press **DEFAULTS**, then **APPLY**. On the world settings screen
+the button is **DEFAULTS**, then **SAVE**.
+
+Both act on the page you are looking at, not on every mod at once.
+
+## Multiplayer and servers
+
+### Who decides world settings in multiplayer?
 
 Whoever starts the world. Their values are written into the save and sent to every player as they
 join, replacing whatever those players had. Nobody but the host can change them, and a client's own
 copy is never sent to anyone.
 
-## Do my settings follow me onto a server?
+### Do my settings follow me onto a server?
 
 Your **global** settings do. They live on your machine, apply in every world, and no server
 overwrites them.
@@ -54,13 +104,21 @@ overwrites them.
 Your **world** settings do not. Those belong to the world you are in, and you receive the server's
 values when you join.
 
-## I joined a server and all its mod world settings look like defaults
+### I joined a server and all its mod world settings look like defaults
 
 The server does not have Gears, or does not have the mod. When no world values arrive, Gears puts
 every world setting back to the value the mod shipped with, so the session runs on defaults. Ask the
 server's admin to install Gears and the mod.
 
-## Where are my settings saved?
+### How do I change settings on a dedicated server?
+
+A dedicated server has no menu, so you edit its files with the server stopped. See
+[World Settings on a Dedicated Server](/docs/players/dedicated-server-world-settings) and
+[Global Settings on a Dedicated Server](/docs/players/dedicated-server-global-settings).
+
+## Saved settings
+
+### Where are my settings saved?
 
 | What | File |
 |---|---|
@@ -68,40 +126,43 @@ server's admin to install Gears and the mod.
 | One world's settings | `WorldModSettings.xml`, in that world's save folder |
 | The values your next new world will start with | `newGameWorldModSettings.xml`, beside your saves |
 
-## Can I copy my settings to another PC?
+On Linux, replace `%APPDATA%\7DaysToDie` with `~/.local/share/7DaysToDie`. On macOS, replace it
+with `~/Library/Application Support/7DaysToDie`.
+
+### Can I copy my settings to another PC?
 
 Copy `%APPDATA%\7DaysToDie\Gears\ModSettings.xml` and your global settings come with you, as long as
-the same mods are installed there. Values belonging to a mod that is missing are dropped the next
-time the game starts.
+the same mods are installed there. Values belonging to a mod that is missing stay in the file, and
+apply once you install that mod.
 
-## How do I put a mod's settings back to normal?
-
-Open the mod's **Settings** tab and press **DEFAULTS**, then **APPLY**. On the world settings screen
-the button is **DEFAULTS**, then **SAVE**.
-
-Both act on the page you are looking at, not on every mod at once.
-
-## Will I lose my settings when a mod updates?
+### Will I lose my settings when a mod updates?
 
 Only where the mod renames something. Gears matches a saved value to a setting by name, so a
 renamed setting starts at its default, and the old value is dropped at the next startup. Values for
 settings that kept their names are unaffected.
 
-## A setting shows text like `myModHudScale` instead of a name
+## Problems and logs
+
+### A setting shows text like `myModHudScale` instead of a name
 
 That mod is missing a localization entry for that key. Nothing is broken and the setting still
 works. It is the mod author's to fix, so report it to them.
 
-## A mod I installed has no Settings tab
+### A mod I installed has no Settings tab
 
 Gears found no valid settings file in that mod. Either the mod does not use Gears, or its
 `ModSettings.xml` was rejected — which is the mod author's to fix. The game log says which, on a
 line starting with `[Gears]`.
 
-## Where is the log, and how do I get more detail?
+### Where is the log?
 
-The log is at `7DaysToDie_Data\output_log*.txt`, and the same lines appear in the in-game console.
-Search it for `[Gears]`.
+In the game, press F1 to open the console, then press the button in its top-right corner to open the
+log folder. This works on Windows, Linux and macOS. On Windows, the folder is
+`%APPDATA%\7DaysToDie\logs`.
+
+The same lines appear in the console. Search them for `[Gears]`.
+
+### How do I get more detail in the log?
 
 Mod authors sometimes ask for Gears' extra logging. Open the console with F1 and run:
 
@@ -110,10 +171,14 @@ gears debug on
 ```
 
 `off` turns it back off, and running `gears debug` alone flips it. It works in the main menu and in
-a world.
+a world, and lasts until the game closes.
 
-## Is Gears safe to remove?
+### Where do I report a problem with Gears itself?
 
-Yes, but the mods that use it lose their settings pages, and most of them need it to run at all.
-Gears' own saved file stays in `%APPDATA%\7DaysToDie\Gears` until you delete it, so reinstalling
-brings your values back.
+Ask in the `#laydors-toolshed` channel on
+[Guppy's Unofficial 7DtD Modding Server](https://discord.gg/eS73U4RxVj), a community Discord for 7
+Days to Die modding, or open an issue on [GitHub](https://github.com/s7092910/Gears/issues). Include
+your game version, your Gears version, and the full log file from the session where the problem
+happened. See [Where is the log?](#where-is-the-log) to find it.
+
+A problem with one mod's settings goes to that mod's author.
