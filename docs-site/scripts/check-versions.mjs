@@ -21,7 +21,11 @@ function sourceVersion(file, pattern, label) {
   return m[1];
 }
 
-const gears = sourceVersion('Gears/Modlet/ModInfo.xml', /<Version value="(\d+\.\d+\.\d+)"/, 'Gears');
+// ModInfo.xml is untracked (see /.gitignore), so a CI checkout doesn't have it. Without it, the
+// Gears versions are only checked against each other: the first one found becomes the expected one.
+const MODINFO = 'Gears/Modlet/ModInfo.xml';
+const hasModInfo = fs.existsSync(path.join(REPO, MODINFO));
+let gears = hasModInfo ? sourceVersion(MODINFO, /<Version value="(\d+\.\d+\.\d+)"/, 'Gears') : null;
 const gearsApi = sourceVersion(
   'GearsAPI/Properties/AssemblyInfo.cs',
   /\[assembly: AssemblyVersion\("(\d+\.\d+\.\d+)(?:\.\d+)?"\)\]/,
@@ -30,25 +34,30 @@ const gearsApi = sourceVersion(
 
 // Each pattern captures one version number. Add an entry when a page states a version.
 const CHECKS = [
-  { file: 'content/docs/index.mdx', expect: gears, pattern: /\| Gears \(the mod players install\) \| (\S+) \|/ },
-  { file: 'content/docs/index.mdx', expect: gearsApi, pattern: /\| GearsAPI\.dll \(the assembly mods reference\) \| (\S+) \|/ },
-  { file: 'content/docs/index.mdx', expect: gearsApi, pattern: /Every public type in GearsAPI (\d+\.\d+\.\d+)/ },
-  { file: 'content/docs/players/index.mdx', expect: gears, pattern: /\| Gears \| (\S+) \|/ },
-  { file: 'app/(home)/page.tsx', expect: gears, pattern: /Gears (\d+\.\d+\.\d+) · GearsAPI\.dll/ },
-  { file: 'app/(home)/page.tsx', expect: gearsApi, pattern: /GearsAPI\.dll (\d+\.\d+\.\d+)</ },
-  { file: 'scripts/gen-api-reference.mjs', expect: gearsApi, pattern: /GearsAPI\.dll (\d+\.\d+\.\d+), one page per type/ },
-  { file: 'scripts/gen-api-reference.mjs', expect: gearsApi, pattern: /\$\{ASSEMBLY\}\\` (\d+\.\d+\.\d+) —/ },
-  { file: 'scripts/gen-api-reference.mjs', expect: gearsApi, pattern: /Every public type in GearsAPI (\d+\.\d+\.\d+)'/ },
+  { file: 'content/docs/index.mdx', product: 'Gears', pattern: /\| Gears \(the mod players install\) \| (\S+) \|/ },
+  { file: 'content/docs/index.mdx', product: 'GearsAPI', pattern: /\| GearsAPI\.dll \(the assembly mods reference\) \| (\S+) \|/ },
+  { file: 'content/docs/index.mdx', product: 'GearsAPI', pattern: /Every public type in GearsAPI (\d+\.\d+\.\d+)/ },
+  { file: 'content/docs/players/index.mdx', product: 'Gears', pattern: /\| Gears \| (\S+) \|/ },
+  { file: 'app/(home)/page.tsx', product: 'Gears', pattern: /Gears (\d+\.\d+\.\d+) · GearsAPI\.dll/ },
+  { file: 'app/(home)/page.tsx', product: 'GearsAPI', pattern: /GearsAPI\.dll (\d+\.\d+\.\d+)</ },
+  { file: 'scripts/gen-api-reference.mjs', product: 'GearsAPI', pattern: /GearsAPI\.dll (\d+\.\d+\.\d+), one page per type/ },
+  { file: 'scripts/gen-api-reference.mjs', product: 'GearsAPI', pattern: /\$\{ASSEMBLY\}\\` (\d+\.\d+\.\d+) —/ },
+  { file: 'scripts/gen-api-reference.mjs', product: 'GearsAPI', pattern: /Every public type in GearsAPI (\d+\.\d+\.\d+)'/ },
 ];
 
 let problems = 0;
-for (const { file, expect, pattern } of CHECKS) {
+for (const { file, product, pattern } of CHECKS) {
   const m = read(path.join(SITE, file)).match(pattern);
   if (!m) {
     console.error(`${file}: the version text was not found (${pattern})`);
     problems++;
-  } else if (m[1] !== expect) {
-    console.error(`${file}: says ${m[1]}, source says ${expect}`);
+    continue;
+  }
+  if (product === 'Gears' && gears === null) gears = m[1];
+  const expect = product === 'Gears' ? gears : gearsApi;
+  if (m[1] !== expect) {
+    const from = product === 'Gears' && !hasModInfo ? 'other pages say' : 'source says';
+    console.error(`${file}: says ${m[1]}, ${from} ${expect}`);
     problems++;
   }
 }
@@ -57,4 +66,11 @@ if (problems) {
   console.error(`\n${problems} version problem(s). Gears ${gears}, GearsAPI ${gearsApi}.`);
   process.exit(1);
 }
-console.log(`OK - every stated version matches Gears ${gears} and GearsAPI ${gearsApi}`);
+if (hasModInfo) {
+  console.log(`OK - every stated version matches Gears ${gears} and GearsAPI ${gearsApi}`);
+} else {
+  console.log(
+    `OK - every stated version matches GearsAPI ${gearsApi}, and every page agrees on Gears ${gears}` +
+      ` (${MODINFO} not found, so Gears was not checked against its source)`,
+  );
+}
