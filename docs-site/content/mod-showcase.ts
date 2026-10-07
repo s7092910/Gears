@@ -58,4 +58,13 @@ export const showcaseMods: ShowcaseMod[] = [
     globalSettings: true,
     worldSettings: false,
   },
+  {
+    name: 'Byteblazar\'s RWG Tweaks',
+    description: 'A configurable 7 Days to Die mod that enhances Random World Generation (RWG). It improves POI diversity, prevents unwanted duplicates, among other things.',
+    image: 'Byteblazars-RWG-Tweaks.png',
+    imageAlt: 'The Byteblazar\'s RWG Tweaks logo: bold white text reading BYTEBLAZAR\'S above and RWG TWEAKS below a colorful generated world map with scattered white POI markers.',
+    url: 'https://www.nexusmods.com/7daystodie/mods/9557',
+    globalSettings: true,
+    worldSettings: false,
+  },
 ];
