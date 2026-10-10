@@ -31,6 +31,11 @@ export function baseOptions(): BaseLayoutProps {
         url: '/showcase',
         on: 'nav',
       },
+      {
+        text: 'Share Codes',
+        url: '/share-code',
+        on: 'nav',
+      },
       discordLink,
     ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,

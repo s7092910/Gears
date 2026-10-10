@@ -3,7 +3,7 @@ title: "IValueModSetting<T>"
 description: "A setting that holds a value of type T: the default, the applied value and the selected value."
 ---
 
-<TypeMeta kind="Interface" namespace="GearsAPI.Settings" source="GearsAPI/Source/Settings/IValueModSetting.cs" />
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings" assembly="GearsAPI.dll" source="GearsAPI/Source/Settings/IValueModSetting.cs" />
 
 ```csharp
 public interface IValueModSetting<T> : IValueModSettingBase
@@ -50,6 +50,8 @@ event OnSelectedChangedEvent<T> OnSelectedChanged;
 ```
 
 Occurs when `SelectedValue` changes to a different value. Type [`OnSelectedChangedEvent<T>`](/docs/reference/settings/on-selected-changed-event).
+
+Not raised while Gears loads values in from XML - restoring saved global values, or a world's values arriving. Loading a value in is not a change to report; use `SyncSettingsToClass` to be handed the loaded values deliberately.
 
 ## Methods
 

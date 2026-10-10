@@ -3,7 +3,7 @@ title: "IGlobalValueSetting<T>"
 description: "A global setting that holds a value of type T, with the applied-value event."
 ---
 
-<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/SettingTypes/IGlobalValueSetting.cs" />
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" assembly="GearsAPI.dll" source="GearsAPI/Source/Settings/Global/SettingTypes/IGlobalValueSetting.cs" />
 
 ```csharp
 public interface IGlobalValueSetting<T> : IGlobalModSetting, IValueModSetting<T>
@@ -24,3 +24,5 @@ event ValueChangedEvent<T> OnValueChanged;
 ```
 
 Occurs when `SettingValue` changes to a different value: when the player saves, or when code assigns it. Type [`ValueChangedEvent<T>`](/docs/reference/global/value-changed-event).
+
+Not raised while Gears restores the player's saved values at startup. Loading a value in is not a change to report, and a mod that has already bound its listeners would otherwise get a burst of them for values that only just arrived. Use `IModGlobalSettings.SyncSettingsToClass` to be handed the loaded values deliberately.

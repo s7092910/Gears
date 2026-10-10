@@ -1,0 +1,123 @@
+{
+  "comment": "Share code test vectors, shared by the C# library (UnitTests/Tests/ShareCodeFormatTests.cs) and the TypeScript port (scripts/check-share-code.mjs). Hashes pin the name hash on both sides: a mod hash of text, or a setting hash when tab and category are given. Valid codes were made by the C# encoder; a code holds only name hashes, so both sides must decode them to exactly the hashes of the names given, and the values given. Floats and color channels are 32-bit IEEE bit patterns in hex, and enum numbers are decimal strings, so no value depends on a JSON number's precision. Invalid codes must fail with the error kind given.",
+  "hashes": [
+    { "text": "", "hash": "811c9dc5" },
+    { "text": "a", "hash": "e40c292c" },
+    { "text": "ModA", "hash": "6f4ea346" },
+    { "text": "Héllo ✓ 🎮", "hash": "9fa0ce5c" },
+    { "tab": "General", "category": "Display", "text": "Int", "hash": "2fae2104" }
+  ],
+  "valid": [
+    {
+      "name": "global, every value kind, two mods",
+      "code": "Gears:IWNyW-yXL8yiuE6f6X8Hv1HZ-_dM__7__89vv1Oyj-XsmTO2NXzyB5mDwyesMGDRyM7zE6u_PYWFgYGh4dSTJUdYGBkO1Gf8ZtoNZDAwuMmuFGRcscZHluG-weUG1o1qerfZGOwKC16w8XscXpmTk6_waM5khQ_z-9Z5sc9Yxc7ikViUsmhG3QYOLjHen0wc_2GAUW_2MVdO47Qz_9l_ZbJygRwBNN2egcHBftbMmXYWjBPquVkNdYx0jDcv9MtjBFnLAAA",
+      "scope": "Global",
+      "mods": [
+        {
+          "name": "ModA",
+          "settings": [
+            { "tab": "General", "category": "Display", "name": "Int", "value": { "kind": "Int", "value": -123456 } },
+            { "tab": "General", "category": "Display", "name": "IntMax", "value": { "kind": "Int", "value": 2147483647 } },
+            { "tab": "General", "category": "Display", "name": "Float", "value": { "kind": "Float", "bits": "3dcccccd" } },
+            { "tab": "General", "category": "Display", "name": "WholeFloat", "value": { "kind": "Float", "bits": "c2280000" } },
+            { "tab": "General", "category": "Display", "name": "BigFloat", "value": { "kind": "Float", "bits": "4e6e6b28" } },
+            { "tab": "General", "category": "Display", "name": "NegativeZero", "value": { "kind": "Float", "bits": "80000000" } },
+            { "tab": "General", "category": "Display", "name": "NaNPayload", "value": { "kind": "Float", "bits": "7fc00001" } },
+            { "tab": "General", "category": "Display", "name": "Subnormal", "value": { "kind": "Float", "bits": "00000001" } },
+            { "tab": "General", "category": "Display", "name": "On", "value": { "kind": "Bool", "value": true } },
+            { "tab": "General", "category": "Display", "name": "Off", "value": { "kind": "Bool", "value": false } },
+            { "tab": "Looks", "category": "Colors", "name": "NullString", "value": { "kind": "String", "value": null } },
+            { "tab": "Looks", "category": "Colors", "name": "EmptyString", "value": { "kind": "String", "value": "" } },
+            { "tab": "Looks", "category": "Colors", "name": "Unicode", "value": { "kind": "String", "value": "Héllo ✓ 🎮" } },
+            { "tab": "Looks", "category": "Colors", "name": "Difficulty", "value": { "kind": "EnumName", "value": "Hard" } },
+            { "tab": "Looks", "category": "Colors", "name": "Flags", "value": { "kind": "EnumValue", "value": "5" } },
+            { "tab": "Looks", "category": "Colors", "name": "FlagsMin", "value": { "kind": "EnumValue", "value": "-9223372036854775808" } },
+            { "tab": "Looks", "category": "Colors", "name": "PickedColor", "value": { "kind": "Color", "bits": ["3e4ccccd", "3ecccccd", "3f4ccccd", "3f800000"] } },
+            { "tab": "Looks", "category": "Colors", "name": "PreciseColor", "value": { "kind": "Color", "bits": ["3dcccccd", "3f000000", "3f400000", "3e99999a"] } },
+            { "tab": "Looks", "category": "Colors", "name": "Custom", "value": { "kind": "Serialized", "value": "1,2,3" } }
+          ]
+        },
+        {
+          "name": "ModB",
+          "settings": [
+            { "tab": "General", "category": "Display", "name": "On", "value": { "kind": "Bool", "value": false } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "world, two mods",
+      "code": "Gears:EQJGo05vA5S45-EC2AQ_rDvFAfCi0NAEAADgP7OhTm4BEKIghQcESGFyZA",
+      "scope": "World",
+      "mods": [
+        {
+          "name": "ModA",
+          "settings": [
+            { "name": "Count", "value": { "kind": "Int", "value": 300 } },
+            { "name": "Feral", "value": { "kind": "Bool", "value": true } },
+            { "name": "Abundance", "value": { "kind": "Float", "bits": "3fe00000" } }
+          ]
+        },
+        {
+          "name": "ModB",
+          "settings": [
+            { "name": "Difficulty", "value": { "kind": "EnumName", "value": "Hard" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "world, one setting, stored uncompressed",
+      "code": "Gears:EQEY_QvIASITDNYB",
+      "scope": "World",
+      "mods": [
+        { "name": "M", "settings": [ { "name": "S", "value": { "kind": "Bool", "value": true } } ] }
+      ]
+    },
+    {
+      "name": "global, nothing changed",
+      "code": "Gears:AQ",
+      "scope": "Global",
+      "mods": []
+    },
+    {
+      "name": "world, nothing changed",
+      "code": "Gears:EQ",
+      "scope": "World",
+      "mods": []
+    },
+    {
+      "name": "standard base64 alphabet with padding and whitespace is accepted",
+      "code": " Gears: EQEY/QvI ASITDNYGAz8+Pw==\n",
+      "scope": "World",
+      "mods": [
+        { "name": "M", "settings": [ { "name": "S", "value": { "kind": "String", "value": "?>?" } } ] }
+      ]
+    }
+  ],
+  "invalid": [
+    { "name": "empty", "code": "", "error": "Empty" },
+    { "name": "only whitespace", "code": "  \n ", "error": "Empty" },
+    { "name": "only the prefix", "code": "Gears:", "error": "Empty" },
+    { "name": "no prefix", "code": "AQ", "error": "MissingPrefix" },
+    { "name": "prefix in the wrong case", "code": "gears:AQ", "error": "MissingPrefix" },
+    { "name": "prefix not at the start", "code": "xGears:AQ", "error": "MissingPrefix" },
+    { "name": "only padding", "code": "Gears:==", "error": "Empty" },
+    { "name": "characters outside base64", "code": "Gears:AQ!!", "error": "InvalidBase64" },
+    { "name": "impossible base64 length", "code": "Gears:AQIDB", "error": "InvalidBase64" },
+    { "name": "padding in the middle", "code": "Gears:AQ==AQ", "error": "InvalidBase64" },
+    { "name": "format version 2", "code": "Gears:Ag", "error": "UnsupportedVersion" },
+    { "name": "reserved header bit", "code": "Gears:QQ", "error": "UnsupportedVersion" },
+    { "name": "reserved deflate block type", "code": "Gears:If8", "error": "CorruptCompression" },
+    { "name": "decompresses past 1 MB", "code": "Gears:Ie3BMQEAAADCoPVPbQhfoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATgM", "error": "TooLarge" },
+    { "name": "mod hash runs past the end", "code": "Gears:EQEY_Q", "error": "Truncated" },
+    { "name": "value runs past the end", "code": "Gears:EQEY_QvIASITDNYC", "error": "Truncated" },
+    { "name": "count larger than the data", "code": "Gears:EQU", "error": "MalformedData" },
+    { "name": "unknown value tag", "code": "Gears:EQEY_QvIASITDNYM", "error": "MalformedData" },
+    { "name": "invalid UTF-8 text", "code": "Gears:EQEY_QvIASITDNYGAf8", "error": "MalformedData" },
+    { "name": "int value out of range", "code": "Gears:EQEY_QvIASITDNYCgICAgCA", "error": "MalformedData" },
+    { "name": "bytes after the last mod", "code": "Gears:EQAA", "error": "TrailingData" },
+    { "name": "same mod twice", "code": "Gears:EQIY_QvIASITDNYBGP0LyAFDCwzRAA", "error": "DuplicateSetting" },
+    { "name": "same setting twice", "code": "Gears:EQEY_QvIAiITDNYBIhMM1gA", "error": "DuplicateSetting" }
+  ]
+}

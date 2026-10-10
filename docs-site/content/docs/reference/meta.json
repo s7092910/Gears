@@ -1,12 +1,13 @@
 {
   "title": "API Reference",
-  "description": "Every public type in GearsAPI 3.0.0",
+  "description": "Every public type in GearsAPI and GearsSharing",
   "pages": [
     "core",
     "settings",
     "base",
     "global",
     "world",
-    "attributes"
+    "attributes",
+    "gearssharing"
   ]
 }

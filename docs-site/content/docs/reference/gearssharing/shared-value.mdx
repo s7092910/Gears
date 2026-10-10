@@ -1,0 +1,132 @@
+---
+title: "SharedValue"
+description: "One setting value in a share code. Create one with the static factory for its kind; each kind is its own sealed subclass holding only its own data."
+---
+
+<TypeMeta kind="Abstract class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/SharedValue.cs" />
+
+```csharp
+public abstract class SharedValue : IEquatable<SharedValue>
+```
+
+Two values are equal when they have the same kind and the same bits, so `NaN` (not a number) equals `NaN` and `-0` does not equal `0`.
+
+**Inheritance:** `Object` → `SharedValue`\
+**Implements:** `IEquatable<SharedValue>`\
+**Derived:** [`SharedBool`](/docs/reference/gearssharing/shared-bool) · [`SharedInt`](/docs/reference/gearssharing/shared-int) · [`SharedFloat`](/docs/reference/gearssharing/shared-float) · [`SharedString`](/docs/reference/gearssharing/shared-string) · [`SharedEnumName`](/docs/reference/gearssharing/shared-enum-name) · [`SharedEnumValue`](/docs/reference/gearssharing/shared-enum-value) · [`SharedColor`](/docs/reference/gearssharing/shared-color) · [`SharedSerialized`](/docs/reference/gearssharing/shared-serialized)
+
+## Methods
+
+### Bool(Boolean)
+
+```csharp
+public static SharedBool Bool(bool value)
+```
+
+Creates a [`SharedBool`](/docs/reference/gearssharing/shared-bool) value.
+
+### Int(Int32)
+
+```csharp
+public static SharedInt Int(int value)
+```
+
+Creates a [`SharedInt`](/docs/reference/gearssharing/shared-int) value.
+
+### Float(Single)
+
+```csharp
+public static SharedFloat Float(float value)
+```
+
+Creates a [`SharedFloat`](/docs/reference/gearssharing/shared-float) value.
+
+### String(String)
+
+```csharp
+public static SharedString String(string value)
+```
+
+Creates a [`SharedString`](/docs/reference/gearssharing/shared-string) value. `value` may be `null`.
+
+### EnumName(String)
+
+```csharp
+public static SharedEnumName EnumName(string name)
+```
+
+Creates a [`SharedEnumName`](/docs/reference/gearssharing/shared-enum-name) value from an enum member name.
+
+### EnumValue(Int64)
+
+```csharp
+public static SharedEnumValue EnumValue(long value)
+```
+
+Creates a [`SharedEnumValue`](/docs/reference/gearssharing/shared-enum-value) value from an enum's underlying number.
+
+### Color(Single, Single, Single, Single)
+
+```csharp
+public static SharedColor Color(float r, float g, float b, float a)
+```
+
+Creates a [`SharedColor`](/docs/reference/gearssharing/shared-color) value from RGBA channels, normally 0 to 1.
+
+### Serialized(String)
+
+```csharp
+public static SharedSerialized Serialized(string text)
+```
+
+Creates a [`SharedSerialized`](/docs/reference/gearssharing/shared-serialized) value: a mod-registered type's serialized text.
+
+### Equals(SharedValue)
+
+```csharp
+public abstract bool Equals(SharedValue other);
+```
+
+Indicates whether the current object is equal to another object of the same type.
+
+### Equals(Object)
+
+```csharp
+public override bool Equals(object obj)
+```
+
+Determines whether the specified object is equal to the current object.
+
+### GetHashCode()
+
+```csharp
+public abstract override int GetHashCode();
+```
+
+Serves as the default hash function.
+
+### ToString()
+
+```csharp
+public abstract override string ToString();
+```
+
+Returns the value as text, for display. Floats use the shortest round-trip form.
+
+## Operators
+
+### operator ==(SharedValue, SharedValue)
+
+```csharp
+public static bool operator ==(SharedValue left, SharedValue right)
+```
+
+Returns `true` if both values have the same kind and bits, or both are `null`.
+
+### operator !=(SharedValue, SharedValue)
+
+```csharp
+public static bool operator !=(SharedValue left, SharedValue right)
+```
+
+Returns `true` if the values differ in kind or bits.

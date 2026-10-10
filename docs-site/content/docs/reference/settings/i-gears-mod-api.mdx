@@ -3,7 +3,7 @@ title: "IGearsModApi"
 description: "The callback contract a C# mod implements to be told about its settings."
 ---
 
-<TypeMeta kind="Interface" namespace="GearsAPI.Settings" source="GearsAPI/Source/IGearsModApi.cs" />
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings" assembly="GearsAPI.dll" source="GearsAPI/Source/IGearsModApi.cs" />
 
 ```csharp
 public interface IGearsModApi
@@ -20,6 +20,10 @@ void InitMod(IGearsMod modInstance);
 ```
 
 Called at `GameAwake` once every mod's `ModSettings.xml` has been parsed, and before the player's saved global values are restored. Create settings from code here, and bind settings classes here.
+
+The settings tree already holds everything `ModSettings.xml` declared, so `GetOrCreateTab` / `GetOrCreateSetting` hand back the XML's objects and anything this callback assigns onto them wins. A setting declared in both places must use the same type in both, or `GetOrCreateSetting` throws.
+
+Because every setting exists by now, this is also where to call `BindSettingsClass`, for global and world settings alike. Values are not final yet - the saved global values are restored after this returns, silently - so ask for them with `SyncSettingsToClass` in `OnGlobalSettingsLoaded` rather than reading them here.
 
 ### OnGlobalSettingsLoaded(IModGlobalSettings)
 

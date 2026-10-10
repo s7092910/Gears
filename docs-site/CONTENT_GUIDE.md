@@ -6,6 +6,8 @@ Gears' readers are mod developers for the video game 7 Days to Die who need to i
 
 One section has a different reader. `content/docs/players/` is for players and server admins who installed a mod that uses Gears. They are not writing code, so keep those pages to what they can see and do in the game, in its menus and its files, and send anything that is the mod author's to fix back to the author. Everything else in this guide applies to those pages too.
 
+`content/docs/share-codes/` also serves tool authors: developers who read or write Gears share codes in a website, server tool, launcher or bot, in C# with the GearsSharing library or in another language. They may never write a mod. Everything else in this guide applies to those pages too.
+
 Follow the [Mailchimp voice and tone guide](https://styleguide.mailchimp.com/voice-and-tone/): be plainspoken, helpful, and clear. Prefer useful information over personality or promotion.
 
 ## Write for the reader's task
@@ -60,6 +62,7 @@ Document what Gears does now. Do not present a design idea, roadmap item, or old
 Important current boundaries include:
 
 - Only document modder facing features, ie the GearsAPI and how Gears uses the GearsAPI. Do not document the internals of Gears.
+- The share code format and the GearsSharing library are public too, for tool authors. Document the format byte for byte and GearsSharing's public API, under `content/docs/share-codes/`. GearsSharing's internal types, and the Gears code that applies a share code in the game, stay undocumented; describe what a tool should do instead.
 
 Recheck these statements against the code before repeating them. Change this guide when the implementation changes.
 
@@ -139,7 +142,7 @@ Do not edit these directories by hand:
 
 - `docs-site/content/docs/reference/`
 
-To change API documentation, edit public XML comments under `GearsAPI/Source`, or update `docs-site/scripts/lib/csharp.mjs` when the shared reference format must change.
+The reference covers two assemblies: GearsAPI and GearsSharing. To change API documentation, edit the public XML comments under `GearsAPI/Source` or in `GearsSharing/*.cs`. Update `docs-site/scripts/lib/model.mjs` to add a namespace, section or assembly, and `docs-site/scripts/lib/csharp.mjs` when the shared reference format must change.
 
 From `/docs-site`, regenerate references with:
 
@@ -153,7 +156,7 @@ Commit the generated output with its source changes.
 
 Before finishing a documentation change, check that:
 
-- The page addresses a game developer's task or question.
+- The page addresses a game developer's task or question, or a tool author's on a share code page.
 - The first paragraph states the purpose or first action.
 - Every Gears-specific term and acronym is defined before use.
 - Instructions use direct, active language.

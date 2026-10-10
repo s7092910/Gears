@@ -12,6 +12,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       { text: 'API Reference', url: '/docs/reference' },
       { text: 'For Players', url: '/docs/players', active: 'nested-url' },
       { text: 'Mod Showcase', url: '/showcase' },
+      { text: 'Share Codes', url: '/share-code' },
       discordLink,
     ]}
     >

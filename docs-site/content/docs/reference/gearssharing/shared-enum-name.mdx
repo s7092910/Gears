@@ -1,0 +1,50 @@
+---
+title: "SharedEnumName"
+description: "An enum value, by member name."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/SharedValue.cs" />
+
+```csharp
+public sealed class SharedEnumName : SharedValue
+```
+
+An enum value, by member name.
+
+**Inheritance:** `Object` → [`SharedValue`](/docs/reference/gearssharing/shared-value) → `SharedEnumName`
+
+## Properties
+
+### Name
+
+```csharp
+public string Name { get; }
+```
+
+Gets the enum member name.
+
+## Methods
+
+### Equals(SharedValue)
+
+```csharp
+public override bool Equals(SharedValue other)
+```
+
+Indicates whether the current object is equal to another object of the same type.
+
+### GetHashCode()
+
+```csharp
+public override int GetHashCode()
+```
+
+Serves as the default hash function.
+
+### ToString()
+
+```csharp
+public override string ToString()
+```
+
+Returns the value as text, for display. Floats use the shortest round-trip form.

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xml>
+	<Name value="GearsExample" />
+	<DisplayName value="Gears Ex" />
+	<Version value="1.0.0" />
+	<Description value="An Example Mod for Gears, used for testing features and guide creation" />
+	<Author value="Laydor" />
+	<Website value="https://github.com/s7092910/Gears" />
+</xml>

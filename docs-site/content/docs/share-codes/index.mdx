@@ -1,0 +1,62 @@
+---
+title: Share Codes
+description: What a Gears share code holds, what it leaves out, and where to go to read or write one.
+---
+
+A **share code** is one line of text that holds the settings a player changed, so they can pass
+those settings to someone else. It starts with `Gears:` and looks like this:
+
+```text
+Gears:EQEY_QvIASITDNYB
+```
+
+Use this section to read or write share codes outside the game: in a website, a server tool, or a
+launcher. To make a World settings code in your browser without writing any code, use the
+[Share Code Generator](/share-code).
+
+## What a share code holds
+
+A code holds one scope of settings for any number of mods:
+
+- **Scope.** A code is either a Global code or a World code, never both. A **global setting** is
+  one the player changes from the main menu or in game. A **world setting** belongs to one world and
+  can't change while the world runs. See [Global and World Settings](/docs/global-and-world-settings).
+- **Changed values only.** A code lists only the settings whose value differs from the default. A
+  code with no changed settings is still a valid code, such as `Gears:EQ` for World.
+- **Hashes, not names.** Each mod is stored as a 32-bit hash of its name, and each setting as a
+  32-bit hash of where it sits: its tab, category and name for a global setting, or its name alone
+  for a world setting. Hashes keep codes short.
+- **A typed value per setting**, such as an int, a float, a bool, a string, an enum member or a
+  color.
+
+## What a share code leaves out
+
+Because a code holds hashes and changed values only:
+
+- **Reading a code needs the mods.** To show which setting a hash stands for, you need that mod's
+  settings, such as from its `ModSettings.xml`. Without them you can still read the values and write
+  the code back out unchanged.
+- **A renamed setting no longer matches.** Renaming a setting, or moving a global setting to
+  another tab or category, changes its hash, so older codes no longer reach it.
+
+## Apply a share code in a tool
+
+A tool that applies a code to a set of settings, such as a server panel writing a world's
+settings, should treat the code as complete:
+
+- **Set every setting in the code's scope.** A code lists only changed values, so give each setting
+  the code's value where the code has one, and its default everywhere else.
+- **Skip what you can't match.** Don't apply a value for a mod or setting that isn't installed, or
+  a value of the wrong type for its setting. Leave that setting at its default and tell the user
+  which entries were skipped.
+- **Check the whole code first.** Decode the code completely before changing anything, so a code
+  that can't be read leaves every setting as it was.
+
+## Read and write share codes
+
+- [Share Code Format Reference](/docs/share-codes/format) describes every byte of a code, with a
+  worked example.
+- [Write a Share Code Generator](/docs/share-codes/write-a-generator) walks through building a
+  generator in any language and testing it.
+- [Use GearsSharing in C#](/docs/share-codes/gearssharing) shows how to read and write codes with
+  the same library Gears uses.

@@ -1,0 +1,102 @@
+---
+title: "ShareCodeFormat"
+description: "Encodes, decodes and validates share codes. Has no game dependencies, so a website or tool can use it."
+---
+
+<TypeMeta kind="Static class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/ShareCodeFormat.cs" />
+
+```csharp
+public static class ShareCodeFormat
+```
+
+A code is `Prefix` then one header byte and a payload, written as unpadded URL-safe base64.
+
+- Header: bits 0-3 format version (1), bit 4 set for World, bit 5 set when the payload is raw-deflated.
+- The payload is deflated only when that makes it smaller.
+- Payload, for both scopes: `count { modHash; count { settingHash; value } }`.
+- Names are not stored, only their hashes (`ModHash`, `SettingHash`): 32 bits each, little-endian. Whoever imports the code matches them against the mods they have.
+- Counts are 7-bit varints, and each value is a type tag then its data. An empty payload means no mods.
+- A code is at most `MaxCodeLength` characters when written; longer ones still decode.
+
+**Inheritance:** `Object` → `ShareCodeFormat`
+
+## Fields
+
+### MaxPayloadBytes
+
+```csharp
+public const int MaxPayloadBytes = 1 << 20;
+```
+
+The most a payload may decompress to. Far beyond any real settings list; stops a tampered code from inflating without limit.
+
+### MaxCodeLength
+
+```csharp
+public const int MaxCodeLength = 32767;
+```
+
+The longest code `Encode` writes, prefix included: the usual limit of a single-line text field, so a code pastes anywhere. Decoding does not enforce it.
+
+### Prefix
+
+```csharp
+public const string Prefix = "Gears:";
+```
+
+Starts every share code, so a player can tell one apart from other text. Case-sensitive.
+
+## Methods
+
+### ModHash(String)
+
+```csharp
+public static uint ModHash(string mod)
+```
+
+Returns the hash a code holds for the mod named `mod`: the 32-bit FNV-1a (Fowler–Noll–Vo) hash of its UTF-8 (8-bit Unicode Transformation Format) bytes.
+
+### SettingHash(String, String, String)
+
+```csharp
+public static uint SettingHash(string tab, string category, string name)
+```
+
+Returns the hash a code holds for a setting: 32-bit FNV-1a of the UTF-8 of `tab + "\0" + category + "\0" + name` for a Global setting, or of `name` alone for a World setting (`tab` and `category` `null`).
+
+### Encode(ShareCode)
+
+```csharp
+public static string Encode(ShareCode code)
+```
+
+Encodes `code` as a share code string. Mods with no settings are left out.
+
+**Exceptions:**
+
+- `ArgumentException`: A name is empty, a mod or setting appears twice (or hashes the same as another), a setting has no value, a Global setting has no tab or category, or a World setting or one with no name has one.
+- `InvalidOperationException`: The code would be longer than `MaxCodeLength`.
+
+### Validate(String)
+
+```csharp
+public static ShareCodeValidationResult Validate(string code)
+```
+
+Decodes and checks `code`. Never throws for bad input; every problem is reported in [`ShareCodeValidationResult.Errors`](/docs/reference/gearssharing/share-code-validation-result).
+
+### TryDecode(String, ShareCode, String)
+
+```csharp
+public static bool TryDecode(string code, out ShareCode result, out string error)
+```
+
+Decodes `code`. Returns `false` with the first problem in `error` if it is not valid.
+
+### PathOf(SharedMod, SharedSetting)
+
+```csharp
+public static string PathOf(SharedMod mod, SharedSetting setting)
+```
+
+Returns the setting's display path: `Mod/Tab/Category/Setting` for Global, `Mod/Setting` for World. A mod or setting with no name (as decoded) shows its hash instead, as `#1a2b3c4d`.

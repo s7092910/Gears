@@ -1,0 +1,50 @@
+---
+title: "SharedInt"
+description: "An int value (Slider, Selector)."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/SharedValue.cs" />
+
+```csharp
+public sealed class SharedInt : SharedValue
+```
+
+An `int` value (Slider, Selector).
+
+**Inheritance:** `Object` → [`SharedValue`](/docs/reference/gearssharing/shared-value) → `SharedInt`
+
+## Properties
+
+### Value
+
+```csharp
+public int Value { get; }
+```
+
+Gets the value.
+
+## Methods
+
+### Equals(SharedValue)
+
+```csharp
+public override bool Equals(SharedValue other)
+```
+
+Indicates whether the current object is equal to another object of the same type.
+
+### GetHashCode()
+
+```csharp
+public override int GetHashCode()
+```
+
+Serves as the default hash function.
+
+### ToString()
+
+```csharp
+public override string ToString()
+```
+
+Returns the value as text, for display. Floats use the shortest round-trip form.

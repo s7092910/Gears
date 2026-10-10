@@ -1,0 +1,82 @@
+---
+title: "SharedSetting"
+description: "One setting and its value in a share code."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/ShareCode.cs" />
+
+```csharp
+public sealed class SharedSetting
+```
+
+A code holds only a hash of each setting's address. To encode, set the names and the hash is worked out from them. A decoded setting has only `Hash`, with every name left `null`; whoever knows the mod can match it with [`ShareCodeFormat.SettingHash`](/docs/reference/gearssharing/share-code-format).
+
+**Inheritance:** `Object` → `SharedSetting`
+
+## Constructors
+
+### SharedSetting(String, String, String, SharedValue)
+
+```csharp
+public SharedSetting(string tab, string category, string name, SharedValue value)
+```
+
+Creates a Global setting entry.
+
+### SharedSetting(String, SharedValue)
+
+```csharp
+public SharedSetting(string name, SharedValue value)
+```
+
+Creates a World setting entry. World setting names are unique within a mod, so no tab or category is stored.
+
+### SharedSetting(UInt32, SharedValue)
+
+```csharp
+public SharedSetting(uint hash, SharedValue value)
+```
+
+Creates an entry for a setting known only by the hash of its address.
+
+## Properties
+
+### Tab
+
+```csharp
+public string Tab { get; set; }
+```
+
+Gets or sets the tab name. `null` for a World setting or in a decoded code.
+
+### Category
+
+```csharp
+public string Category { get; set; }
+```
+
+Gets or sets the category name. `null` for a World setting or in a decoded code.
+
+### Name
+
+```csharp
+public string Name { get; set; }
+```
+
+Gets or sets the setting name. `null` in a decoded code.
+
+### Hash
+
+```csharp
+public uint Hash { get; set; }
+```
+
+Gets or sets the hash of the setting's address. Only used while `Name` is `null`.
+
+### Value
+
+```csharp
+public SharedValue Value { get; set; }
+```
+
+Gets or sets the setting's value.

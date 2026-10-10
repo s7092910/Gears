@@ -1,11 +1,12 @@
 /**
- * A small C# declaration parser, scoped to what GearsAPI actually uses: block-scoped
- * namespaces, interfaces, classes, enums, delegates, and their members.
+ * A small C# declaration parser, scoped to what GearsAPI and GearsSharing actually use:
+ * block-scoped namespaces, interfaces, classes, enums, delegates, and their members, including
+ * expression-bodied members, operators and fields with initializers.
  *
  * Deliberately not a general C# parser. It reads declarations and skips method bodies; it never
  * looks at expressions. That is enough to derive every signature in the public API surface.
- * It is line-oriented, which the GearsAPI sources support because they are uniformly formatted
- * with one declaration per line.
+ * It is line-oriented, which both sources support because they are uniformly formatted with one
+ * declaration per line.
  */
 
 const ACCESS = ['public', 'private', 'protected', 'internal'];
@@ -127,26 +128,73 @@ function extractNamed(text, tag) {
   return Object.keys(out).length ? out : null;
 }
 
+/** Every `<exception cref="X">...</exception>`, in order. */
+function extractExceptions(text) {
+  const re = /<exception\s+cref="([^"]+)"\s*>([\s\S]*?)<\/exception>/gi;
+  const out = [];
+  let m;
+  while ((m = re.exec(text))) out.push({ cref: m[1], text: flatten(m[2]) });
+  return out.length ? out : null;
+}
+
 /**
  * Parse a `///` block into its structural pieces: `<summary>`, `<remarks>`, `<note>`,
- * `<typeparam>`, `<param>` and the self-closing `<reserved/>` marker. Prose-level inline tags --
- * `<see cref>`, `<c>`, `<paramref>` -- are left intact in the extracted text; resolving them into
- * links/markdown is the renderer's job, since only it knows the rest of the type model.
+ * `<returns>`, `<exception>`, `<typeparam>`, `<param>`, and the self-closing `<reserved/>` and
+ * `<inheritdoc/>` markers. Prose-level tags -- `<see cref>`, `<c>`, `<paramref>`, `<para>`,
+ * `<list>` -- are left intact in the extracted text; turning them into links and markdown is the
+ * renderer's job, since only it knows the rest of the type model.
  */
 function parseDoc(lines) {
   if (!lines || !lines.length) return null;
   const joined = lines.join('\n');
-  const summary = flatten(extractTag(joined, 'summary') ?? joined);
+  const inheritdoc = /<inheritdoc\s*\/>/i.test(joined);
+  const summaryTag = extractTag(joined, 'summary');
+  // With no <summary>, the whole block is the summary - unless it only inherits its docs.
+  const summary = summaryTag != null ? flatten(summaryTag) : inheritdoc ? null : flatten(joined);
   const remarks = extractTag(joined, 'remarks');
   const note = extractTag(joined, 'note');
+  const returns = extractTag(joined, 'returns');
   return {
     summary,
     remarks: remarks ? flatten(remarks) : null,
     note: note ? flatten(note) : null,
+    returns: returns ? flatten(returns) : null,
+    exceptions: extractExceptions(joined),
+    inheritdoc,
     reserved: /<reserved\s*\/>/i.test(joined),
     typeParams: extractNamed(joined, 'typeparam'),
     params: extractNamed(joined, 'param'),
   };
+}
+
+/** Index of the first top-level occurrence of `token`, ignoring (), [], {} and string literals. */
+function topLevelIndex(s, token) {
+  let depth = 0;
+  let inStr = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) { if (c === '\\') i++; else if (c === '"') inStr = false; continue; }
+    if (c === '"') { inStr = true; continue; }
+    if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') depth--;
+    else if (depth === 0 && s.startsWith(token, i)) return i;
+  }
+  return -1;
+}
+
+/** Index of a top-level assignment `=` (not `==`, `=>`, `<=`, `>=` or `!=`), or -1. */
+function assignmentIndex(s) {
+  let depth = 0;
+  let inStr = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) { if (c === '\\') i++; else if (c === '"') inStr = false; continue; }
+    if (c === '"') { inStr = true; continue; }
+    if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') depth--;
+    else if (depth === 0 && c === '=' && s[i + 1] !== '=' && s[i + 1] !== '>' && !'=<>!'.includes(s[i - 1])) return i;
+  }
+  return -1;
 }
 
 const countChar = (s, ch) => {
@@ -359,6 +407,33 @@ export function parseFile(source, file) {
       return;
     }
 
+    // Expression-bodied member: `Type Name => expr` is a get-only property; with a parameter list
+    // before the arrow it is a method, constructor or operator that has a body.
+    const arrow = topLevelIndex(clean, '=>');
+    if (arrow >= 0) {
+      const head = clean.slice(0, arrow).trim();
+      const { mods, rest } = splitModifiers(head);
+      if (!/\(/.test(head)) {
+        const pm = rest.match(/^(.+?)\s+([A-Za-z_]\w*)$/);
+        if (pm) {
+          t.members.push({
+            kind: 'property',
+            name: pm[2],
+            propertyType: pm[1].trim(),
+            accessors: ['get'],
+            signature: `${head} { get; }`,
+            modifiers: mods,
+            params: [],
+            doc: parseDoc(doc),
+          });
+        }
+        return;
+      }
+      const m = matchCallable(head, t, mods, attrs, doc, true);
+      if (m) t.members.push(m);
+      return;
+    }
+
     // property: has an accessor block
     if (/\{/.test(clean)) {
       const head = clean.slice(0, clean.indexOf('{')).trim();
@@ -405,6 +480,29 @@ export function parseFile(source, file) {
       return;
     }
 
+    // Field with an initializer: `Type Name = value`. Checked before methods, so that
+    // `static readonly X y = new X(...)` is not read as a method. A const keeps its value, which is
+    // part of its contract; any other field's initializer is an implementation detail.
+    const eq = assignmentIndex(clean);
+    const firstParen = clean.indexOf('(');
+    if (eq >= 0 && (firstParen < 0 || eq < firstParen)) {
+      const left = clean.slice(0, eq).trim();
+      const { mods, rest } = splitModifiers(left);
+      const f = rest.match(/^(.+)\s+([A-Za-z_]\w*)$/);
+      if (f) {
+        t.members.push({
+          kind: 'field',
+          name: f[2],
+          fieldType: f[1].trim(),
+          signature: mods.includes('const') ? `${left} = ${clean.slice(eq + 1).trim()};` : `${left};`,
+          modifiers: mods,
+          params: [],
+          doc: parseDoc(doc),
+        });
+      }
+      return;
+    }
+
     // method / constructor without a body
     if (/\(/.test(clean)) {
       const { mods } = splitModifiers(clean);
@@ -444,6 +542,27 @@ export function parseFile(source, file) {
 
     const { rest } = splitModifiers(head);
     if (!rest) return null;
+
+    // Operator: `bool operator ==`, or a conversion such as `implicit operator Foo`.
+    const op = rest.match(/^(.*?)\s*\boperator\s+(\S+)$/);
+    if (op) {
+      const name = `operator ${op[2]}`;
+      const signature = [...mods, op[1], `${name}(${inside.trim()})`].filter(Boolean).join(' ') + (hasBody ? '' : ';');
+      return {
+        kind: 'operator',
+        hasBody,
+        name,
+        typeParams: [],
+        returnType: op[1] || null,
+        params: parseParams(inside),
+        constraints: '',
+        signature,
+        modifiers: mods,
+        attributes: attrs,
+        doc: parseDoc(doc),
+      };
+    }
+
     const words = rest.split(/\s+/);
     const nameG = words.pop();
     const returnType = words.join(' ');
@@ -493,7 +612,7 @@ export function parseFile(source, file) {
 
 /** Stable key for prose lookup, matching the .NET API browser's member naming. */
 export function memberKey(m) {
-  if (m.kind === 'method' || m.kind === 'constructor') {
+  if (m.kind === 'method' || m.kind === 'constructor' || m.kind === 'operator') {
     const g = m.typeParams?.length ? `<${m.typeParams.join(', ')}>` : '';
     return `${m.name}${g}(${m.params.map((p) => typeLabel(p.type)).join(', ')})`;
   }

@@ -1,0 +1,58 @@
+---
+title: "SharedMod"
+description: "One mod's settings in a share code."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/ShareCode.cs" />
+
+```csharp
+public sealed class SharedMod
+```
+
+A code holds only a hash of each name. To encode, set `Name` and the hash is worked out from it. A decoded code has only `NameHash`, with `Name` left `null`; whoever knows the mod can match it with [`ShareCodeFormat.ModHash`](/docs/reference/gearssharing/share-code-format).
+
+**Inheritance:** `Object` → `SharedMod`
+
+## Constructors
+
+### SharedMod(String)
+
+```csharp
+public SharedMod(string name)
+```
+
+Creates an entry for the mod named `name`, as in its `ModInfo.xml`.
+
+### SharedMod(UInt32)
+
+```csharp
+public SharedMod(uint nameHash)
+```
+
+Creates an entry for a mod known only by the hash of its name.
+
+## Properties
+
+### Name
+
+```csharp
+public string Name { get; set; }
+```
+
+Gets or sets the mod's name, as in its `ModInfo.xml`. `null` in a decoded code.
+
+### NameHash
+
+```csharp
+public uint NameHash { get; set; }
+```
+
+Gets or sets the hash of the mod's name. Only used while `Name` is `null`.
+
+### Settings
+
+```csharp
+public List<SharedSetting> Settings { get; }
+```
+
+Gets the mod's settings. They can be listed in any order: the encoder groups them by tab and category.

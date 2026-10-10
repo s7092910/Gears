@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Edge cases for scripts/check-mod-settings.mjs; the expected result is in that script. -->
+<ModSettings version="2">
+	<World>
+		<Category name="Rules">
+			<Selector name="Difficulty" type="MyMod.Difficulty" defaultValue="Normal">
+				<List allowedValues="Easy, Normal, Hard" />
+			</Selector>
+			<Switch name="Mode" type="MyMod.Mode" defaultValue="Classic" />
+			<Switch name="Weather" type="string" defaultValue="Sunny">
+				<Buttons left="Sunny" right="Stormy" />
+			</Switch>
+			<Slider name="LootScale" type="float" defaultValue="50%">
+				<Incremental increment="5%" minValue="0%" maxValue="200%" />
+			</Slider>
+			<Selector name="Greeting" type="string" defaultValue="Hello">
+				<List allowedValues="Hello,Howdy" />
+			</Selector>
+			<Switch name="MissingDefault" type="bool" />
+			<Slider name="StringSlider" type="string" defaultValue="a" />
+			<Selector name="Precise" type="double" defaultValue="1.5" />
+			<Color name="Tint" defaultValue="255,0,0" />
+			<Switch name="BadBool" type="bool" defaultValue="maybe" />
+		</Category>
+		<Category name="More">
+			<Switch name="Weather" type="bool" defaultValue="true" />
+		</Category>
+		<Category name="Rules">
+			<Selector name="Merged" type="Int32" defaultValue="3" />
+		</Category>
+	</World>
+	<World>
+		<Category name="Ignored">
+			<Switch name="SecondWorld" type="bool" defaultValue="true" />
+		</Category>
+	</World>
+</ModSettings>

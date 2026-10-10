@@ -18,6 +18,10 @@
 !/Directory.Build.props
 !/CHANGELOG.md
 
+# --- share code library, so tool authors can build it and the docs' links resolve ---
+!/GearsSharing/*.cs
+!/GearsSharing/GearsSharing.csproj
+
 # --- never track, even under the allowances above (last match wins) ---
 /docs-site/node_modules/
 /docs-site/.next/

@@ -1,0 +1,40 @@
+---
+title: "ShareCodeValidationResult"
+description: "The result of checking a share code."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/ShareCodeValidationResult.cs" />
+
+```csharp
+public sealed class ShareCodeValidationResult
+```
+
+The result of checking a share code.
+
+**Inheritance:** `Object` → `ShareCodeValidationResult`
+
+## Properties
+
+### IsValid
+
+```csharp
+public bool IsValid { get; }
+```
+
+Gets whether the code is valid: it could be read, and no mod or setting is repeated.
+
+### Errors
+
+```csharp
+public IReadOnlyList<ShareCodeError> Errors { get; }
+```
+
+Gets the problems found. Empty when the code is valid.
+
+### ShareCode
+
+```csharp
+public ShareCode ShareCode { get; }
+```
+
+Gets the decoded contents. Set whenever the code could be read, even if a mod or setting is repeated, so an editor can show what is there; `null` if it could not be read.

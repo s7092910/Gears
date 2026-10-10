@@ -3,7 +3,7 @@ title: "IModGlobalSettings"
 description: "The root of a mod's global settings: the tabs, and operations across the whole tree."
 ---
 
-<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" source="GearsAPI/Source/Settings/Global/IModGlobalSettings.cs" />
+<TypeMeta kind="Interface" namespace="GearsAPI.Settings.Global" assembly="GearsAPI.dll" source="GearsAPI/Source/Settings/Global/IModGlobalSettings.cs" />
 
 ```csharp
 public interface IModGlobalSettings
@@ -77,6 +77,14 @@ void BindSettingsClass(Type settingsType);
 
 Binds a settings class. A type is bound once; later calls for it do nothing.
 
+Scans `settingsType` for tagged static members carrying a `"Tab.Category.Setting"` path. Fields and properties tagged [`SettingAttribute`](/docs/reference/attributes/setting-attribute) are assigned the named setting first, then methods tagged [`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute), [`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute), [`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute) or [`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute) are subscribed.
+
+**Call this from `IGearsModApi.InitMod`.** `ModSettings.xml` is read before that callback, so every setting exists by then, and one `InitMod` can bind the world class too. Binding is a one-time wiring job; use `SyncSettingsToClass` in `OnGlobalSettingsLoaded` for the values.
+
+This binds and nothing else. No listener is called, whether or not it asked for `IncludeInSync`. Calling this again with a type already bound does nothing at all, so binding from `OnGlobalSettingsLoaded` instead is safe - just harder to follow.
+
+Throws `ArgumentNullException` for `null`; every other problem is logged and that one member skipped. See the Bind Settings with Attributes guide.
+
 ### SyncSettingsToClass(Type)
 
 ```csharp
@@ -84,6 +92,14 @@ void SyncSettingsToClass(Type settingsType);
 ```
 
 Calls the opted-in value listeners on an already-bound class with the values their settings hold now.
+
+Calls every method on `settingsType` tagged [`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute) or [`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute) **with `includeInSync: true`**, handing each the value its setting holds at that moment, exactly as if the event had fired. Nothing is bound or subscribed, so this is safe to call as often as you like.
+
+Call it from `OnGlobalSettingsLoaded`, where the player's saved values are final, with the `BindSettingsClass` done earlier in `InitMod`. That starts a mod off in step with what is saved, rather than waiting for the first change.
+
+A listener without `IncludeInSync` is skipped — it runs only when its event fires. Throws `ArgumentNullException` for `null`, and logs a type that has never been bound rather than doing anything.
+
+When `OnGlobalSettingsLoaded` returns, Gears warns about every bound class that has an `includeInSync` listener and was not passed to this method during that callback. A class with no `includeInSync` listener is never reported.
 
 ### SaveSettings()
 

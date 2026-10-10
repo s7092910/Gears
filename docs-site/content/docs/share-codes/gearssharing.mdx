@@ -1,0 +1,327 @@
+---
+title: Use GearsSharing in C#
+description: Read and write Gears share codes from a C# tool, website or server with GearsSharing, the library Gears itself uses.
+---
+
+**GearsSharing** is the C# library that reads and writes share codes. A **share code** is one line
+of text, starting with `Gears:`, that holds the settings a player changed from their defaults. Gears
+uses GearsSharing in the game, and you can use it in any .NET tool: a website, a server panel, a
+launcher or a Discord bot. It has no game, Unity or GearsAPI dependencies.
+
+This page shows how to make a code, read one, and match a code to the settings you know about. For
+the format itself, see the [Share Code Format Reference](/docs/share-codes/format).
+
+## Get the library
+
+GearsSharing ships with Gears 8.1.0 and later.
+
+| Runtime | Use |
+|---|---|
+| .NET Framework 4.8 | `GearsSharing.dll` from the `00000-Gears` mod folder. This is the build the game loads. |
+| .NET 6 and later, .NET Standard 2.0, Mono, Unity | Build [`GearsSharing/GearsSharing.csproj`](https://github.com/s7092910/Gears/blob/main/GearsSharing/GearsSharing.csproj) for `netstandard2.0`: `dotnet build GearsSharing.csproj -f netstandard2.0 -c Release`. |
+
+Everything is in the `GearsSharing` namespace.
+
+## Make a share code
+
+A code holds one scope: **world settings**, which belong to one world and can't change while it
+runs, or **global settings**, which a player changes from the main menu or in game.
+
+Build a [`ShareCode`](/docs/reference/gearssharing/share-code) for the scope, add a
+[`SharedMod`](/docs/reference/gearssharing/shared-mod) for each mod, and add a
+[`SharedSetting`](/docs/reference/gearssharing/shared-setting) for each setting that differs from
+its default. Then call
+[`ShareCodeFormat.Encode`](/docs/reference/gearssharing/share-code-format). This method makes a
+World code:
+
+```csharp
+using System;
+using GearsSharing;
+
+static string MakeWorldCode()
+{
+    ShareCode code = new ShareCode(ShareCodeScope.World);
+
+    SharedMod mod = new SharedMod("MyMod");          // the <Name> value in the mod's ModInfo.xml
+    mod.Settings.Add(new SharedSetting("FeralNights", SharedValue.Bool(true)));
+    mod.Settings.Add(new SharedSetting("SpawnMultiplier", SharedValue.Int(3)));
+    mod.Settings.Add(new SharedSetting("LootScale", SharedValue.Float(1.5f)));
+    mod.Settings.Add(new SharedSetting("Difficulty", SharedValue.EnumName("Hard")));
+    code.Mods.Add(mod);
+
+    try
+    {
+        return ShareCodeFormat.Encode(code);         // Gears:...
+    }
+    catch (InvalidOperationException e)
+    {
+        // The code would be longer than ShareCodeFormat.MaxCodeLength (32,767 characters).
+        Console.WriteLine(e.Message);
+        return null;
+    }
+    catch (ArgumentException e)
+    {
+        // The model can't be written: an empty name, a setting listed twice, two names with the same
+        // hash, a setting with no value, or a tab and category on the wrong scope.
+        Console.WriteLine(e.Message);
+        return null;
+    }
+}
+```
+
+`Encode` leaves out mods with no settings, and decides for itself whether to compress.
+
+A global setting is addressed by its tab, category and name, so use the four-argument constructor
+in a Global code:
+
+```csharp
+using GearsSharing;
+
+static string MakeGlobalCode()
+{
+    ShareCode code = new ShareCode(ShareCodeScope.Global);
+    SharedMod mod = new SharedMod("MyMod");
+    mod.Settings.Add(new SharedSetting("General", "Display", "ShowHud", SharedValue.Bool(false)));
+    code.Mods.Add(mod);
+    return ShareCodeFormat.Encode(code);
+}
+```
+
+Pick the [`SharedValue`](/docs/reference/gearssharing/shared-value) factory that matches the setting's value type:
+
+| Setting value type | Factory |
+|---|---|
+| `bool` | `SharedValue.Bool(bool)` |
+| `int` | `SharedValue.Int(int)` |
+| `float` | `SharedValue.Float(float)` |
+| `string` | `SharedValue.String(string)`, which accepts `null` |
+| an enum, by member name | `SharedValue.EnumName(string)` |
+| an enum value with no member name, such as a combination of flags | `SharedValue.EnumValue(long)` |
+| `Color` (global settings only) | `SharedValue.Color(r, g, b, a)`, channels normally 0 to 1 |
+| a mod's own registered type | `SharedValue.Serialized(string)`, the text its serializer writes |
+
+## Read a share code
+
+`ShareCodeFormat.Validate` never throws for bad input. It returns every problem it finds. Pass it
+the code the user pasted:
+
+```csharp
+using System;
+using GearsSharing;
+
+static ShareCode ReadCode(string text)
+{
+    ShareCodeValidationResult result = ShareCodeFormat.Validate(text);
+    foreach (ShareCodeError error in result.Errors)
+    {
+        Console.WriteLine(error.ErrorType + ": " + error.Message);
+    }
+    return result.IsValid ? result.ShareCode : null;
+}
+```
+
+`Message` is written for players, so you can show it as it is. When a code only repeats a mod or
+setting, `IsValid` is `false` but `ShareCode` is still set, so an editor can show what is there.
+
+When you only need a yes or no, use `TryDecode`. It reports the first problem:
+
+```csharp
+using System;
+using GearsSharing;
+
+static void Describe(string text)
+{
+    if (ShareCodeFormat.TryDecode(text, out ShareCode decoded, out string error))
+    {
+        Console.WriteLine(decoded.Scope + " code with " + decoded.Mods.Count + " mods");
+    }
+    else
+    {
+        Console.WriteLine(error);
+    }
+}
+```
+
+## Match a decoded code to settings
+
+A code holds hashes, not names. In a decoded code, `SharedMod.Name` and every `SharedSetting` name
+are `null`; `SharedMod.NameHash` and `SharedSetting.Hash` hold the hashes. To name them, hash the
+names you know with `ShareCodeFormat.ModHash` and `ShareCodeFormat.SettingHash`, and look the code's
+hashes up. This method lists a decoded World code's settings for a mod named `MyMod` with two known
+settings:
+
+```csharp
+using System;
+using System.Collections.Generic;
+using GearsSharing;
+
+static void ListSettings(ShareCode decoded)
+{
+    // The settings you know about, such as those read from each mod's ModSettings.xml.
+    Dictionary<(uint Mod, uint Setting), string> known = new Dictionary<(uint, uint), string>();
+    foreach (string name in new[] { "FeralNights", "SpawnMultiplier" })
+    {
+        // A world setting has no tab or category, so pass null for both.
+        known[(ShareCodeFormat.ModHash("MyMod"), ShareCodeFormat.SettingHash(null, null, name))] = "MyMod/" + name;
+    }
+
+    foreach (SharedMod mod in decoded.Mods)
+    {
+        foreach (SharedSetting setting in mod.Settings)
+        {
+            // PathOf shows an unknown mod or setting by its hash, such as #c80bfd18/#d60c1322.
+            string path = known.TryGetValue((mod.NameHash, setting.Hash), out string name)
+                ? name
+                : ShareCodeFormat.PathOf(mod, setting);
+            Console.WriteLine(path + " = " + setting.Value);
+        }
+    }
+}
+```
+
+For a global setting, pass its tab and category too: `SettingHash("General", "Display", "ShowHud")`.
+
+To read a value, match on its type:
+
+```csharp
+using System.Globalization;
+using System.Linq;
+using GearsSharing;
+
+static string ValueText(SharedValue value)
+{
+    CultureInfo invariant = CultureInfo.InvariantCulture;
+    switch (value)
+    {
+        case SharedBool b: return b.Value ? "true" : "false";
+        case SharedInt i: return i.Value.ToString(invariant);
+        case SharedFloat f: return f.Value.ToString("R", invariant);
+        case SharedString s: return s.Value ?? "null";
+        case SharedEnumName e: return e.Name;
+        case SharedEnumValue n: return n.Value.ToString(invariant);
+        case SharedColor c: return string.Join(",", new[] { c.R, c.G, c.B, c.A }.Select(x => x.ToString("R", invariant)));
+        case SharedSerialized t: return t.Text;
+        default: return value.ToString();
+    }
+}
+```
+
+## Change a decoded code and write it again
+
+A decoded code can be encoded again as it is: `Encode` writes the hashes it holds. Change a value,
+add or remove settings, then encode. This method sets a mod's `SpawnMultiplier` and adds
+`LootRespawnDays`, by name, beside the settings the code already has:
+
+```csharp
+using GearsSharing;
+
+static string UpdateCode(ShareCode decoded)
+{
+    foreach (SharedMod mod in decoded.Mods)
+    {
+        if (mod.NameHash != ShareCodeFormat.ModHash("MyMod"))
+        {
+            continue;
+        }
+
+        uint spawn = ShareCodeFormat.SettingHash(null, null, "SpawnMultiplier");
+        SharedSetting existing = mod.Settings.Find(s => s.Hash == spawn);
+        if (existing != null)
+        {
+            existing.Value = SharedValue.Int(4);
+        }
+        mod.Settings.Add(new SharedSetting("LootRespawnDays", SharedValue.Int(14)));
+    }
+    return ShareCodeFormat.Encode(decoded);
+}
+```
+
+Entries you couldn't match keep their hashes, so re-sharing a code doesn't lose the settings of
+mods you don't have.
+
+## Read world settings from ModSettings.xml
+
+To offer a mod's world settings in a tool, read them from its `ModSettings.xml`. This method reads
+each setting's name and default as a `SharedValue`. It leaves out the checks Gears makes, which
+[Write a Share Code Generator](/docs/share-codes/write-a-generator) lists:
+
+```csharp
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Xml.Linq;
+using GearsSharing;
+
+static Dictionary<string, SharedValue> ReadWorldDefaults(string modSettingsPath)
+{
+    Dictionary<string, SharedValue> defaults = new Dictionary<string, SharedValue>();
+    XElement world = XDocument.Load(modSettingsPath).Root?.Element("World");
+    if (world == null)
+    {
+        return defaults;
+    }
+
+    string[] settingElements = { "Switch", "Slider", "Selector" };
+    foreach (XElement setting in world.Elements("Category").SelectMany(c => c.Elements())
+                                      .Where(e => settingElements.Contains(e.Name.LocalName)))
+    {
+        string name = (string)setting.Attribute("name");
+        string type = ((string)setting.Attribute("type"))?.Trim().ToLowerInvariant();
+        string text = (string)setting.Attribute("defaultValue");
+        if (name == null || type == null || text == null || defaults.ContainsKey(name))
+        {
+            continue;
+        }
+
+        switch (type)
+        {
+            case "int": case "int32": case "integer":
+                defaults[name] = SharedValue.Int(int.Parse(text, CultureInfo.InvariantCulture));
+                break;
+            case "float": case "single":
+                // A % sign makes the value a percentage: 50% is 0.5.
+                bool percent = text.Contains("%");
+                float number = float.Parse(text.Replace("%", ""), CultureInfo.InvariantCulture);
+                defaults[name] = SharedValue.Float(percent ? number / 100f : number);
+                break;
+            case "bool": case "boolean":
+                defaults[name] = SharedValue.Bool(bool.Parse(text));
+                break;
+            case "string":
+                defaults[name] = SharedValue.String(text);
+                break;
+            case "double": case "color": case "color32":
+                break;                                  // Gears drops these for world settings.
+            default:
+                defaults[name] = SharedValue.EnumName(text.Trim());   // a mod's own enum
+                break;
+        }
+    }
+    return defaults;
+}
+```
+
+The mod name for `ModHash` is the `value` of `<Name>` in the `ModInfo.xml` beside it:
+
+```csharp
+using System.Linq;
+using System.Xml.Linq;
+
+static string ReadModName(string modInfoPath)
+{
+    return (string)XDocument.Load(modInfoPath).Descendants("Name").First().Attribute("value");
+}
+```
+
+## GearsSharing reference
+
+Every type has a generated reference page with its exact signatures, in the
+[API Reference](/docs/reference#gearssharingdll-100):
+
+| Type | Use it to |
+|---|---|
+| [`ShareCodeFormat`](/docs/reference/gearssharing/share-code-format) | Encode, decode and check codes, and hash names. |
+| [`ShareCode`](/docs/reference/gearssharing/share-code) and [`ShareCodeScope`](/docs/reference/gearssharing/share-code-scope) | Hold one scope's mods. |
+| [`SharedMod`](/docs/reference/gearssharing/shared-mod) and [`SharedSetting`](/docs/reference/gearssharing/shared-setting) | Hold a mod and its settings, by name or by hash. A name is used whenever it is set; `NameHash` and `Hash` only while the name is `null`. |
+| [`SharedValue`](/docs/reference/gearssharing/shared-value) | Create values, and compare them by kind and bits. Each kind is its own class, such as [`SharedInt`](/docs/reference/gearssharing/shared-int) or [`SharedColor`](/docs/reference/gearssharing/shared-color). |
+| [`ShareCodeValidationResult`](/docs/reference/gearssharing/share-code-validation-result), [`ShareCodeError`](/docs/reference/gearssharing/share-code-error) and [`ShareCodeErrorType`](/docs/reference/gearssharing/share-code-error-type) | Read what `Validate` found. See [Decoding errors](/docs/share-codes/format#decoding-errors). |

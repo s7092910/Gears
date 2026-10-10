@@ -1,0 +1,29 @@
+---
+title: "ShareCodeErrorType"
+description: "Why a share code is not valid."
+---
+
+<TypeMeta kind="Enum" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/ShareCodeValidationResult.cs" />
+
+```csharp
+public enum ShareCodeErrorType
+```
+
+Why a share code is not valid.
+
+**Inheritance:** `Object` → `ValueType` → `Enum` → `ShareCodeErrorType`
+
+## Fields
+
+| Name | Value | Description |
+|---|---|---|
+| `Empty` | 0 | The code is empty or only whitespace. |
+| `MissingPrefix` | 1 | The code does not start with [`ShareCodeFormat.Prefix`](/docs/reference/gearssharing/share-code-format). |
+| `InvalidBase64` | 2 | The code is not base64 (standard or URL-safe). |
+| `UnsupportedVersion` | 3 | The code was made by a format version this library does not read. |
+| `CorruptCompression` | 4 | The compressed payload cannot be decompressed. |
+| `TooLarge` | 5 | The payload decompresses to more than the 1 MB limit. |
+| `Truncated` | 6 | The payload ends part way through a value. |
+| `MalformedData` | 7 | The payload holds an impossible count, number, value type or invalid text. |
+| `TrailingData` | 8 | Bytes are left over after the last mod. |
+| `DuplicateSetting` | 9 | The same mod, or the same setting within a mod, appears more than once. |

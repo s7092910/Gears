@@ -1,0 +1,181 @@
+---
+title: Share Code Format Reference
+description: Every byte of a Gears share code - prefix and base64 text, header, compression, payload, hashes, value encodings and errors - with a worked example.
+---
+
+Use this page to read or write share codes in any language. A **share code** is one line of text,
+starting with `Gears:`, that holds the settings a player changed from their defaults. A code holds
+either **global settings**, which a player changes from the main menu or in game, or **world
+settings**, which belong to one world and can't change while it runs.
+
+This page describes format version 1, the only version. The C# library
+[GearsSharing](/docs/share-codes/gearssharing) and the documentation site's TypeScript port both
+follow it, and both are tested against the same
+[test vectors](https://github.com/s7092910/Gears/blob/main/docs-site/lib/share-code/vectors.json).
+For what a code is for, see [Share Codes](/docs/share-codes).
+
+## How a code is built
+
+A code is built in four layers. To write one, work from the top down. To read one, work from the
+bottom up.
+
+1. A **payload** of mods, setting hashes and values.
+2. Optional **compression**: the payload is raw-deflated when that makes it smaller.
+3. A **header byte** in front, giving the version, the scope, and whether the payload is compressed.
+4. **Prefix and base64 text**: the header and payload as base64, after the `Gears:` prefix.
+
+## Prefix and base64 text
+
+| Rule | Writing | Reading |
+|---|---|---|
+| Prefix | Write `Gears:` exactly. | Trim the ends of the text, then require `Gears:`. It is case-sensitive: `gears:` is not a code. |
+| Alphabet | URL-safe base64: `-` and `_` in place of `+` and `/`. | Accept both alphabets. |
+| Padding | Leave out the trailing `=`. | Accept it. |
+| Whitespace | Write none. | Ignore whitespace after the prefix, so a code split across lines still reads. |
+| Length | At most 32,767 characters, prefix included. A writer must refuse to make a longer code. | Don't enforce a length; the 1 MB payload limit below covers it. |
+
+Base64 text whose length leaves 1 character over a multiple of 4 can't be valid, and neither can
+padding in the middle. Both are `InvalidBase64`.
+
+## Header byte
+
+The first decoded byte is the header. The rest are the payload.
+
+| Bits | Meaning |
+|---|---|
+| 0-3 | Format version. Always `1`. |
+| 4 | Set for a World code, clear for a Global code. |
+| 5 | Set when the payload is compressed. |
+| 6-7 | Reserved. Always clear. |
+
+A reader must reject any other version, or a reserved bit that is set, as `UnsupportedVersion`.
+
+## Payload compression
+
+When bit 5 is set, the payload is **raw deflate**, the compressed format defined in Request for
+Comments (RFC) 1951, with no zlib or gzip header. A writer
+compresses the payload and keeps the result only if it is shorter. An empty payload is never
+compressed.
+
+A reader must stop inflating once the output passes **1 MB** (1,048,576 bytes) and report
+`TooLarge`, so a tampered code can't expand without limit.
+
+## Payload layout
+
+The payload has the same shape for both scopes:
+
+```text
+payload  = [ count mod* ]               ; empty means no mods
+mod      = modHash:u32 count setting*
+setting  = settingHash:u32 value
+```
+
+- An empty payload means no mods. It is a valid code that changes nothing from the defaults.
+- `u32` is 4 bytes, little-endian.
+- A writer leaves out mods with no settings, and never writes the same mod hash twice, or the same
+  setting hash twice within a mod.
+- After the last mod, the payload must end. Leftover bytes are `TrailingData`.
+
+## Number and text encodings
+
+| Name | Encoding |
+|---|---|
+| varint | Unsigned Little Endian Base 128 (LEB128): 7 bits per byte, low bits first, high bit set on every byte but the last. At most 10 bytes (64 bits); a longer one is `MalformedData`. |
+| count | A varint. Every counted item takes at least one byte, so a count larger than the bytes left is `MalformedData`. |
+| signed | Zigzag, then a varint: `(n << 1) ^ (n >> 63)` on a 64-bit integer, so 0, -1, 1, -2 become 0, 1, 2, 3. |
+| text | A varint byte length, then that many bytes of UTF-8 (the 8-bit Unicode Transformation Format). Invalid UTF-8 is `MalformedData`. |
+
+## Name hashes
+
+Names are stored as **32-bit FNV-1a** hashes of their UTF-8 bytes. FNV-1a is the
+Fowler–Noll–Vo hash, variant 1a:
+
+```text
+hash = 0x811C9DC5
+for each byte b of UTF-8(text):
+    hash = (hash XOR b) * 0x01000193   ; modulo 2^32
+```
+
+| Hash | Text that is hashed |
+|---|---|
+| Mod | The mod's name: the `value` of `<Name>` in its `ModInfo.xml`. |
+| Global setting | `tab + "\0" + category + "\0" + name`: the three names joined by a zero byte. |
+| World setting | The setting name alone. World setting names are unique within a mod. |
+
+Hashes are case-sensitive and use the names exactly as the mod defines them. Check an
+implementation against these values:
+
+| Text | Hash |
+|---|---|
+| `""` (empty) | `811c9dc5` |
+| `"a"` | `e40c292c` |
+| `"ModA"` | `6f4ea346` |
+| `"Héllo ✓ 🎮"` | `9fa0ce5c` |
+| Global setting `General` / `Display` / `Int` | `2fae2104` |
+
+## Value encodings
+
+Each value starts with a one-byte tag. Several kinds have a compact form. A writer picks the
+compact form whenever it applies; a reader accepts either.
+
+| Tag | Kind | Data after the tag | Writer uses it when |
+|---|---|---|---|
+| `0` | Bool false | none | |
+| `1` | Bool true | none | |
+| `2` | Int | signed | always, for an int. A reader rejects a value outside the 32-bit range as `MalformedData`. |
+| `3` | Float, whole | signed | the float is a whole number greater than -2^20 and less than 2^20, and is not -0. A reader converts it to a single-precision float. |
+| `4` | Float | 4 bytes: single precision as defined by the Institute of Electrical and Electronics Engineers (IEEE) 754 standard, little-endian | any other float. NaN (not a number) payloads and -0 survive unchanged. |
+| `5` | String, null | none | the string is null. |
+| `6` | String | text | the string is not null. It may be empty. |
+| `7` | Enum by name | text | the value is a named enum member. The name must match exactly. |
+| `8` | Enum by number | signed (64-bit) | the value has no member name, such as a combination of flags. |
+| `9` | Color, compact | 4 bytes: R, G, B, A, each 0-255 | every channel is between 0 and 1 and equals exactly `round(channel * 255) / 255` in single precision. A reader divides each byte by 255. |
+| `10` | Color | 4 floats as in tag `4`: R, G, B, A | any other color. |
+| `11` | Serialized | text | the setting's type is a mod's own type, written by its registered serializer. |
+
+Any other tag is `MalformedData`.
+
+Floats are **single precision** throughout. Round a double to single precision before you compare
+or write it, and compare floats by their bits, so that NaN equals NaN and -0 differs from 0.
+
+## Decoding errors
+
+A reader stops at the first problem that prevents decoding. It reports repeated entries only after
+reading the whole code, so an editor can still show what is there.
+
+| Error | When |
+|---|---|
+| `Empty` | The text is empty or whitespace, is only the prefix, or decodes to no bytes. |
+| `MissingPrefix` | The trimmed text does not start with `Gears:`. |
+| `InvalidBase64` | The text after the prefix is not base64. |
+| `UnsupportedVersion` | The header's version is not 1, or a reserved bit is set. |
+| `CorruptCompression` | The compressed payload can't be inflated. |
+| `TooLarge` | The payload inflates to more than 1 MB. |
+| `Truncated` | The payload ends part way through a value or text. |
+| `MalformedData` | A count, number, tag or text is impossible: see [Number and text encodings](#number-and-text-encodings) and [Value encodings](#value-encodings). |
+| `TrailingData` | Bytes are left after the last mod. |
+| `DuplicateSetting` | The same mod hash appears twice, or the same setting hash twice within a mod. |
+
+## Worked example: decoding a code
+
+`Gears:EQEY_QvIASITDNYB` is a World code that turns one setting on. After the prefix, the base64
+decodes to 12 bytes:
+
+```text
+11 01 18 FD 0B C8 01 22 13 0C D6 01
+```
+
+| Bytes | Meaning |
+|---|---|
+| `11` | Header `0001 0001`: version 1, World, not compressed. |
+| `01` | 1 mod. |
+| `18 FD 0B C8` | Mod hash `0xC80BFD18`: FNV-1a of `"M"`. |
+| `01` | 1 setting. |
+| `22 13 0C D6` | Setting hash `0xD60C1322`: FNV-1a of `"S"`. |
+| `01` | Tag `1`: Bool true. |
+
+The payload is 11 bytes, too short for deflate to shrink it, so it is not compressed.
+
+To write this code: build the payload, try deflating it and keep the shorter form, put the header
+byte in front, then base64 the result with the URL-safe alphabet, drop the padding, and add the
+prefix.

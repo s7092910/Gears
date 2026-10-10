@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The World section of GearsExample/Modlet/ModSettings.xml, for scripts/check-mod-settings.mjs,
+     with a one-setting Global section that the World reader has to skip. -->
+<ModSettings version="2">
+	<Global>
+		<Tab name="General" displayKey="gearsExTabGeneral">
+			<Category name="Display" displayKey="gearsExCatDisplay">
+				<Switch name="ShowHud" displayKey="gearsExShowHud" type="bool" defaultValue="true" />
+			</Category>
+		</Tab>
+	</Global>
+	<World>
+		<Category name="Zombies" displayKey="gearsExCatZombies">
+			<Description key="gearsExCatZombiesDesc" />
+
+			<Switch name="FeralNights" displayKey="gearsExFeralNights" type="bool" defaultValue="false">
+				<LocalizationPrefix prefix="gearsExOnOff_" />
+				<Description key="gearsExFeralNightsDesc" />
+			</Switch>
+
+			<Slider name="SpawnMultiplier" displayKey="gearsExSpawnMultiplier" type="int" defaultValue="1">
+				<Incremental increment="1" minValue="1" maxValue="4" />
+				<Description key="gearsExSpawnMultiplierDesc" />
+			</Slider>
+
+			<Selector name="LootRespawnDays" displayKey="gearsExLootRespawnDays" type="int" defaultValue="7">
+				<Incremental increment="1" minValue="1" maxValue="30" />
+				<Description key="gearsExLootRespawnDaysDesc" />
+			</Selector>
+		</Category>
+	</World>
+</ModSettings>

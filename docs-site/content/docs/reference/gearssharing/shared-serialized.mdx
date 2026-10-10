@@ -1,0 +1,50 @@
+---
+title: "SharedSerialized"
+description: "A mod-registered value type, as written by that type's own serializer."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/SharedValue.cs" />
+
+```csharp
+public sealed class SharedSerialized : SharedValue
+```
+
+A mod-registered value type, as written by that type's own serializer.
+
+**Inheritance:** `Object` → [`SharedValue`](/docs/reference/gearssharing/shared-value) → `SharedSerialized`
+
+## Properties
+
+### Text
+
+```csharp
+public string Text { get; }
+```
+
+Gets the serialized text.
+
+## Methods
+
+### Equals(SharedValue)
+
+```csharp
+public override bool Equals(SharedValue other)
+```
+
+Indicates whether the current object is equal to another object of the same type.
+
+### GetHashCode()
+
+```csharp
+public override int GetHashCode()
+```
+
+Serves as the default hash function.
+
+### ToString()
+
+```csharp
+public override string ToString()
+```
+
+Returns the value as text, for display. Floats use the shortest round-trip form.

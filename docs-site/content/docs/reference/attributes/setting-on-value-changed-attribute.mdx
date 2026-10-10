@@ -3,13 +3,15 @@ title: "SettingOnValueChangedAttribute"
 description: "Binds a static method to OnValueChanged. Raised on global value settings; on a world path the method is bound invoke-only."
 ---
 
-<TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" source="GearsAPI/Source/Attributes/Listeners/SettingListenerAttribute.cs" />
+<TypeMeta kind="Sealed class" namespace="GearsAPI.Attributes" assembly="GearsAPI.dll" source="GearsAPI/Source/Attributes/Listeners/SettingListenerAttribute.cs" />
 
 ```csharp
 public sealed class SettingOnValueChangedAttribute : SettingListenerAttribute
 ```
 
-Binds a static method to the named setting's `OnValueChanged` event ([`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting)), which fires when the applied value changes. Required method signature: `static void M(IValueModSetting<T> setting, T newValue)`. Pass `includeInSync: true` to have `SyncSettingsToClass` call the method with the setting's current `SettingValue`. <para> A world setting raises no `OnValueChanged` - its applied value arrives with the world rather than changing under the player - so on a world path the method is bound <b>invoke-only</b>: never raised, and run only by `SyncSettingsToClass`. That makes `includeInSync: true` mandatory there, or the method can never run at all. </para>
+Binds a static method to the named setting's `OnValueChanged` event ([`IGlobalValueSetting<T>`](/docs/reference/global/i-global-value-setting)), which fires when the applied value changes. Required method signature: `static void M(IValueModSetting<T> setting, T newValue)`. Pass `includeInSync: true` to have `SyncSettingsToClass` call the method with the setting's current `SettingValue`.
+
+A world setting raises no `OnValueChanged` - its applied value arrives with the world rather than changing under the player - so on a world path the method is bound **invoke-only**: never raised, and run only by `SyncSettingsToClass`. That makes `includeInSync: true` mandatory there, or the method can never run at all.
 
 **Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → [`SettingListenerAttribute`](/docs/reference/attributes/setting-listener-attribute) → `SettingOnValueChangedAttribute`
 

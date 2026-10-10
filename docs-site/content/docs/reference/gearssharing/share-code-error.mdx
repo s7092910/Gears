@@ -1,0 +1,42 @@
+---
+title: "ShareCodeError"
+description: "One problem found in a share code."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/ShareCodeValidationResult.cs" />
+
+```csharp
+public sealed class ShareCodeError
+```
+
+One problem found in a share code.
+
+**Inheritance:** `Object` → `ShareCodeError`
+
+## Properties
+
+### ErrorType
+
+```csharp
+public ShareCodeErrorType ErrorType { get; }
+```
+
+Gets the type of problem.
+
+### Message
+
+```csharp
+public string Message { get; }
+```
+
+Gets a description of the problem, suitable for showing to a player.
+
+## Methods
+
+### ToString()
+
+```csharp
+public override string ToString()
+```
+
+Returns a string that represents the current object.

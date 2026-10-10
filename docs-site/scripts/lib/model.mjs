@@ -9,14 +9,19 @@ import path from 'node:path';
 import { parseFile, memberKey, splitGeneric } from './csharp.mjs';
 
 /**
- * Namespace -> section folder under /docs/reference.
+ * The assemblies the reference covers, each with its source folder (relative to the repo root)
+ * and its sections: namespace -> section folder under /docs/reference.
+ *
+ * `version` is typed here rather than read from the project, so the pages carry a plain number;
+ * scripts/check-versions.mjs checks it against the project's own version.
  *
  * `order` is the reading order for the sidebar and the index tables: general contracts before
- * the concrete setting types. Any type not listed is appended in source order, so adding a type
- * to the assembly never breaks generation — it just lands at the end of its section until
- * someone places it here.
+ * the concrete types. Any type not listed is appended in source order, so adding a type to an
+ * assembly never breaks generation — it just lands at the end of its section until someone
+ * places it here.
  */
-export const SECTIONS = [
+export const ASSEMBLIES = [
+  { name: 'GearsAPI.dll', version: '3.0.0', root: 'GearsAPI/Source', sections: [
   {
     id: 'core', ns: 'GearsAPI', title: 'GearsAPI', short: 'Core',
     blurb: 'The assembly entry point.',
@@ -68,7 +73,23 @@ export const SECTIONS = [
       'SettingFactoryAttribute', 'SettingFactoryEnumAttribute', 'SettingFactoryFixedAttribute',
     ],
   },
+  ] },
+  { name: 'GearsSharing.dll', version: '1.0.0', root: 'GearsSharing', sections: [
+  {
+    id: 'gearssharing', ns: 'GearsSharing', title: 'GearsSharing', short: 'GearsSharing',
+    blurb: 'Read, write and check share codes.',
+    order: [
+      'ShareCodeFormat', 'ShareCode', 'ShareCodeScope', 'SharedMod', 'SharedSetting',
+      'SharedValue', 'SharedBool', 'SharedInt', 'SharedFloat', 'SharedString', 'SharedEnumName',
+      'SharedEnumValue', 'SharedColor', 'SharedSerialized',
+      'ShareCodeValidationResult', 'ShareCodeError', 'ShareCodeErrorType',
+    ],
+  },
+  ] },
 ];
+
+/** Every section, in assembly order, each tagged with its assembly. */
+export const SECTIONS = ASSEMBLIES.flatMap((a) => a.sections.map((s) => ({ ...s, assembly: a.name, version: a.version })));
 
 /** Sort a section's types by its curated `order`, unlisted ones last in source order. */
 export function orderTypes(section, types) {
@@ -79,8 +100,6 @@ export function orderTypes(section, types) {
   };
   return [...types].sort((a, b) => rank(a) - rank(b) || a.source.localeCompare(b.source) || a.plain.localeCompare(b.plain));
 }
-
-export const ASSEMBLY = 'GearsAPI.dll';
 
 /** PascalCase -> kebab-case, the way the Nebula-style URLs are built. */
 export function slugify(name) {
@@ -105,11 +124,25 @@ function kindLabel(t) {
 /** Unknown bases: `IFoo` is taken to be an interface, anything else a class. */
 const looksLikeInterface = (n) => /^I[A-Z]/.test(splitGeneric(n).base);
 
+// Build output: a local build leaves generated .cs files here that a CI checkout doesn't have.
+const SKIP_DIRS = new Set(['bin', 'obj']);
+
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = path.join(dir, e.name);
-    return e.isDirectory() ? walk(p) : p.endsWith('.cs') ? [p] : [];
+    if (e.isDirectory()) return SKIP_DIRS.has(e.name) ? [] : walk(p);
+    return p.endsWith('.cs') ? [p] : [];
   });
+}
+
+/**
+ * Only public types are part of an assembly's API. A type nested in an interface is public by
+ * default; one nested in a type that isn't public is hidden with it.
+ */
+function isPublicType(t, hiddenNames, kindsByName) {
+  if (t.declaringType && hiddenNames.has(t.declaringType)) return false;
+  if (t.modifiers.includes('public')) return true;
+  return t.declaringType != null && kindsByName.get(t.declaringType) === 'interface' && !t.modifiers.some((m) => ['private', 'protected', 'internal'].includes(m));
 }
 
 /**
@@ -118,19 +151,22 @@ function walk(dir) {
  * @param {Record<string,string[]>} [opts.hidden] type -> member keys to leave undocumented
  */
 export function buildModel(repoRoot, opts = {}) {
-  const srcRoot = path.join(repoRoot, 'GearsAPI', 'Source');
   const hidden = opts.hidden ?? {};
 
   /** @type {Map<string, any>} display name -> type */
   const types = new Map();
   const warnings = [];
 
-  for (const file of walk(srcRoot).sort()) {
+  const files = ASSEMBLIES.flatMap((a) => walk(path.join(repoRoot, ...a.root.split('/'))).sort().map((file) => ({ file, assembly: a })));
+  for (const { file, assembly } of files) {
     const rel = path.relative(repoRoot, file).replace(/\\/g, '/');
     for (const ns of parseFile(fs.readFileSync(file, 'utf8'), rel)) {
-      const section = SECTIONS.find((s) => s.ns === ns.name);
+      const section = assembly.sections.find((s) => s.ns === ns.name);
       if (!section) { warnings.push(`namespace not mapped to a section: ${ns.name}`); continue; }
+      const hiddenNames = new Set();
+      const kindsByName = new Map(ns.types.map((t) => [t.name, t.kind]));
       for (const t of ns.types) {
+        if (!isPublicType(t, hiddenNames, kindsByName)) { hiddenNames.add(t.name); continue; }
         const display = t.declaringType ? `${t.declaringType}.${t.name}` : t.name;
         const generic = t.typeParams.length ? `<${t.typeParams.join(', ')}>` : '';
         const key = display + generic;
@@ -143,6 +179,7 @@ export function buildModel(repoRoot, opts = {}) {
           kind: t.kind,
           kindLabel: kindLabel(t),
           namespace: ns.name,
+          assembly: assembly.name,
           section: section.id,
           slug: slugify(display),
           source: rel,
@@ -171,12 +208,14 @@ export function buildModel(repoRoot, opts = {}) {
             value: m.value,
             params: m.params ?? [],
             xmlDoc: m.doc ?? null,
+            override: (m.modifiers ?? []).includes('override'),
           });
         }
 
-        // A non-abstract class with no declared constructor still has a public one.
+        // A non-abstract class with no declared constructor still has a public one. A class whose
+        // constructors are all non-public has none, so look before filtering by visibility.
         if (t.kind === 'class' && !t.modifiers.includes('static') && !t.modifiers.includes('abstract')
-          && !node.members.some((m) => m.kind === 'constructor')) {
+          && !t.members.some((m) => m.kind === 'constructor')) {
           const mk = `${t.name}()`;
           if (!hides.has(mk)) {
             node.members.unshift({

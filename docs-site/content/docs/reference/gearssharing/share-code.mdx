@@ -1,0 +1,42 @@
+---
+title: "ShareCode"
+description: "The contents of a share code: the settings that differ from their defaults, grouped by mod."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/ShareCode.cs" />
+
+```csharp
+public sealed class ShareCode
+```
+
+The contents of a share code: the settings that differ from their defaults, grouped by mod.
+
+**Inheritance:** `Object` → `ShareCode`
+
+## Constructors
+
+### ShareCode(ShareCodeScope)
+
+```csharp
+public ShareCode(ShareCodeScope scope)
+```
+
+Creates an empty share code for `scope`.
+
+## Properties
+
+### Scope
+
+```csharp
+public ShareCodeScope Scope { get; }
+```
+
+Gets whether the code holds Global or World settings.
+
+### Mods
+
+```csharp
+public List<SharedMod> Mods { get; }
+```
+
+Gets the mods in the code, in the order they are written.

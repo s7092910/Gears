@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The share code format on its own: no game, Unity or GearsAPI references, so anything that runs
+    .NET can read and write codes. net48 is the build the Gears mod loads; netstandard2.0 is for a
+    website or tool (ASP.NET Core, Azure Functions, Blazor).
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>net48;netstandard2.0</TargetFrameworks>
+    <ProjectGuid>{C97FBE90-DB27-4539-A80E-7F5796F098BC}</ProjectGuid>
+    <RootNamespace>GearsSharing</RootNamespace>
+    <AssemblyName>GearsSharing</AssemblyName>
+    <Deterministic>true</Deterministic>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Product>GearsSharing</Product>
+    <Copyright>Copyright © 2026</Copyright>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.IO.Compression" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests" />
+  </ItemGroup>
+
+</Project>

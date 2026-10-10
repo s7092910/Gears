@@ -7,57 +7,60 @@ overwrites them. CI fails the build if they are stale.
 npm run gen:api          # regenerate the reference pages
 npm run gen:api:report   # only print the drift report, write nothing
 npm run gen:api:check    # fail if the pages are stale (used by CI)
-npm run check            # gen:api:check + check:links + check:versions
+npm run check            # gen:api:check + check:links + check:versions + share code checks
 ```
 
 ## Where each piece of a page comes from
 
 | Part of the page | Source |
 |---|---|
-| Declaration, member signatures, parameter names and types, generic constraints, attributes | parsed from `GearsAPI/Source/**/*.cs` |
+| Declaration, member signatures, parameter names and types, generic constraints, attributes | parsed from each assembly's source folder: `GearsAPI/Source/**/*.cs` and `GearsSharing/*.cs` |
 | Kind label (Interface / Sealed class / …) | derived from the declaration's modifiers |
 | `Implements` (transitive), `Derived` (direct), `Inheritance` chain, `Nested types` | derived from the base lists across the whole assembly |
 | Enum member values | read from source, including implicit `0, 1, 2…` |
-| URL slug, section folder, sidebar order | derived from the type name and `SECTIONS` in `lib/model.mjs` |
-| Type summaries and per-member descriptions | `///` XML doc comments in `GearsAPI/Source` |
+| URL slug, section folder, sidebar order | derived from the type name and `ASSEMBLIES` in `lib/model.mjs` |
+| Assembly name and version on each page and the index | `ASSEMBLIES` in `lib/model.mjs` |
+| Type summaries and per-member descriptions | `///` XML doc comments in the same sources |
 
-**Nothing on the page is hand-maintained.** Everything, prose included, is parsed from
-`GearsAPI/Source`, so a page can never drift from the assembly. There is no separate prose file —
+**Nothing on the page is hand-maintained.** Everything, prose included, is parsed from the
+sources, so a page can never drift from the assembly. There is no separate prose file —
 document a member the same way you'd document it for IntelliSense, and the site picks it up on the
 next `npm run gen:api`.
 
 ## Changing a description
 
-Edit the `///` doc comment on the type or member in `GearsAPI/Source`, then `npm run gen:api`.
+Edit the `///` doc comment on the type or member in `GearsAPI/Source` or `GearsSharing`, then
+`npm run gen:api`. Only public types are published; internal types and non-public members are left out.
 Supported tags:
 
 ```csharp
 /// <summary>One line; used in frontmatter and the index tables.</summary>
-/// <remarks>The paragraph under the declaration. Omit to fall back to the summary.</remarks>
+/// <remarks>The text under the declaration (or under a member's summary). Omit to fall back to the summary.</remarks>
 /// <typeparam name="T">Only meaningful on a generic type.</typeparam>
 /// <note>Rendered as a Callout.</note>
 /// <reserved/>                       <!-- renders the "Reserved" warning -->
 public interface IValueModSetting<T>
 {
-    /// <summary>Properties, events, methods, constructors and enum members all take one of these.</summary>
+    /// <summary>Properties, events, methods, operators, constructors, fields and enum members all take one of these.</summary>
+    /// <param name="x">Rendered as a Parameters list.</param>
+    /// <returns>Rendered after the parameters.</returns>
+    /// <exception cref="ArgumentException">Rendered as an Exceptions list.</exception>
     T SettingValue { get; set; }
 }
 ```
 
 Inside any of those tags, `<see cref="IGearsMod"/>` becomes a link to that type's page (or plain
-code if the name isn't a GearsAPI type — game and .NET types are never linked), `<c>text</c>` and
-`<paramref name="x"/>`/`<typeparamref name="x"/>` become code spans, and literal `<`/`>` must be
+code if the name isn't a type in the reference — game and .NET types are never linked), `<c>text</c>` and
+`<paramref name="x"/>`/`<typeparamref name="x"/>`/`<see langword="null"/>` become code spans,
+`<b>`/`<i>` become bold and italics, `<para>` starts a new paragraph, and `<list type="bullet">`
+(or `"number"`) with `<item>` (optionally `<term>`/`<description>`) becomes a markdown list, and literal `<`/`>` must be
 escaped as `&lt;`/`&gt;` since raw angle brackets aren't legal inside XML doc comment text. A
 delegate's `<param name="x">` tags go on the delegate's own declaration line. Run `gen:api:report`
 if you want to see exactly which types/members currently have no `///` summary at all.
 
-Two limits are worth knowing before you write a long comment:
-
-- **`<remarks>` counts on a type only.** A member renders its `<summary>` and nothing else, so a
-  `<remarks>` block on a property or method is parsed and then silently dropped. Put the whole member
-  description in its `<summary>`, however long it runs.
-- **`<para>` is not supported** and leaks into the page as literal text. Everything inside a tag is
-  flattened into one paragraph, so separate ideas with sentences rather than markup.
+`<inheritdoc/>` takes the docs of the same member on a base class or implemented interface in the
+reference, or, for `Equals`, `GetHashCode` and `ToString`, the standard .NET summary. Tags written on
+the member itself still win.
 
 ## Adding a type to the assembly
 
@@ -76,8 +79,15 @@ parser warnings (1):
 Add a `<summary>` to the type and place it in that section's `order` array in `lib/model.mjs`, and
 regenerate.
 
-A type in a namespace that is not in `SECTIONS` is skipped with a warning — add the namespace
-there to publish it.
+A type in a namespace that is not in its assembly's `sections` is skipped with a warning — add the
+namespace there to publish it.
+
+## Adding an assembly
+
+Add an entry to `ASSEMBLIES` in `lib/model.mjs`: its DLL name, its version, its source folder
+relative to the repo root (`bin/` and `obj/` are skipped), and its sections. Then add a
+`check-versions.mjs` entry for the version, and the source folder to the deploy workflow's
+`paths`.
 
 ## Files
 
@@ -85,10 +95,10 @@ there to publish it.
 |---|---|
 | `gen-api-reference.mjs` | renders the pages, `meta.json` files and the index; undocumented-member report; `--check` |
 | `lib/csharp.mjs` | the C# declaration parser (line-oriented, skips method bodies) |
-| `lib/model.mjs` | namespace→section map, reading order, and all derived relationships |
-| `lib/dump.mjs` | debug aid: `node scripts/lib/dump.mjs` prints everything the parser found |
+| `lib/model.mjs` | assemblies, namespace→section map, reading order, and all derived relationships |
+| `lib/dump.mjs` | debug aid: `node scripts/lib/dump.mjs [folder]` prints everything the parser found |
 | `check-links.mjs` | audits every internal doc link and heading anchor |
-| `check-versions.mjs` | fails when a Gears or GearsAPI version on the site differs from `ModInfo.xml` or `AssemblyInfo.cs` |
+| `check-versions.mjs` | fails when a Gears, GearsAPI or GearsSharing version on the site differs from `ModInfo.xml`, `AssemblyInfo.cs` or `GearsSharing.csproj` |
 | `check-subpath.mjs` | verifies the export works under `/Gears/`, as GitHub Pages serves it |
 
 ### Checking the export the way Pages serves it
@@ -105,9 +115,10 @@ node scripts/check-subpath.mjs
 
 ## Parser scope
 
-`lib/csharp.mjs` handles what GearsAPI uses: block-scoped namespaces, interfaces, classes, enums,
-delegates, nested types, generic constraints, attributes, and XML doc comments. It is **not** a
+`lib/csharp.mjs` handles what GearsAPI and GearsSharing use: block-scoped namespaces, interfaces,
+classes, enums, delegates, nested types, generic constraints, attributes, expression-bodied members,
+operators, fields with initializers (a `const` keeps its value), and XML doc comments. It is **not** a
 general C# parser — it reads declarations and skips bodies. Things it does not attempt: file-scoped
-namespaces, expression-bodied members, tuples, records, partial types spread across files.
+namespaces, tuples, records, partial types spread across files.
 `npm run gen:api:report` surfacing a type you expected to see is the signal that the parser needs
 extending; `lib/dump.mjs` shows exactly what it did read.

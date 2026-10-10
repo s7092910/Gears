@@ -1,0 +1,50 @@
+---
+title: "SharedEnumValue"
+description: "An enum value with no member name of its own (a flags combination), by number."
+---
+
+<TypeMeta kind="Sealed class" namespace="GearsSharing" assembly="GearsSharing.dll" source="GearsSharing/SharedValue.cs" />
+
+```csharp
+public sealed class SharedEnumValue : SharedValue
+```
+
+An enum value with no member name of its own (a flags combination), by number.
+
+**Inheritance:** `Object` → [`SharedValue`](/docs/reference/gearssharing/shared-value) → `SharedEnumValue`
+
+## Properties
+
+### Value
+
+```csharp
+public long Value { get; }
+```
+
+Gets the enum's underlying number. An enum based on `ulong` is stored reinterpreted as `long`.
+
+## Methods
+
+### Equals(SharedValue)
+
+```csharp
+public override bool Equals(SharedValue other)
+```
+
+Indicates whether the current object is equal to another object of the same type.
+
+### GetHashCode()
+
+```csharp
+public override int GetHashCode()
+```
+
+Serves as the default hash function.
+
+### ToString()
+
+```csharp
+public override string ToString()
+```
+
+Returns the value as text, for display. Floats use the shortest round-trip form.

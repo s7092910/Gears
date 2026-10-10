@@ -1,0 +1,23 @@
+{
+  "title": "GearsSharing",
+  "description": "Read, write and check share codes.",
+  "pages": [
+    "share-code-format",
+    "share-code",
+    "share-code-scope",
+    "shared-mod",
+    "shared-setting",
+    "shared-value",
+    "shared-bool",
+    "shared-int",
+    "shared-float",
+    "shared-string",
+    "shared-enum-name",
+    "shared-enum-value",
+    "shared-color",
+    "shared-serialized",
+    "share-code-validation-result",
+    "share-code-error",
+    "share-code-error-type"
+  ]
+}

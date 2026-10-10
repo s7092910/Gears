@@ -1,22 +1,27 @@
 ---
 title: API Reference
-description: Every public type in GearsAPI.dll 3.0.0, one page per type, grouped by namespace.
+description: Every public type in GearsAPI.dll 3.0.0 and GearsSharing.dll 1.0.0, one page per type, grouped by namespace.
 ---
 
-Every public type in `GearsAPI.dll` 3.0.0 — one page per type, laid out the way the .NET API
-browser does it: a declaration, then its constructors, properties, methods and events, each with
-its real signature.
+Every public type in the two Gears assemblies you can reference, one page per type, laid out
+much like the .NET API browser: a declaration, then its constructors, fields, properties,
+events, methods and operators, each with its real signature.
 
-Members inherited from a base interface are not repeated. Every GearsAPI type named on an
-*Implements*, *Derived* or *Inheritance* line links to its own page, so follow those to find
-them. Game and .NET types (`Mod`, `IModApi`, `PlayerAction`, `Color`, `Attribute`) are not linked.
+- [`GearsAPI.dll` 3.0.0](#gearsapidll-300) is the assembly mods reference to create and read their settings.
+- [`GearsSharing.dll` 1.0.0](#gearssharingdll-100) reads and writes share codes, for websites and tools. See [Share Codes](/docs/share-codes).
+
+Members inherited from a base type are not repeated. Every type named on an *Implements*,
+*Derived* or *Inheritance* line links to its own page, so follow those to find them. Game and
+.NET types (`Mod`, `IModApi`, `PlayerAction`, `Color`, `Attribute`) are not linked.
 
 <Callout title="Generated from source">
-  These pages are generated from the C# in `GearsAPI/Source` by
-  `docs-site/scripts/gen-api-reference.mjs`. Signatures always match the assembly.
+  These pages are generated from the C# in `GearsAPI/Source` and `GearsSharing` by
+  `docs-site/scripts/gen-api-reference.mjs`. Signatures always match the assemblies.
 </Callout>
 
-## GearsAPI
+## GearsAPI.dll 3.0.0
+
+### GearsAPI
 
 The assembly entry point.
 
@@ -24,7 +29,7 @@ The assembly entry point.
 |---|---|---|
 | [`GearsApi`](/docs/reference/core/gears-api) | Class | The game's `IModApi` entry point for `GearsAPI.dll` itself. Not intended for use by mods. |
 
-## GearsAPI.Settings
+### GearsAPI.Settings
 
 The mod-level contracts and the members every setting shares.
 
@@ -39,7 +44,7 @@ The mod-level contracts and the members every setting shares.
 | [`OnSelectedChangedEvent<T>`](/docs/reference/settings/on-selected-changed-event) | Delegate | Handler for `IValueModSetting<T>.OnSelectedChanged`. |
 | [`SettingRestartScope`](/docs/reference/settings/setting-restart-scope) | Enum | What a change to a global setting costs the player. |
 
-## GearsAPI.Settings.Base
+### GearsAPI.Settings.Base
 
 Non-generic faces of the value settings, for type-agnostic code.
 
@@ -51,7 +56,7 @@ Non-generic faces of the value settings, for type-agnostic code.
 | [`ISwitchSettingBase`](/docs/reference/base/i-switch-setting-base) | Interface | The non-generic members of a Switch: the two buttons, their text, and which one is lit. |
 | [`ISwitchSettingBase.SelectedButton`](/docs/reference/base/i-switch-setting-base-selected-button) | Enum | Which side of a Switch is lit. |
 
-## GearsAPI.Settings.Global
+### GearsAPI.Settings.Global
 
 The player's settings: tabs, categories and the global setting types.
 
@@ -70,7 +75,7 @@ The player's settings: tabs, categories and the global setting types.
 | [`IColorSelectorGlobalSetting`](/docs/reference/global/i-color-selector-global-setting) | Interface | A global color picker over `UnityEngine.Color`. |
 | [`IControlBindingSetting`](/docs/reference/global/i-control-binding-setting) | Interface | A global key-binding row. Not a value setting. |
 
-## GearsAPI.Settings.World
+### GearsAPI.Settings.World
 
 A save's settings: categories and the world setting types.
 
@@ -83,7 +88,7 @@ A save's settings: categories and the world setting types.
 | [`ISliderWorldSetting<T>`](/docs/reference/world/i-slider-world-setting) | Interface | A world numeric setting within a range. `int` and `float` only. |
 | [`ISwitchWorldSetting<T>`](/docs/reference/world/i-switch-world-setting) | Interface | A world two-position setting. |
 
-## GearsAPI.Attributes
+### GearsAPI.Attributes
 
 Binding, listener and serialization attributes.
 
@@ -103,3 +108,29 @@ Binding, listener and serialization attributes.
 | [`SettingFactoryAttribute`](/docs/reference/attributes/setting-factory-attribute) | Sealed class | Registers a setting family implementation for one value type. |
 | [`SettingFactoryEnumAttribute`](/docs/reference/attributes/setting-factory-enum-attribute) | Sealed class | Registers a setting family implementation for every enum. |
 | [`SettingFactoryFixedAttribute`](/docs/reference/attributes/setting-factory-fixed-attribute) | Sealed class | Registers an implementation of a non-generic setting interface. |
+
+## GearsSharing.dll 1.0.0
+
+### GearsSharing
+
+Read, write and check share codes.
+
+| Type | Kind | Summary |
+|---|---|---|
+| [`ShareCodeFormat`](/docs/reference/gearssharing/share-code-format) | Static class | Encodes, decodes and validates share codes. Has no game dependencies, so a website or tool can use it. |
+| [`ShareCode`](/docs/reference/gearssharing/share-code) | Sealed class | The contents of a share code: the settings that differ from their defaults, grouped by mod. |
+| [`ShareCodeScope`](/docs/reference/gearssharing/share-code-scope) | Enum | Which settings a share code holds. |
+| [`SharedMod`](/docs/reference/gearssharing/shared-mod) | Sealed class | One mod's settings in a share code. |
+| [`SharedSetting`](/docs/reference/gearssharing/shared-setting) | Sealed class | One setting and its value in a share code. |
+| [`SharedValue`](/docs/reference/gearssharing/shared-value) | Abstract class | One setting value in a share code. Create one with the static factory for its kind; each kind is its own sealed subclass holding only its own data. |
+| [`SharedBool`](/docs/reference/gearssharing/shared-bool) | Sealed class | A `bool` value (Switch). |
+| [`SharedInt`](/docs/reference/gearssharing/shared-int) | Sealed class | An `int` value (Slider, Selector). |
+| [`SharedFloat`](/docs/reference/gearssharing/shared-float) | Sealed class | A `float` value (Slider, Selector), kept bit for bit. |
+| [`SharedString`](/docs/reference/gearssharing/shared-string) | Sealed class | A `string` value, which may be `null`. |
+| [`SharedEnumName`](/docs/reference/gearssharing/shared-enum-name) | Sealed class | An enum value, by member name. |
+| [`SharedEnumValue`](/docs/reference/gearssharing/shared-enum-value) | Sealed class | An enum value with no member name of its own (a flags combination), by number. |
+| [`SharedColor`](/docs/reference/gearssharing/shared-color) | Sealed class | A color of red, green, blue and alpha (RGBA) channels, each a `float` kept bit for bit. |
+| [`SharedSerialized`](/docs/reference/gearssharing/shared-serialized) | Sealed class | A mod-registered value type, as written by that type's own serializer. |
+| [`ShareCodeValidationResult`](/docs/reference/gearssharing/share-code-validation-result) | Sealed class | The result of checking a share code. |
+| [`ShareCodeError`](/docs/reference/gearssharing/share-code-error) | Sealed class | One problem found in a share code. |
+| [`ShareCodeErrorType`](/docs/reference/gearssharing/share-code-error-type) | Enum | Why a share code is not valid. |

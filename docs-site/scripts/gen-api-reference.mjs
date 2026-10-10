@@ -1,19 +1,20 @@
 #!/usr/bin/env node
 /**
- * Generates content/docs/reference/** from the GearsAPI C# sources.
+ * Generates content/docs/reference/** from the C# sources of every assembly in ASSEMBLIES
+ * (lib/model.mjs): GearsAPI and GearsSharing.
  *
  *   node scripts/gen-api-reference.mjs           write the pages
  *   node scripts/gen-api-reference.mjs --check   fail if the pages are stale (for CI)
  *   node scripts/gen-api-reference.mjs --report  only print the undocumented-member report
  *
  * Everything — signatures, kinds, inheritance, Implements/Derived, enum values, and every scrap
- * of prose — comes from `///` XML doc comments in GearsAPI/Source. There is no separate prose
+ * of prose — comes from `///` XML doc comments in the sources. There is no separate prose
  * store: a member with no doc comment renders as "_No description yet._" and is called out by
  * the report below.
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildModel, orderTypes, ASSEMBLY } from './lib/model.mjs';
+import { buildModel, orderTypes, ASSEMBLIES } from './lib/model.mjs';
 import { typeLabel } from './lib/csharp.mjs';
 
 const HERE = import.meta.dirname;
@@ -74,21 +75,57 @@ function docLink(cref, label) {
   return t ? `[\`${text}\`](${url(t)})` : `\`${text}\``;
 }
 
+/** Escape what MDX would read as JSX or an expression, outside inline code spans. */
+function escapeMdx(s) {
+  return s
+    .split(/(`[^`]*`)/)
+    .map((part, i) => (i % 2 ? part : part.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\{/g, '&#123;').replace(/\}/g, '&#125;')))
+    .join('');
+}
+
+/** `<list>` as markdown items, or as one line joined with `; `. */
+function renderList(type, body, block) {
+  const items = [...body.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => {
+    const term = m[1].match(/<term>([\s\S]*?)<\/term>/)?.[1]?.trim();
+    const desc = (m[1].match(/<description>([\s\S]*?)<\/description>/)?.[1] ?? m[1].replace(/<term>[\s\S]*?<\/term>/, '')).trim();
+    return term ? `**${term}**: ${desc}` : desc;
+  });
+  if (!block) return ` ${items.join('; ')} `;
+  return '\n\n' + items.map((item, i) => `${type === 'number' ? `${i + 1}.` : '-'} ${item}`).join('\n') + '\n\n';
+}
+
 /**
  * Render a fragment of parsed XML doc text (see `parseDoc` in lib/csharp.mjs) as the same
  * markdown hand-written prose uses: `<see cref>` becomes a link (or plain code for a type outside
- * GearsAPI), `<paramref>`/`<typeparamref>` and `<c>` become code spans, and the `&lt;&gt;`
- * escaping XML requires around literal angle brackets is undone.
+ * the reference), `<paramref>`/`<typeparamref>`, `<c>` and `<see langword>` become code spans,
+ * `<b>`/`<i>` become bold and italics, and the `&lt;&gt;` escaping XML requires around literal
+ * angle brackets is undone.
+ *
+ * `block` turns `<para>` into paragraphs and `<list>` into markdown lists, for a page body; without
+ * it, they flatten to one line, for table cells. `mdx: false` skips MDX escaping, for frontmatter.
  */
-function renderXmlText(raw) {
+function renderXmlText(raw, { block = false, mdx = true } = {}) {
   if (raw == null) return null;
   let s = String(raw);
+  s = s.replace(/<list(?:\s+type="([^"]*)")?\s*>([\s\S]*?)<\/list>/g, (_, type, body) => renderList(type, body.replace(/<listheader>[\s\S]*?<\/listheader>/g, ''), block));
+  s = s.replace(/<\/?para>/g, block ? '\n\n' : ' ');
   s = s.replace(/<see\s+cref="([^"]+)"\s*\/>/g, (_, cref) => docLink(cref));
   s = s.replace(/<see\s+cref="([^"]+)"\s*>([\s\S]*?)<\/see>/g, (_, cref, label) => docLink(cref, decodeEntities(label.trim())));
+  s = s.replace(/<see\s+langword="([^"]+)"\s*\/>/g, (_, word) => `\`${word}\``);
   s = s.replace(/<paramref\s+name="([^"]+)"\s*\/>/g, (_, n) => `\`${n}\``);
   s = s.replace(/<typeparamref\s+name="([^"]+)"\s*\/>/g, (_, n) => `\`${n}\``);
   s = s.replace(/<c>([\s\S]*?)<\/c>/g, (_, code) => `\`${decodeEntities(code)}\``);
-  return decodeEntities(s);
+  s = s.replace(/<b>([\s\S]*?)<\/b>/g, (_, text) => `**${text.trim()}**`);
+  s = s.replace(/<i>([\s\S]*?)<\/i>/g, (_, text) => `_${text.trim()}_`);
+  s = decodeEntities(s);
+  if (mdx) s = escapeMdx(s);
+  return s
+    .split('\n')
+    .map((line) => line.trim())
+    .join('\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function yamlString(s) {
@@ -111,11 +148,58 @@ const heading = (s) => String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const GROUP_ORDER = [
   ['constructor', 'Constructors'],
+  ['field', 'Fields'],
   ['property', 'Properties'],
   ['event', 'Events'],
   ['method', 'Methods'],
-  ['field', 'Fields'],
+  ['operator', 'Operators'],
 ];
+
+// ---------------------------------------------------------------- <inheritdoc/>
+
+/**
+ * The summaries .NET itself gives the members most often overridden, for an `<inheritdoc/>` whose
+ * source is outside the reference.
+ */
+const DOTNET_SUMMARIES = {
+  'Equals(Object)': 'Determines whether the specified object is equal to the current object.',
+  'GetHashCode()': 'Serves as the default hash function.',
+  'ToString()': 'Returns a string that represents the current object.',
+};
+// IEquatable<T>.Equals(T), for an Equals that takes anything but Object.
+const EQUATABLE_SUMMARY = 'Indicates whether the current object is equal to another object of the same type.';
+
+/**
+ * The doc comment a member actually has: its own, or for `<inheritdoc/>`, the nearest one with a
+ * summary up the base classes and implemented interfaces, then the .NET summaries above. Its own
+ * tags win over inherited ones.
+ */
+function effectiveDoc(t, m, seen = new Set()) {
+  const own = m.xmlDoc;
+  if (!own?.inheritdoc || own.summary) return own;
+  const guard = `${t.key}#${m.key}`;
+  if (seen.has(guard)) return own;
+  seen.add(guard);
+
+  for (const baseName of [t.baseClass, ...t.implementsList].filter(Boolean)) {
+    const base = model.resolve(baseName);
+    const bm = base?.members.find((x) => x.key === m.key);
+    const doc = bm && effectiveDoc(base, bm, seen);
+    if (doc?.summary) return mergeDoc(own, doc);
+  }
+  const fallback = DOTNET_SUMMARIES[m.key] ?? (m.name === 'Equals' && m.params.length === 1 ? EQUATABLE_SUMMARY : null);
+  return fallback ? mergeDoc(own, { summary: fallback }) : own;
+}
+
+function mergeDoc(own, inherited) {
+  const merged = { ...inherited };
+  for (const [k, v] of Object.entries(own)) if (v != null && v !== false) merged[k] = v;
+  return merged;
+}
+
+for (const t of model.types.values()) {
+  for (const m of t.members) m.resolvedDoc = effectiveDoc(t, m);
+}
 
 // ---------------------------------------------------------------- rendering
 
@@ -123,8 +207,8 @@ function renderType(t) {
   const xd = t.xmlDoc ?? {};
   const out = [];
 
-  const summary = renderXmlText(xd.summary) ?? '';
-  const description = renderXmlText(xd.remarks) ?? renderXmlText(xd.summary) ?? '_No description yet._';
+  const summary = renderXmlText(xd.summary, { mdx: false }) ?? '';
+  const description = renderXmlText(xd.remarks, { block: true }) ?? renderXmlText(xd.summary, { block: true }) ?? '_No description yet._';
   const typeParamsText = xd.typeParams
     ? Object.entries(xd.typeParams).map(([n, d]) => `\`${n}\` — ${renderXmlText(d)}`).join('; ')
     : null;
@@ -135,7 +219,7 @@ function renderType(t) {
   out.push(`description: ${yamlString(summary)}`);
   out.push('---');
   out.push('');
-  out.push(`<TypeMeta kind="${t.kindLabel}" namespace="${t.namespace}" source="${t.source}" />`);
+  out.push(`<TypeMeta kind="${t.kindLabel}" namespace="${t.namespace}" assembly="${t.assembly}" source="${t.source}" />`);
   out.push('');
   out.push('```csharp');
   out.push(t.decl);
@@ -183,7 +267,7 @@ function renderType(t) {
     out.push('| Name | Value | Description |');
     out.push('|---|---|---|');
     for (const m of t.members) {
-      const desc = renderXmlText(m.xmlDoc?.summary) ?? '';
+      const desc = renderXmlText(m.resolvedDoc?.summary) ?? '';
       out.push(`| \`${m.name}\` | ${m.value} | ${desc} |`);
     }
     out.push('');
@@ -200,8 +284,7 @@ function renderType(t) {
         out.push(m.signature);
         out.push('```');
         out.push('');
-        out.push(renderXmlText(m.xmlDoc?.summary) ?? '_No description yet._');
-        out.push('');
+        out.push(...renderMemberDoc(m));
       }
     }
   }
@@ -226,42 +309,77 @@ function renderType(t) {
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
 }
 
+/** A member's prose: summary, remarks, then its parameters, return value and exceptions. */
+function renderMemberDoc(m) {
+  const d = m.resolvedDoc ?? {};
+  const out = [renderXmlText(d.summary, { block: true }) ?? '_No description yet._', ''];
+  const remarks = renderXmlText(d.remarks, { block: true });
+  if (remarks) out.push(remarks, '');
+
+  const params = m.params.filter((p) => d.params?.[p.name]);
+  if (params.length) {
+    out.push('**Parameters:**', '');
+    for (const p of params) out.push(`- \`${p.name}\`: ${renderXmlText(d.params[p.name])}`);
+    out.push('');
+  }
+  if (d.returns) out.push(`**Returns:** ${renderXmlText(d.returns)}`, '');
+  if (d.exceptions?.length) {
+    out.push('**Exceptions:**', '');
+    for (const e of d.exceptions) out.push(`- ${docLink(e.cref)}: ${renderXmlText(e.text)}`);
+    out.push('');
+  }
+  return out;
+}
+
 function renderIndex(bySection) {
+  const [api, sharing] = ASSEMBLIES;
   const out = [];
   out.push('---');
   out.push('title: API Reference');
-  out.push('description: Every public type in GearsAPI.dll 3.0.0, one page per type, grouped by namespace.');
+  out.push(`description: Every public type in ${api.name} ${api.version} and ${sharing.name} ${sharing.version}, one page per type, grouped by namespace.`);
   out.push('---');
   out.push('');
-  out.push(`Every public type in \`${ASSEMBLY}\` 3.0.0 — one page per type, laid out the way the .NET API`);
-  out.push('browser does it: a declaration, then its constructors, properties, methods and events, each with');
-  out.push('its real signature.');
+  out.push('Every public type in the two Gears assemblies you can reference, one page per type, laid out');
+  out.push('much like the .NET API browser: a declaration, then its constructors, fields, properties,');
+  out.push('events, methods and operators, each with its real signature.');
   out.push('');
-  out.push('Members inherited from a base interface are not repeated. Every GearsAPI type named on an');
-  out.push('*Implements*, *Derived* or *Inheritance* line links to its own page, so follow those to find');
-  out.push('them. Game and .NET types (`Mod`, `IModApi`, `PlayerAction`, `Color`, `Attribute`) are not linked.');
+  out.push(`- [\`${api.name}\` ${api.version}](#${anchor(`${api.name} ${api.version}`)}) is the assembly mods reference to create and read their settings.`);
+  out.push(`- [\`${sharing.name}\` ${sharing.version}](#${anchor(`${sharing.name} ${sharing.version}`)}) reads and writes share codes, for websites and tools. See [Share Codes](/docs/share-codes).`);
+  out.push('');
+  out.push('Members inherited from a base type are not repeated. Every type named on an *Implements*,');
+  out.push('*Derived* or *Inheritance* line links to its own page, so follow those to find them. Game and');
+  out.push('.NET types (`Mod`, `IModApi`, `PlayerAction`, `Color`, `Attribute`) are not linked.');
   out.push('');
   out.push('<Callout title="Generated from source">');
-  out.push('  These pages are generated from the C# in `GearsAPI/Source` by');
-  out.push('  `docs-site/scripts/gen-api-reference.mjs`. Signatures always match the assembly.');
+  out.push(`  These pages are generated from the C# in ${ASSEMBLIES.map((a) => `\`${a.root}\``).join(' and ')} by`);
+  out.push('  `docs-site/scripts/gen-api-reference.mjs`. Signatures always match the assemblies.');
   out.push('</Callout>');
   out.push('');
-  for (const sec of model.sections) {
-    const rows = bySection.get(sec.id) ?? [];
-    if (!rows.length) continue;
-    out.push(`## ${sec.title}`);
+  for (const assembly of ASSEMBLIES) {
+    out.push(`## ${assembly.name} ${assembly.version}`);
     out.push('');
-    out.push(sec.blurb);
-    out.push('');
-    out.push('| Type | Kind | Summary |');
-    out.push('|---|---|---|');
-    for (const t of rows) {
-      const summary = renderXmlText(t.xmlDoc?.summary) ?? '';
-      out.push(`| [\`${t.display}\`](${url(t)}) | ${t.kindLabel} | ${summary} |`);
+    for (const sec of model.sections.filter((s) => s.assembly === assembly.name)) {
+      const rows = bySection.get(sec.id) ?? [];
+      if (!rows.length) continue;
+      out.push(`### ${sec.title}`);
+      out.push('');
+      out.push(sec.blurb);
+      out.push('');
+      out.push('| Type | Kind | Summary |');
+      out.push('|---|---|---|');
+      for (const t of rows) {
+        const summary = renderXmlText(t.xmlDoc?.summary) ?? '';
+        out.push(`| [\`${t.display}\`](${url(t)}) | ${t.kindLabel} | ${summary} |`);
+      }
+      out.push('');
     }
-    out.push('');
   }
   return out.join('\n');
+}
+
+/** The heading anchor Fumadocs gives a heading: lowercase, punctuation dropped, spaces to dashes. */
+function anchor(text) {
+  return text.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
 }
 
 // ---------------------------------------------------------------- undocumented-member report
@@ -271,7 +389,7 @@ const report = { undocumented: [], warnings: model.warnings };
 for (const t of model.types.values()) {
   if (!t.xmlDoc?.summary) report.undocumented.push(`${t.key} (type)`);
   for (const m of t.members) {
-    if (!m.xmlDoc?.summary) report.undocumented.push(`${t.key}#${m.key}`);
+    if (!m.resolvedDoc?.summary) report.undocumented.push(`${t.key}#${m.key}`);
   }
   if (t.kind === 'delegate') {
     for (const a of t.params ?? []) {
@@ -341,7 +459,7 @@ for (const sec of model.sections) {
 files.set(
   path.join(OUT, 'meta.json'),
   JSON.stringify(
-    { title: 'API Reference', description: 'Every public type in GearsAPI 3.0.0', pages: model.sections.map((s) => s.id) },
+    { title: 'API Reference', description: 'Every public type in GearsAPI and GearsSharing', pages: model.sections.map((s) => s.id) },
     null, 2
   ) + '\n'
 );

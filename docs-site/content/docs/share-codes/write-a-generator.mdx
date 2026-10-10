@@ -1,0 +1,143 @@
+---
+title: Write a Share Code Generator
+description: Build a tool in any language that reads a mod's World settings from its files, makes share codes from the values a user picks, and opens existing codes.
+---
+
+Follow these steps to build a share code generator: a tool that shows a mod's settings, lets a
+user change them, and turns the changes into a share code. A **share code** is one line of text,
+starting with `Gears:`, that holds the settings a player changed from their defaults.
+
+The steps use **world settings**: settings that belong to one world and can't change while it
+runs, which a mod declares in its `ModSettings.xml`. In C#, use
+[GearsSharing](/docs/share-codes/gearssharing) for the encoding and decoding in steps 3 and 4.
+
+The [Share Code Format Reference](/docs/share-codes/format) has every byte-level rule these steps
+rely on. The documentation site's own [Share Code Generator](/share-code) is a working example,
+and its source is listed under [Reference implementation](#reference-implementation).
+
+<Steps>
+<Step>
+
+### Read each mod's name and World settings
+
+Each mod folder holds a `ModInfo.xml` and a `ModSettings.xml`.
+
+- **Mod name:** the `value` attribute of the `<Name>` element in `ModInfo.xml`. The root element
+  may be `<xml>` or `<ModInfo>`. Take the element named exactly `Name`; `DisplayName` is not it.
+  Every hash in a code starts from this name.
+- **World settings:** read `ModSettings.xml` as Gears does. The file must have
+  `<ModSettings version="2">`. Read only the first `<World>`, then each `<Category>` under it, then
+  the `<Switch>`, `<Slider>` and `<Selector>` elements in each category. World settings take no
+  other element.
+
+For each setting, keep its `name`, `type`, `defaultValue`, and the child elements that limit its
+values: `<List allowedValues>` on a Selector, `<Incremental increment minValue maxValue>` on a
+Selector or Slider, and `<Buttons left right>` on a Switch.
+
+Leave out a setting that Gears drops: one with no `name`, `type` or `defaultValue`, or with a type
+its element can't take. A world setting name must be unique within the mod; Gears gives a repeated
+name's saved value to the first setting with that name. The full rules are in the
+[ModSettings.xml Reference](/docs/xml/modsettings-reference).
+
+Map each `type` to the value kind the code stores. Gears matches `type` case-insensitively:
+
+| `type` | Elements | Value kind | Parsing text such as `defaultValue` |
+|---|---|---|---|
+| `int`, `int32`, `integer` | Selector, Slider | Int (tag `2`) | a base-10 integer |
+| `float`, `single` | Selector, Slider | Float (tag `3` or `4`) | a decimal number. A `%` sign makes it a percentage: `50%` is `0.5`. Round to single precision. |
+| `bool`, `boolean` | Switch | Bool (tag `0` or `1`) | `true` or `false` |
+| `string` | Selector, Switch | String (tag `6`) | the text as written |
+| any other name | Selector, Switch | Enum by name (tag `7`) | the member name |
+
+A type that isn't one of the built-in names is a mod's own enum. The XML names the enum type but
+not its members, unless the setting has a `<List>` or `<Buttons>`. Without one, ask the user for
+the member name. The game accepts only an exact match, case included.
+
+</Step>
+<Step>
+
+### Keep only the values that differ
+
+Let the user change values, then compare each one with its default:
+
+- Compare ints, strings and enum names exactly.
+- Compare floats as single precision, by their bits.
+- Check a number against `minValue` and `maxValue`, and a choice against its `<List>` or
+  `<Buttons>`, before you accept it.
+
+Only the settings that differ go into the code. A mod with no changed settings is left out.
+
+</Step>
+<Step>
+
+### Make the code
+
+1. For each mod with changes, hash its name. For each changed setting, hash its name. See
+   [Name hashes](/docs/share-codes/format#name-hashes).
+2. Write the payload: the mod count, then for each mod its hash, its setting count, and each
+   setting's hash and value. See [Payload layout](/docs/share-codes/format#payload-layout) and
+   [Value encodings](/docs/share-codes/format#value-encodings).
+3. Raw-deflate the payload. Keep the compressed form only if it is shorter.
+4. Put the header byte in front: `0x11` for an uncompressed World code, `0x31` when compressed.
+5. Encode as URL-safe base64 with no padding, and add the `Gears:` prefix.
+6. Refuse to output a code longer than 32,767 characters. Tell the user to change fewer settings.
+
+</Step>
+<Step>
+
+### Open an existing code
+
+Decode the code, then match each mod hash against the hashes of the loaded mods' names, and each
+setting hash against the hashes of that mod's setting names. Check that the value's kind fits the
+setting before you show it.
+
+Keep every entry you can't match, by its hashes, and write it back out unchanged when the user
+makes a new code. Otherwise re-sharing a code would quietly drop the settings of every mod the user
+didn't load.
+
+Opening a code replaces the user's values: a setting the code doesn't mention goes back to its
+default.
+
+</Step>
+<Step>
+
+### Test against the shared vectors
+
+The [test vectors](https://github.com/s7092910/Gears/blob/main/docs-site/lib/share-code/vectors.json)
+are the same ones the C# library is tested with. Check that:
+
+- every entry under `hashes` hashes to its value.
+- every code under `valid` decodes to exactly its model, and the model survives your encoder and
+  decoder.
+- every code under `invalid` fails with its `error`.
+
+Compare decoded models, not code strings. Deflate libraries produce different bytes for the same
+input, so your codes may differ from the vectors and still be correct.
+
+</Step>
+</Steps>
+
+<Callout type="warn" title="Mistakes that give codes nothing will match">
+  A code built with any of these still decodes, but its hashes or values won't match the game's:
+
+  - **Hashing UTF-16 instead of UTF-8.** Many languages store strings as UTF-16 (16-bit Unicode
+    Transformation Format) inside. Hash the UTF-8 (8-bit) bytes.
+  - **Keeping floats as doubles.** A double that isn't rounded to single precision writes different
+    bits.
+  - **Losing -0 or NaN (not a number) bits.** Copy float bits; don't round-trip through text.
+  - **Deflate with a header.** Many libraries add a zlib or gzip header by default. The format uses
+    raw deflate.
+  - **Changing an enum name's case.** The game matches member names exactly.
+</Callout>
+
+## Reference implementation
+
+The documentation site's generator is written in TypeScript, without dependencies beyond the
+browser's own `CompressionStream` and `DOMParser`:
+
+- [`format.ts`](https://github.com/s7092910/Gears/blob/main/docs-site/lib/share-code/format.ts):
+  encoding, decoding, validation and hashing.
+- [`mod-settings.ts`](https://github.com/s7092910/Gears/blob/main/docs-site/lib/share-code/mod-settings.ts):
+  reading the mod name and the World settings.
+- [`generator.ts`](https://github.com/s7092910/Gears/blob/main/docs-site/lib/share-code/generator.ts):
+  keeping only changed values, opening a code, and checking what the user typed.
