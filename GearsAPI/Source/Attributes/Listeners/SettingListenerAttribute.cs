@@ -7,6 +7,13 @@ namespace GearsAPI.Attributes
     /// The setting path must be in the form "tabName.CategoryName.SettingName" for global settings
     /// and "CategoryName.SettingName" for world settings.
     /// </summary>
+    /// <remarks>
+    /// Write <c>*</c> as the setting name, as in <c>"tabName.CategoryName.*"</c> or
+    /// <c>"CategoryName.*"</c>, to bind the method to every setting in the category that fits it.
+    /// Settings that do not fit, such as a value setting of a different <c>T</c>, are skipped without
+    /// a log line. A path that fits no setting at all is reported. The wildcard expands when
+    /// <c>BindSettingsClass</c> runs, so a setting created in the category later is not bound.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public abstract class SettingListenerAttribute : SettingPathAttribute
     {

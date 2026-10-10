@@ -10,7 +10,7 @@ description: "Base for attributes that bind a static method to a setting's event
 public abstract class SettingListenerAttribute : SettingPathAttribute
 ```
 
-Base for attributes that bind a static method to a setting's event. The setting path must be in the form "tabName.CategoryName.SettingName" for global settings and "CategoryName.SettingName" for world settings.
+Write `*` as the setting name, as in `"tabName.CategoryName.*"` or `"CategoryName.*"`, to bind the method to every setting in the category that fits it. Settings that do not fit, such as a value setting of a different `T`, are skipped without a log line. A path that fits no setting at all is reported. The wildcard expands when `BindSettingsClass` runs, so a setting created in the category later is not bound.
 
 **Inheritance:** `Object` → `Attribute` → [`SettingPathAttribute`](/docs/reference/attributes/setting-path-attribute) → `SettingListenerAttribute`\
 **Derived:** [`SettingOnValueChangedAttribute`](/docs/reference/attributes/setting-on-value-changed-attribute) · [`SettingOnAppliedAttribute`](/docs/reference/attributes/setting-on-applied-attribute) · [`SettingOnSelectedChangedAttribute`](/docs/reference/attributes/setting-on-selected-changed-attribute) · [`SettingOnEnabledAttribute`](/docs/reference/attributes/setting-on-enabled-attribute)\

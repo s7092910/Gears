@@ -11,7 +11,8 @@ namespace GearsAPI.Attributes
     /// Base class of every attribute that names a setting by its path for <c>BindSettingsClass</c>.
     /// Cannot be applied directly. This class deliberately declares no <see cref="AttributeUsage"/> of
     /// its own, because <c>AttributeUsage</c> is inherited — each concrete attribute below it declares
-    /// its own targets.
+    /// its own targets. Only listener attributes (<see cref="SettingListenerAttribute"/>) accept
+    /// <c>*</c> as the setting name.
     /// </remarks>
     public abstract class SettingPathAttribute : Attribute
     {

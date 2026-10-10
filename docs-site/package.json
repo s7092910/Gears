@@ -13,7 +13,8 @@
     "gen:api:report": "node scripts/gen-api-reference.mjs --report",
     "check:links": "node scripts/check-links.mjs",
     "check:versions": "node scripts/check-versions.mjs",
-    "check": "npm run gen:api:check && npm run check:links && npm run check:versions"
+    "check:share-code": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-share-code.mjs",
+    "check": "npm run gen:api:check && npm run check:links && npm run check:versions && npm run check:share-code"
   },
   "dependencies": {
     "cn": "^0.2.6",

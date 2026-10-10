@@ -40,6 +40,9 @@ class. See [Exceptions that stop a bind](#exceptions-that-stop-a-bind).
 The names are the `name` attributes from `ModSettings.xml`, or the names you passed to `Create…`.
 They are not the display keys.
 
+A listener attribute can also take `*` as the setting name. See
+[Bind a method to every setting in a category](#bind-a-method-to-every-setting-in-a-category).
+
 <Callout type="warn">
   **Put global and world members on separate types.** Each `BindSettingsClass` call resolves every
   tagged member on the type you hand it, using that side's segment count. A world path on a type you
@@ -223,6 +226,61 @@ parameter type does not match.
 every setting type. It fires only when `Enabled` actually changes value, not on every assignment.
 
 A method may carry several attributes, so one method can listen to several settings.
+
+## Bind a method to every setting in a category
+
+Write `*` in place of the setting name to bind one method to every setting in a category. This works
+on all four listener attributes:
+
+```csharp
+public static class MyGlobalListeners
+{
+    // Runs for any setting in the Display category that is turned on or off.
+    [SettingOnEnabled("General.Display.*")]
+    private static void DisplayEnabledChanged(IModSetting setting, bool isEnabled)
+    {
+        MyHud.Redraw();
+    }
+
+    // Runs for the float settings in the category only.
+    [SettingOnValueChanged("General.Display.*", includeInSync: true)]
+    private static void DisplayFloatSaved(IValueModSetting<float> setting, float newValue)
+    {
+        MyHud.SetValue(setting.Name, newValue);
+    }
+}
+```
+
+A world path works the same way, for example `"Zombies.*"`.
+
+Gears binds the method to each setting in the category that fits it, and skips the rest without
+logging anything:
+
+| Attribute | Binds to |
+|---|---|
+| `[SettingOnEnabled]` | every setting in the category |
+| `[SettingOnApplied]` | every global setting in the category |
+| `[SettingOnValueChanged]`, `[SettingOnSelectedChanged]` | the value settings whose type `T` matches the method's parameters exactly |
+
+A value listener has one `T`, so in a category that mixes `float` sliders and `string` selectors
+you write one method per value type. `includeInSync: true` works per setting:
+`SyncSettingsToClass` calls the method once for each setting it bound, with that setting's value.
+
+Gears logs an error and binds nothing when the path matches no setting at all. That happens when the
+category does not exist, is empty, or holds no setting that fits the method.
+
+<Callout type="warn">
+  **The wildcard expands when you bind.** `BindSettingsClass` binds the settings the category holds at
+  that moment. A setting you create in the category later is not bound, so create code-defined
+  settings first.
+</Callout>
+
+The `*` must replace the whole setting name. `"General.Disp*.HudScale"` and `"General.*.HudScale"`
+are not wildcards. `[Setting]` and `[SettingPlayerAction]` do not accept `*`, because each one fills a
+single member with a single setting.
+
+A setting that a wildcard and a separate full path on the same method both name is bound twice, so
+the method runs twice on each change.
 
 ## Sync settings to a class
 
@@ -456,6 +514,9 @@ The exception is the last line in the listener table, which reports a whole clas
 | `[SettingOnValueChangedAttribute] on 'Ns.Type.Method' references unknown setting "…". Skipping registration of listener.` | no setting at that path |
 | `[SettingOnApplied("…")] on '…' targets a setting that does not support OnSettingApplied (only global settings expose it). Skipping registration of listener.` | `[SettingOnApplied]` on a world path |
 | `[SettingOnValueChangedAttribute("…")] on '…' targets a setting that holds no value and raises no 'OnValueChanged'. Skipping registration of listener.` | either value attribute on a Binding, which holds no value at all. A world setting is not this case: it holds a value, so the listener binds [invoke-only](#settingonvaluechanged-on-a-world-path) |
+| `[SettingOnEnabledAttribute("…")] on '…' matched no setting in the category. A value listener binds only the settings whose value type matches its parameters, and OnSettingApplied only global settings. Skipping registration of listener.` | a [wildcard path](#bind-a-method-to-every-setting-in-a-category) whose category is empty or holds no setting that fits the method |
+| `[SettingOnEnabledAttribute("…")] on '…' references unknown category "…". Skipping registration of listener.` | a wildcard path whose category does not exist |
+| `[SettingOnEnabledAttribute("…")] on '…' uses '*' where it is not allowed. …` | `*` in place of the tab or category name, or on `[Setting]` or `[SettingPlayerAction]` |
 | `'Ns.Type' has not been bound, so its listeners cannot be invoked. Call BindSettingsClass on it first.` | `SyncSettingsToClass` for a type no `BindSettingsClass` ever saw |
 | ``[SettingOnValueChangedAttribute] on '…' has an invalid signature, skipping registration of listener. Expected: static Void Method(IValueModSetting`1, Int32).`` | wrong parameter types, wrong parameter count, or a non-void return. An instance method is not reported: Gears never looks at it |
 | `[SettingOnValueChangedAttribute("…")] on '…' threw when it was invoked with the setting's current value: …` | your handler threw on a `SyncSettingsToClass` call; the remaining calls still run |
