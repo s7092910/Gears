@@ -67,4 +67,13 @@ export const showcaseMods: ShowcaseMod[] = [
     globalSettings: true,
     worldSettings: false,
   },
+  {
+    name: 'Natural Selection',
+    description: 'Natural Selection is a 7 Days to Die mod that makes animals behave like real animals: they size up threats, hunt in packs, stalk players, fear fire, and eat to survive. It also reworks animal spawns, speed, size, and harvest yields, among other things.',
+    image: 'Natural-Selection.png',
+    imageAlt: 'The Natural Selection logo: the words NATURAL and SELECTION in fur-textured capital letters, above and below the glaring eyes of a big cat on a red background.',
+    url: 'https://www.nexusmods.com/7daystodie/mods/8528',
+    globalSettings: false,
+    worldSettings: true,
+  },
 ];
